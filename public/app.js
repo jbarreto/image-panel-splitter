@@ -144,16 +144,20 @@ async function loadFile(selected) {
 }
 
 imageInput.addEventListener('change', () => loadFile(imageInput.files[0]));
+
+function selectOrientation(orientation, { dispatchChange = true } = {}) {
+  orientationInput.value = orientation;
+  for (const option of orientationButtons) {
+    const selected = option.dataset.orientation === orientation;
+    option.classList.toggle('selected', selected);
+    option.setAttribute('aria-pressed', String(selected));
+  }
+  if (dispatchChange) orientationInput.dispatchEvent(new Event('change'));
+}
+
 for (const button of orientationButtons) {
   button.addEventListener('click', () => {
-    if (orientationInput.value === button.dataset.orientation) return;
-    orientationInput.value = button.dataset.orientation;
-    for (const option of orientationButtons) {
-      const selected = option === button;
-      option.classList.toggle('selected', selected);
-      option.setAttribute('aria-pressed', String(selected));
-    }
-    orientationInput.dispatchEvent(new Event('change'));
+    selectOrientation(button.dataset.orientation);
   });
 }
 for (const input of [paperInput, orientationInput]) {
@@ -344,5 +348,6 @@ exportButton.addEventListener('click', async () => {
   }
 });
 
+selectOrientation('landscape', { dispatchChange: false });
 applyOrientationLimits({ resetToMaximum: true });
 updateLabels();
