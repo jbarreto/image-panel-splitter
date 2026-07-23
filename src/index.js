@@ -184,7 +184,6 @@ function parseArgs(argv) {
       throw new Error(`For ${options.paper} ${options.orientation}, --panel-height-in cannot exceed ${maxHeight}.`);
     }
   }
-
   return { input, options };
 }
 

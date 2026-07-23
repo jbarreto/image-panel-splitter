@@ -342,7 +342,7 @@ The GUI provides:
 - orientation selection;
 - panel width slider;
 - panel height slider;
-- draggable interior preview grid lines that update the matching width or height slider, including diagonal intersection dragging to update both;
+- draggable interior preview grid lines that update the matching width or height slider, with diagonal dragging anywhere inside a panel to update both;
 - DPI input;
 - target poster height in millimeters;
 - grid line width;
@@ -487,7 +487,7 @@ Do not break these without explicit user approval:
 10. `--no-number` and `--no-label` both disable numbers.
 11. GUI preview updates live as panel dimensions change.
 12. Exported panels retain transparent padding rather than white padding.
-13. Dragging an interior GUI preview grid line updates the corresponding panel dimension without bypassing its limits; dragging an intersection updates both dimensions.
+13. Dragging an interior GUI preview grid line updates the corresponding panel dimension without bypassing its limits; dragging inside a panel updates both dimensions.
 
 ## 17. Recommended next improvements
 

@@ -102,13 +102,14 @@ function render() {
 
   ctx.save();
   ctx.strokeStyle = gridColorInput.value;
-  ctx.lineWidth = Math.max(1, v.gridWidthMm / 25.4 * v.dpi * previewScale);
-  for (let c = 0; c <= columns; c += 1) {
-    const x = Math.min(canvas.width, c * panelWidthPx * previewScale);
+  const gridLineWidthCanvas = Math.max(1, v.gridWidthMm / 25.4 * v.dpi * previewScale);
+  ctx.lineWidth = gridLineWidthCanvas;
+  for (let column = 0; column <= columns; column += 1) {
+    const x = Math.min(canvas.width, column * panelWidthPx * previewScale);
     ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
   }
-  for (let r = 0; r <= rows; r += 1) {
-    const y = Math.min(canvas.height, r * panelHeightPx * previewScale);
+  for (let row = 0; row <= rows; row += 1) {
+    const y = Math.min(canvas.height, row * panelHeightPx * previewScale);
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
   }
   ctx.restore();
@@ -119,7 +120,8 @@ function render() {
     panelWidthPx,
     panelHeightPx,
     columns,
-    rows
+    rows,
+    gridLineWidthCanvas
   };
 
   const widthIn = outputWidthPx / v.dpi;
@@ -166,7 +168,11 @@ function gridLineAt(event) {
   const point = canvasPoint(event);
   const xScale = canvas.width / previewGrid.outputWidthPx;
   const yScale = canvas.height / previewGrid.outputHeightPx;
-  const hitDistance = 9 * canvas.width / canvas.getBoundingClientRect().width;
+  const canvasToCssScale = canvas.width / canvas.getBoundingClientRect().width;
+  const hitDistance = Math.max(
+    9 * canvasToCssScale,
+    previewGrid.gridLineWidthCanvas / 2 + 3 * canvasToCssScale
+  );
   let vertical;
   let horizontal;
 
@@ -193,11 +199,16 @@ function gridLineAt(event) {
   }
   if (vertical) return { axis: 'width', widthIndex: vertical.index };
   if (horizontal) return { axis: 'height', heightIndex: horizontal.index };
-  return undefined;
+  const touchesOuterBoundary =
+    point.x <= hitDistance ||
+    point.y <= hitDistance ||
+    point.x >= canvas.width - hitDistance ||
+    point.y >= canvas.height - hitDistance;
+  return touchesOuterBoundary ? undefined : { axis: 'both', fromPanelInterior: true };
 }
 
-function gridCursor(line) {
-  if (line?.axis === 'both') return 'nwse-resize';
+function gridCursor(line, dragging = false) {
+  if (line?.axis === 'both') return dragging ? 'grabbing' : 'grab';
   if (line?.axis === 'width') return 'col-resize';
   if (line?.axis === 'height') return 'row-resize';
   return '';
@@ -206,7 +217,13 @@ function gridCursor(line) {
 canvas.addEventListener('pointerdown', (event) => {
   const line = gridLineAt(event);
   if (!line) return;
-  gridDrag = line;
+  gridDrag = {
+    ...line,
+    startPoint: canvasPoint(event),
+    startWidthIn: Number(panelWidth.value),
+    startHeightIn: Number(panelHeight.value)
+  };
+  canvas.style.cursor = gridCursor(gridDrag, true);
   canvas.setPointerCapture(event.pointerId);
   canvas.classList.add('dragging-grid');
   event.preventDefault();
@@ -222,6 +239,22 @@ canvas.addEventListener('pointermove', (event) => {
   const point = canvasPoint(event);
   const v = values();
   const { maxWidth, maxHeight } = panelLimits();
+  if (gridDrag.fromPanelInterior) {
+    const deltaX = (point.x - gridDrag.startPoint.x) * previewGrid.outputWidthPx / canvas.width;
+    const deltaY = (point.y - gridDrag.startPoint.y) * previewGrid.outputHeightPx / canvas.height;
+    panelWidth.value = Math.min(
+      maxWidth,
+      Math.max(Number(panelWidth.min), gridDrag.startWidthIn + deltaX / v.dpi)
+    ).toFixed(2);
+    panelHeight.value = Math.min(
+      maxHeight,
+      Math.max(Number(panelHeight.min), gridDrag.startHeightIn + deltaY / v.dpi)
+    ).toFixed(2);
+    render();
+    canvas.style.cursor = gridCursor(gridDrag, true);
+    event.preventDefault();
+    return;
+  }
   if (gridDrag.axis === 'width' || gridDrag.axis === 'both') {
     const outputX = point.x * previewGrid.outputWidthPx / canvas.width;
     const widthIn = outputX / gridDrag.widthIndex / v.dpi;
@@ -233,7 +266,7 @@ canvas.addEventListener('pointermove', (event) => {
     panelHeight.value = Math.min(maxHeight, Math.max(Number(panelHeight.min), heightIn)).toFixed(2);
   }
   render();
-  canvas.style.cursor = gridCursor(gridDrag);
+  canvas.style.cursor = gridCursor(gridDrag, true);
   event.preventDefault();
 });
 
@@ -242,6 +275,7 @@ function finishGridDrag(event) {
   gridDrag = undefined;
   canvas.classList.remove('dragging-grid');
   if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+  canvas.style.cursor = gridCursor(gridLineAt(event));
 }
 
 canvas.addEventListener('pointerup', finishGridDrag);
