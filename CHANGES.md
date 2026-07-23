@@ -1,0 +1,524 @@
+# Image Panel Splitter — Project Handoff and Change History
+
+This document is the authoritative context handoff for continuing the **Image Panel Splitter** project in a new ChatGPT conversation or with another developer.
+
+## 1. Project purpose
+
+The project is a Node.js application that takes a large PNG or other Sharp-supported image and divides it into multiple print-sized PNG panels for assembling a large poster.
+
+The main use case is Cricut **Print Then Cut**, where every exported panel must fit inside Cricut's usable printable area instead of using an entire A4 sheet.
+
+The project provides:
+
+- a command-line interface;
+- a local browser GUI;
+- image drag-and-drop;
+- live grid preview;
+- ZIP export;
+- optional numbered panels;
+- optional full-poster grid preview;
+- preservation of PNG transparency.
+
+## 2. Runtime and dependencies
+
+- Node.js: `>=20.9.0`
+- Module type: ESM (`"type": "module"`)
+- Main image library: `sharp`
+- GUI server: `express`
+- Upload handling: `multer`
+- ZIP generation: `archiver`
+
+Current dependencies from `package.json`:
+
+```json
+{
+  "sharp": "^0.35.3",
+  "express": "^5.1.0",
+  "multer": "^2.0.2",
+  "archiver": "^7.0.1"
+}
+```
+
+## 3. Repository layout
+
+```text
+image-panel-splitter/
+├── CHANGES.md
+├── LICENSE
+├── README.md
+├── package.json
+├── public/
+│   ├── app.js
+│   ├── index.html
+│   └── style.css
+└── src/
+    ├── gui-server.js
+    └── index.js
+```
+
+## 4. Core image behavior
+
+### 4.1 No scaling by default
+
+The default mode is:
+
+```text
+--fit actual
+```
+
+In this mode:
+
+- the source image is not resized;
+- one source pixel remains one output image pixel;
+- the image is only cropped into page-sized regions;
+- `--dpi` determines how many pixels correspond to the requested physical panel size and writes density metadata;
+- incomplete panels are padded without altering source pixels.
+
+### 4.2 Intentional physical scaling
+
+The complete poster can be intentionally resized using:
+
+```text
+--target-width-mm <number>
+--target-height-mm <number>
+```
+
+For example, to make the assembled poster exactly one meter tall:
+
+```bash
+node src/index.js input.png \
+  --target-height-mm 1000 \
+  --output ./panels
+```
+
+A target physical dimension overrides strict no-scaling intent. Do not describe `--fit actual` and `--target-height-mm` as simultaneously preserving original scale; the target dimension intentionally scales the complete image.
+
+## 5. Cricut physical panel limits
+
+The application supports two Cricut orientations with orientation-aware maximum dimensions.
+
+### Landscape
+
+```text
+Maximum width:  9.26 in
+Maximum height: 6.55 in
+```
+
+CLI example:
+
+```bash
+node src/index.js input.png \
+  --orientation landscape \
+  --panel-width-in 9.26 \
+  --panel-height-in 6.55 \
+  --dpi 144 \
+  --margin-mm 0 \
+  --output ./panels
+```
+
+### Portrait
+
+```text
+Maximum width:  6.55 in
+Maximum height: 9.26 in
+```
+
+CLI example:
+
+```bash
+node src/index.js input.png \
+  --orientation portrait \
+  --panel-width-in 6.55 \
+  --panel-height-in 9.26 \
+  --dpi 144 \
+  --margin-mm 0 \
+  --output ./panels
+```
+
+Both the CLI and GUI export endpoint validate these limits.
+
+In the GUI, changing orientation:
+
+- swaps the width and height maximums;
+- resets both dimensions to the maximum valid values for that orientation;
+- updates the preview immediately.
+
+## 6. Cricut DPI behavior
+
+Cricut Design Space commonly imports raster images according to a 144-PPI physical-size interpretation.
+
+For Cricut-targeted output, the project commonly uses:
+
+```text
+--dpi 144
+```
+
+At 144 DPI:
+
+```text
+9.26 in × 144 ≈ 1333 px
+6.55 in × 144 ≈ 943 px
+```
+
+This allows a generated landscape panel to import close to `9.26 × 6.55 in` in Design Space.
+
+## 7. Transparency requirements
+
+PNG alpha transparency must be preserved throughout the pipeline.
+
+Current intended behavior:
+
+- transparent source pixels remain transparent;
+- resizing preserves alpha;
+- cropped panels preserve alpha;
+- unused space on partial edge panels is transparent;
+- margins are transparent rather than white;
+- `original-with-grid.png` uses an RGBA canvas;
+- all exported poster panels remain transparent where the source is transparent;
+- intentional grid lines and number graphics can remain opaque or semi-transparent.
+
+Do not reintroduce three-channel RGB canvases or white backgrounds unless explicitly requested.
+
+## 8. Grid behavior
+
+### 8.1 Grid is preview-only
+
+The user requested that grid lines appear **only** in:
+
+```text
+original-with-grid.png
+```
+
+The individual poster panel PNGs must remain clean and contain no grid lines.
+
+This is a critical current requirement.
+
+### 8.2 Grid options
+
+```text
+--grid-lines
+--grid-line-width-mm <number>
+--grid-color <CSS/SVG color>
+--grid-mode padding|overlay
+```
+
+Current meaning:
+
+- `overlay`: draws grid lines over the full preview artwork;
+- `padding`: inserts separator strips in the full preview without replacing artwork pixels;
+- neither mode may change panel crop positions, panel dimensions, panel count, or panel pixels;
+- the grid is not baked into poster panel PNGs.
+
+Example:
+
+```bash
+node src/index.js input.png \
+  --orientation landscape \
+  --panel-width-in 9.26 \
+  --panel-height-in 6.55 \
+  --dpi 144 \
+  --margin-mm 0 \
+  --target-height-mm 1000 \
+  --grid-lines \
+  --grid-mode padding \
+  --grid-line-width-mm 1 \
+  --grid-color red \
+  --no-number \
+  --output ./panels
+```
+
+Expected output:
+
+```text
+original-with-grid.png        # full assembled preview with grid
+panel-0-r1-c1.png             # clean panel, no grid
+panel-1-r1-c2.png             # clean panel, no grid
+...
+assembly-guide.txt
+assembly-guide.json
+```
+
+## 9. Panel numbering
+
+Panel numbering begins at `0`, proceeds left-to-right, then top-to-bottom.
+
+Example:
+
+```text
+0  1  2
+3  4  5
+6  7  8
+```
+
+Supported options:
+
+```text
+--number-position inside|center|top|bottom
+--number-size-mm <number>
+--label-height-mm <number>
+--no-number
+--no-label
+```
+
+`--no-label` is an alias for `--no-number`.
+
+### Inside placement
+
+The default number placement attempts to:
+
+1. detect enclosed light/white regions bounded by dark painted lines;
+2. choose the largest suitable enclosed region;
+3. place the panel number inside it;
+4. fall back to the artwork centroid when no enclosed region is found;
+5. fall back to panel center when no artwork region can be determined.
+
+The number uses a readable backing marker, currently intended as a translucent white circle.
+
+## 10. CLI options
+
+The current CLI supports at least:
+
+```text
+--output <directory>
+--paper a4|letter
+--panel-width-in <number>
+--panel-height-in <number>
+--orientation portrait|landscape
+--dpi <number>
+--margin-mm <number>
+--overlap-mm <number>
+--number-position inside|center|top|bottom
+--label-height-mm <number>
+--number-size-mm <number>
+--fit actual|width|height
+--target-width-mm <number>
+--target-height-mm <number>
+--prefix <text>
+--grid-lines
+--grid-line-width-mm <number>
+--grid-mode padding|overlay
+--grid-color <color>
+--no-number
+--no-label
+```
+
+The exact parser and validation logic are in `src/index.js`.
+
+## 11. GUI behavior
+
+Start the GUI with:
+
+```bash
+npm install
+npm run gui
+```
+
+Open:
+
+```text
+http://localhost:4173
+```
+
+The GUI provides:
+
+- drag-and-drop image selection;
+- regular file-picker input;
+- orientation selection;
+- panel width slider;
+- panel height slider;
+- DPI input;
+- target poster height in millimeters;
+- grid line width;
+- grid color;
+- optional panel numbers;
+- live grid preview;
+- calculated rows, columns, total panel count, and assembled poster size;
+- ZIP export.
+
+### GUI orientation limits
+
+Landscape:
+
+```text
+width slider max:  9.26
+height slider max: 6.55
+```
+
+Portrait:
+
+```text
+width slider max:  6.55
+height slider max: 9.26
+```
+
+The front-end implementation is in `public/app.js`. Server-side validation is duplicated in `src/gui-server.js`; keep both implementations synchronized.
+
+## 12. GUI export path
+
+The browser sends a multipart request to:
+
+```text
+POST /api/export
+```
+
+The server:
+
+1. accepts the uploaded image through Multer;
+2. validates panel dimensions and orientation;
+3. invokes `src/index.js` as a child process;
+4. creates a temporary output directory;
+5. ZIPs the output using Archiver;
+6. sends `poster-panels.zip` to the browser;
+7. deletes temporary files afterward.
+
+The GUI currently requests a grid preview while keeping exported panel PNGs clean.
+
+## 13. Public access with Cloudflare Tunnel
+
+The local GUI can be exposed temporarily with:
+
+```bash
+cloudflared tunnel --url http://localhost:4173
+```
+
+A quick tunnel generates a random address such as:
+
+```text
+https://charter-critical-budget-lat.trycloudflare.com
+```
+
+Important:
+
+- a `trycloudflare.com` quick-tunnel hostname cannot be chosen manually;
+- it lasts only while the `cloudflared` process runs;
+- a stable custom hostname requires a Cloudflare account, a domain managed by Cloudflare, and a named tunnel.
+
+The GUI handles file uploads and ZIP generation, so exposing it publicly should eventually include upload limits, MIME checks, authentication, rate limiting, and careful temporary-file cleanup.
+
+## 14. Cricut workflow decisions
+
+### PNG limitations
+
+A PNG imports into Cricut Design Space as a single flattened raster layer. Grid or artwork elements inside the PNG cannot be ungrouped.
+
+### SVG limitations and recommended pairing
+
+For separate printed artwork and vector cut paths, the preferred output model is two matched files per panel:
+
+```text
+panel-00-print.png
+panel-00-cut.svg
+```
+
+The PNG contains visible printed artwork. The SVG contains only the vector cut path.
+
+In Cricut Design Space, both must be imported, given the same physical dimensions, centered, and attached. Do not flatten the cut path into the printed layer unless an outer-only cut is desired.
+
+This paired PNG/SVG export is a discussed future enhancement; confirm whether it exists before claiming it is implemented.
+
+### Batch import limitation
+
+Cricut Design Space generally requires raster images to be uploaded one at a time. The current project produces individual PNG panels but does not automate Design Space.
+
+## 15. Validation history
+
+Syntax validation previously passed for:
+
+```text
+src/index.js
+src/gui-server.js
+public/app.js
+```
+
+A full dependency install and end-to-end GUI export could not be completed in the prior validation environment because npm registry access failed with network/DNS errors, including `EAI_AGAIN` and a Sharp download `503`.
+
+This should be treated as an environment limitation, not proof of runtime correctness. On a machine with npm network access, validate with:
+
+```bash
+npm install
+node --check src/index.js
+node --check src/gui-server.js
+node --check public/app.js
+npm run gui
+```
+
+Then verify:
+
+```bash
+curl http://localhost:4173
+```
+
+Finally, perform a GUI upload/export test and inspect the ZIP.
+
+## 16. Important invariants for future changes
+
+Do not break these without explicit user approval:
+
+1. Original PNG transparency is preserved.
+2. Grid lines appear only in `original-with-grid.png`.
+3. Poster panel PNGs do not contain grid lines.
+4. Landscape limits are `9.26 × 6.55 in`.
+5. Portrait limits are `6.55 × 9.26 in`.
+6. Both front-end and server-side validation enforce the same limits.
+7. Default CLI mode does not scale the source image.
+8. Target physical width or height intentionally enables scaling.
+9. Numbering starts at `0`.
+10. `--no-number` and `--no-label` both disable numbers.
+11. GUI preview updates live as panel dimensions change.
+12. Exported panels retain transparent padding rather than white padding.
+
+## 17. Recommended next improvements
+
+These items were discussed or are natural next steps, but should not be assumed implemented:
+
+- paired `*-print.png` and `*-cut.svg` exports;
+- batch-oriented SVG manifest for non-Cricut cutters;
+- authentication for public GUI access;
+- upload-size and image-dimension limits;
+- progress indicator for large exports;
+- cancellation support;
+- automated tests using synthetic transparent PNG fixtures;
+- visual regression tests for panel boundaries and alpha preservation;
+- end-to-end browser testing of ZIP export;
+- selectable poster target width as well as height in the GUI;
+- optional overlap visualization in the GUI;
+- persistent named Cloudflare Tunnel configuration.
+
+## 18. Ready-to-paste prompt for a new ChatGPT session
+
+Copy the text below into a new conversation and upload the latest project ZIP.
+
+```text
+I am continuing development of a Node.js project named Image Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
+
+Project summary:
+- Node.js ESM project using Sharp, Express, Multer, and Archiver.
+- CLI: src/index.js.
+- Browser GUI server: src/gui-server.js.
+- GUI front end: public/index.html, public/app.js, public/style.css.
+- It splits a large image into physical poster panels and exports PNGs plus assembly guides.
+- Default --fit actual must not resize source pixels.
+- --target-width-mm or --target-height-mm intentionally scales the full poster.
+- Preserve source PNG alpha transparency through resizing, cropping, margins, partial panels, and previews.
+- Grid lines must appear only in original-with-grid.png, never in individual poster panel PNGs.
+- Landscape Cricut max: 9.26 in wide × 6.55 in high.
+- Portrait Cricut max: 6.55 in wide × 9.26 in high.
+- GUI sliders and server/CLI validation must enforce the same orientation-aware limits.
+- GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
+- Panel numbering starts at 0. --no-number and --no-label disable numbering.
+- Do not claim a feature is implemented until you inspect and verify the code.
+
+Before editing:
+1. Read CHANGES.md and README.md.
+2. Inspect package.json, src/index.js, src/gui-server.js, public/app.js, public/index.html, and public/style.css.
+3. Summarize any mismatch between documentation and implementation.
+4. Make the requested change while preserving all invariants in CHANGES.md.
+5. Run syntax checks and any feasible functional tests.
+6. Return an updated ZIP and briefly list changed files and validation results.
+```
+
+## 19. Suggested first message after loading the project
+
+```text
+Please read CHANGES.md and audit the current source against it. Do not modify anything yet. Tell me which documented features are fully implemented, partially implemented, or missing.
+```
