@@ -2,6 +2,7 @@ const $ = (id) => document.getElementById(id);
 const imageInput = $('imageInput');
 const paperInput = $('paper');
 const orientationInput = $('orientation');
+const orientationButtons = [...document.querySelectorAll('.orientation-option')];
 const panelWidth = $('panelWidth');
 const panelHeight = $('panelHeight');
 const panelWidthValue = $('panelWidthValue');
@@ -143,6 +144,18 @@ async function loadFile(selected) {
 }
 
 imageInput.addEventListener('change', () => loadFile(imageInput.files[0]));
+for (const button of orientationButtons) {
+  button.addEventListener('click', () => {
+    if (orientationInput.value === button.dataset.orientation) return;
+    orientationInput.value = button.dataset.orientation;
+    for (const option of orientationButtons) {
+      const selected = option === button;
+      option.classList.toggle('selected', selected);
+      option.setAttribute('aria-pressed', String(selected));
+    }
+    orientationInput.dispatchEvent(new Event('change'));
+  });
+}
 for (const input of [paperInput, orientationInput]) {
   input.addEventListener('change', () => {
     applyOrientationLimits({ resetToMaximum: true });
@@ -331,5 +344,5 @@ exportButton.addEventListener('click', async () => {
   }
 });
 
-applyOrientationLimits();
+applyOrientationLimits({ resetToMaximum: true });
 updateLabels();
