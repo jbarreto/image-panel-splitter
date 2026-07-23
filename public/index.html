@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Panel Splitter</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main>
+    <section class="controls">
+      <h1>Image Panel Splitter</h1>
+      <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
+
+      <label id="dropZone" class="drop-zone">
+        <input id="imageInput" type="file" accept="image/png,image/*" />
+        <strong>Drop image here</strong>
+        <span>or click to choose a PNG</span>
+      </label>
+
+      <div class="field">
+        <label for="orientation">Panel orientation</label>
+        <select id="orientation">
+          <option value="landscape" selected>Landscape — max 9.26 × 6.55 in</option>
+          <option value="portrait">Portrait — max 6.55 × 9.26 in</option>
+        </select>
+      </div>
+      <div class="field">
+        <div><label for="panelWidth">Panel width</label><output id="panelWidthValue"></output></div>
+        <input id="panelWidth" type="range" min="2" max="9.26" step="0.01" value="9.26" />
+      </div>
+      <div class="field">
+        <div><label for="panelHeight">Panel height</label><output id="panelHeightValue"></output></div>
+        <input id="panelHeight" type="range" min="2" max="6.55" step="0.01" value="6.55" />
+      </div>
+
+      <div class="row">
+        <label>DPI<input id="dpi" type="number" min="72" max="600" value="144" /></label>
+        <label>Poster height (mm)<input id="targetHeight" type="number" min="0" value="1000" /></label>
+      </div>
+      <div class="row">
+        <label>Grid width (mm)<input id="gridWidth" type="number" min="0.1" step="0.1" value="1" /></label>
+        <label>Grid color<input id="gridColor" type="color" value="#ff0000" /></label>
+      </div>
+      <label class="check"><input id="printNumbers" type="checkbox" /> Print panel numbers</label>
+
+      <div id="stats" class="stats">Choose an image to preview the grid.</div>
+      <button id="exportButton" disabled>Export panels ZIP</button>
+      <div id="status" class="status" aria-live="polite"></div>
+    </section>
+
+    <section class="preview-wrap">
+      <canvas id="preview"></canvas>
+    </section>
+  </main>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

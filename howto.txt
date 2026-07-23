@@ -1,0 +1,2 @@
+npm run gui
+cloudflared tunnel --url http://localhost:4173
