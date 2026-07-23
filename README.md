@@ -69,7 +69,7 @@ node src/index.js poster.png \
 | Option | Meaning | Default |
 |---|---|---:|
 | `--output` | Output directory | `output` |
-| `--paper` | `a4` or `letter` | `a4` |
+| `--paper` | `a4`, `letter`, or `legal`; also selects custom-panel limits | `a4` |
 | `--orientation` | `portrait` or `landscape` | `portrait` |
 | `--dpi` | Converts paper millimeters into page pixels and writes print-density metadata; it does not resize the source in `actual` mode | `300` |
 | `--margin-mm` | White page margin | `5` |
@@ -207,17 +207,20 @@ npm run gui
 
 Then open `http://localhost:4173`.
 
-The GUI supports image drag-and-drop, live sliders for panel width and height, a real-time grid preview, poster-height scaling, transparency preservation, and ZIP export. Grid lines appear only in `original-with-grid.png`; exported panel PNGs remain clean.
+The GUI supports image drag-and-drop, live sliders for panel width and height, draggable preview grid lines as an alternative way to adjust those dimensions, diagonal dragging at grid intersections to adjust both dimensions together, a real-time grid preview, poster-height scaling, transparency preservation, and ZIP export. Grid lines appear only in `original-with-grid.png`; exported panel PNGs remain clean.
 
-## Cricut panel limits
+## Custom panel limits
 
-Custom panel dimensions are capped at **9.26 in wide × 6.55 in high**. The GUI sliders enforce these maximums, and both the CLI and GUI export endpoint reject larger values. Smaller values remain allowed.
+Custom panel dimensions depend on the selected paper size. The GUI sliders enforce these maximums, and both the CLI and GUI export endpoint reject larger values. Smaller values remain allowed.
 
-
-### Cricut panel orientation limits
+### A4 and US Letter
 
 - Landscape: maximum `9.26 × 6.55 in` (width × height)
 - Portrait: maximum `6.55 × 9.26 in` (width × height)
 
-The GUI swaps the slider maximums when orientation changes. The CLI and GUI export endpoint enforce the same limits.
+### US Legal
 
+- Landscape: maximum `11.84 × 6.76 in` (width × height)
+- Portrait: maximum `6.76 × 11.84 in` (width × height)
+
+The GUI updates the slider maximums when the paper size or orientation changes. The CLI and GUI export endpoint enforce the same mappings.

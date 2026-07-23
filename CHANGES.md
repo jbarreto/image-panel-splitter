@@ -93,9 +93,9 @@ node src/index.js input.png \
 
 A target physical dimension overrides strict no-scaling intent. Do not describe `--fit actual` and `--target-height-mm` as simultaneously preserving original scale; the target dimension intentionally scales the complete image.
 
-## 5. Cricut physical panel limits
+## 5. Physical panel limits
 
-The application supports two Cricut orientations with orientation-aware maximum dimensions.
+The application maps paper size and orientation to maximum custom panel dimensions.
 
 ### Landscape
 
@@ -137,7 +137,23 @@ node src/index.js input.png \
 
 Both the CLI and GUI export endpoint validate these limits.
 
-In the GUI, changing orientation:
+A4 and US Letter use the limits above. US Legal uses:
+
+### Legal landscape
+
+```text
+Maximum width:  11.84 in
+Maximum height: 6.76 in
+```
+
+### Legal portrait
+
+```text
+Maximum width:  6.76 in
+Maximum height: 11.84 in
+```
+
+In the GUI, changing paper size or orientation:
 
 - swaps the width and height maximums;
 - resets both dimensions to the maximum valid values for that orientation;
@@ -280,7 +296,7 @@ The current CLI supports at least:
 
 ```text
 --output <directory>
---paper a4|letter
+--paper a4|letter|legal
 --panel-width-in <number>
 --panel-height-in <number>
 --orientation portrait|landscape
@@ -326,6 +342,7 @@ The GUI provides:
 - orientation selection;
 - panel width slider;
 - panel height slider;
+- draggable interior preview grid lines that update the matching width or height slider, including diagonal intersection dragging to update both;
 - DPI input;
 - target poster height in millimeters;
 - grid line width;
@@ -340,15 +357,19 @@ The GUI provides:
 Landscape:
 
 ```text
-width slider max:  9.26
-height slider max: 6.55
+A4/Letter width slider max:  9.26
+A4/Letter height slider max: 6.55
+Legal width slider max:      11.84
+Legal height slider max:     6.76
 ```
 
 Portrait:
 
 ```text
-width slider max:  6.55
-height slider max: 9.26
+A4/Letter width slider max:  6.55
+A4/Letter height slider max: 9.26
+Legal width slider max:      6.76
+Legal height slider max:     11.84
 ```
 
 The front-end implementation is in `public/app.js`. Server-side validation is duplicated in `src/gui-server.js`; keep both implementations synchronized.
@@ -457,8 +478,8 @@ Do not break these without explicit user approval:
 1. Original PNG transparency is preserved.
 2. Grid lines appear only in `original-with-grid.png`.
 3. Poster panel PNGs do not contain grid lines.
-4. Landscape limits are `9.26 × 6.55 in`.
-5. Portrait limits are `6.55 × 9.26 in`.
+4. A4/Letter landscape limits are `9.26 × 6.55 in`; Legal landscape limits are `11.84 × 6.76 in`.
+5. A4/Letter portrait limits are `6.55 × 9.26 in`; Legal portrait limits are `6.76 × 11.84 in`.
 6. Both front-end and server-side validation enforce the same limits.
 7. Default CLI mode does not scale the source image.
 8. Target physical width or height intentionally enables scaling.
@@ -466,6 +487,7 @@ Do not break these without explicit user approval:
 10. `--no-number` and `--no-label` both disable numbers.
 11. GUI preview updates live as panel dimensions change.
 12. Exported panels retain transparent padding rather than white padding.
+13. Dragging an interior GUI preview grid line updates the corresponding panel dimension without bypassing its limits; dragging an intersection updates both dimensions.
 
 ## 17. Recommended next improvements
 
@@ -501,8 +523,10 @@ Project summary:
 - --target-width-mm or --target-height-mm intentionally scales the full poster.
 - Preserve source PNG alpha transparency through resizing, cropping, margins, partial panels, and previews.
 - Grid lines must appear only in original-with-grid.png, never in individual poster panel PNGs.
-- Landscape Cricut max: 9.26 in wide × 6.55 in high.
-- Portrait Cricut max: 6.55 in wide × 9.26 in high.
+- A4/Letter landscape max: 9.26 in wide × 6.55 in high.
+- A4/Letter portrait max: 6.55 in wide × 9.26 in high.
+- Legal landscape max: 11.84 in wide × 6.76 in high.
+- Legal portrait max: 6.76 in wide × 11.84 in high.
 - GUI sliders and server/CLI validation must enforce the same orientation-aware limits.
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.

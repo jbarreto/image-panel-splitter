@@ -15,8 +15,11 @@ const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
 const upload = multer({ dest: path.join(os.tmpdir(), 'image-panel-splitter-uploads') });
 const app = express();
-const LONG_PANEL_SIDE_IN = 9.26;
-const SHORT_PANEL_SIDE_IN = 6.55;
+const PANEL_LIMITS_IN = {
+  a4: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
+  letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
+  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
+};
 
 app.use(express.static(publicDir));
 
@@ -46,20 +49,22 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
     const outputDir = path.join(workDir, 'panels');
     const panelWidth = Number(req.body.panelWidthIn);
     const panelHeight = Number(req.body.panelHeightIn);
+    const paper = String(req.body.paper || 'a4').toLowerCase();
     const orientation = String(req.body.orientation || 'landscape').toLowerCase();
     const dpi = Number(req.body.dpi || 144);
     const targetHeightMm = Number(req.body.targetHeightMm || 0);
     const gridLineWidthMm = Number(req.body.gridLineWidthMm || 1);
     if (!(panelWidth > 0) || !(panelHeight > 0)) throw new Error('Panel dimensions must be greater than zero.');
+    if (!PANEL_LIMITS_IN[paper]) throw new Error('Paper size must be a4, letter, or legal.');
     if (!['portrait', 'landscape'].includes(orientation)) throw new Error('Orientation must be portrait or landscape.');
-    const maxWidth = orientation === 'portrait' ? SHORT_PANEL_SIDE_IN : LONG_PANEL_SIDE_IN;
-    const maxHeight = orientation === 'portrait' ? LONG_PANEL_SIDE_IN : SHORT_PANEL_SIDE_IN;
-    if (panelWidth > maxWidth) throw new Error(`For ${orientation}, panel width cannot exceed ${maxWidth} in.`);
-    if (panelHeight > maxHeight) throw new Error(`For ${orientation}, panel height cannot exceed ${maxHeight} in.`);
+    const { width: maxWidth, height: maxHeight } = PANEL_LIMITS_IN[paper][orientation];
+    if (panelWidth > maxWidth) throw new Error(`For ${paper} ${orientation}, panel width cannot exceed ${maxWidth} in.`);
+    if (panelHeight > maxHeight) throw new Error(`For ${paper} ${orientation}, panel height cannot exceed ${maxHeight} in.`);
     if (!(dpi > 0)) throw new Error('DPI must be greater than zero.');
 
     const args = [
       req.file.path,
+      '--paper', paper,
       '--panel-width-in', String(panelWidth),
       '--panel-height-in', String(panelHeight),
       '--orientation', orientation,

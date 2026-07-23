@@ -5,12 +5,16 @@ import path from 'node:path';
 import process from 'node:process';
 import sharp from 'sharp';
 
-const LONG_PANEL_SIDE_IN = 9.26;
-const SHORT_PANEL_SIDE_IN = 6.55;
-
 const PAPER_SIZES_MM = {
   a4: { width: 210, height: 297, displayName: 'A4' },
-  letter: { width: 215.9, height: 279.4, displayName: 'US Letter' }
+  letter: { width: 215.9, height: 279.4, displayName: 'US Letter' },
+  legal: { width: 215.9, height: 355.6, displayName: 'US Legal' }
+};
+
+const PANEL_LIMITS_IN = {
+  a4: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
+  letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
+  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
 };
 
 function printHelp() {
@@ -22,7 +26,7 @@ Usage:
 
 Options:
   --output <directory>       Output directory (default: ./output)
-  --paper <a4|letter>        Paper size (default: a4)
+  --paper <a4|letter|legal>  Paper size and custom-panel limit profile (default: a4)
   --panel-width-in <number>  Exact exported panel width in inches
   --panel-height-in <number> Exact exported panel height in inches
   --orientation <portrait|landscape>
@@ -151,7 +155,7 @@ function parseArgs(argv) {
   options.gridMode = String(options.gridMode).toLowerCase();
 
   if (!input) throw new Error('An input image is required.');
-  if (!PAPER_SIZES_MM[options.paper]) throw new Error('--paper must be a4 or letter.');
+  if (!PAPER_SIZES_MM[options.paper]) throw new Error('--paper must be a4, letter, or legal.');
   if (!['portrait', 'landscape'].includes(options.orientation)) {
     throw new Error('--orientation must be portrait or landscape.');
   }
@@ -172,13 +176,12 @@ function parseArgs(argv) {
     throw new Error('Custom panel dimensions must be greater than zero.');
   }
   if (options.panelWidthIn !== undefined) {
-    const maxWidth = options.orientation === 'portrait' ? SHORT_PANEL_SIDE_IN : LONG_PANEL_SIDE_IN;
-    const maxHeight = options.orientation === 'portrait' ? LONG_PANEL_SIDE_IN : SHORT_PANEL_SIDE_IN;
+    const { width: maxWidth, height: maxHeight } = PANEL_LIMITS_IN[options.paper][options.orientation];
     if (options.panelWidthIn > maxWidth) {
-      throw new Error(`For ${options.orientation}, --panel-width-in cannot exceed ${maxWidth}.`);
+      throw new Error(`For ${options.paper} ${options.orientation}, --panel-width-in cannot exceed ${maxWidth}.`);
     }
     if (options.panelHeightIn > maxHeight) {
-      throw new Error(`For ${options.orientation}, --panel-height-in cannot exceed ${maxHeight}.`);
+      throw new Error(`For ${options.paper} ${options.orientation}, --panel-height-in cannot exceed ${maxHeight}.`);
     }
   }
 

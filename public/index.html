@@ -19,11 +19,20 @@
       </label>
 
       <div class="field">
+        <label for="paper">Paper size</label>
+        <select id="paper">
+          <option value="a4" selected>A4</option>
+          <option value="letter">US Letter</option>
+          <option value="legal">US Legal</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="orientation">Panel orientation</label>
         <select id="orientation">
-          <option value="landscape" selected>Landscape — max 9.26 × 6.55 in</option>
-          <option value="portrait">Portrait — max 6.55 × 9.26 in</option>
+          <option value="landscape" selected>Landscape</option>
+          <option value="portrait">Portrait</option>
         </select>
+        <div id="panelLimit" class="field-note"></div>
       </div>
       <div class="field">
         <div><label for="panelWidth">Panel width</label><output id="panelWidthValue"></output></div>
@@ -45,6 +54,7 @@
       <label class="check"><input id="printNumbers" type="checkbox" /> Print panel numbers</label>
 
       <div id="stats" class="stats">Choose an image to preview the grid.</div>
+      <div class="grid-drag-note">Drag an interior grid line to adjust one dimension, or drag a grid intersection diagonally to adjust width and height together.</div>
       <button id="exportButton" disabled>Export panels ZIP</button>
       <div id="status" class="status" aria-live="polite"></div>
     </section>

@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const imageInput = $('imageInput');
+const paperInput = $('paper');
 const orientationInput = $('orientation');
 const panelWidth = $('panelWidth');
 const panelHeight = $('panelHeight');
@@ -18,22 +19,27 @@ const status = $('status');
 const dropZone = $('dropZone');
 let file;
 let image;
+let previewGrid;
+let gridDrag;
 
-const LONG_PANEL_SIDE_IN = 9.26;
-const SHORT_PANEL_SIDE_IN = 6.55;
+const panelLimitText = $('panelLimit');
+
+const PANEL_LIMITS_IN = {
+  a4: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
+  letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
+  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
+};
 
 function panelLimits() {
-  const portrait = orientationInput.value === 'portrait';
-  return {
-    maxWidth: portrait ? SHORT_PANEL_SIDE_IN : LONG_PANEL_SIDE_IN,
-    maxHeight: portrait ? LONG_PANEL_SIDE_IN : SHORT_PANEL_SIDE_IN
-  };
+  const limits = PANEL_LIMITS_IN[paperInput.value][orientationInput.value];
+  return { maxWidth: limits.width, maxHeight: limits.height };
 }
 
 function clampPanelDimensions() {
   const { maxWidth, maxHeight } = panelLimits();
   panelWidth.max = String(maxWidth);
   panelHeight.max = String(maxHeight);
+  panelLimitText.textContent = `Maximum panel: ${maxWidth.toFixed(2)} × ${maxHeight.toFixed(2)} in`;
   const width = Math.min(maxWidth, Math.max(Number(panelWidth.min), Number(panelWidth.value)));
   const height = Math.min(maxHeight, Math.max(Number(panelHeight.min), Number(panelHeight.value)));
   panelWidth.value = width.toFixed(2);
@@ -54,6 +60,7 @@ function applyOrientationLimits({ resetToMaximum = false } = {}) {
 function values() {
   clampPanelDimensions();
   return {
+    paper: paperInput.value,
     orientation: orientationInput.value,
     panelWidthIn: Number(panelWidth.value),
     panelHeightIn: Number(panelHeight.value),
@@ -71,7 +78,10 @@ function updateLabels() {
 
 function render() {
   updateLabels();
-  if (!image) return;
+  if (!image) {
+    previewGrid = undefined;
+    return;
+  }
   const v = values();
   const targetHeightPx = v.targetHeightMm > 0 ? (v.targetHeightMm / 25.4) * v.dpi : image.naturalHeight;
   const scaleToOutput = targetHeightPx / image.naturalHeight;
@@ -103,6 +113,15 @@ function render() {
   }
   ctx.restore();
 
+  previewGrid = {
+    outputWidthPx,
+    outputHeightPx,
+    panelWidthPx,
+    panelHeightPx,
+    columns,
+    rows
+  };
+
   const widthIn = outputWidthPx / v.dpi;
   const heightIn = outputHeightPx / v.dpi;
   stats.textContent = `${columns} columns × ${rows} rows = ${columns * rows} panels · Poster ${widthIn.toFixed(2)} × ${heightIn.toFixed(2)} in`;
@@ -123,14 +142,114 @@ async function loadFile(selected) {
 }
 
 imageInput.addEventListener('change', () => loadFile(imageInput.files[0]));
-orientationInput.addEventListener('change', () => {
-  applyOrientationLimits({ resetToMaximum: true });
-  render();
-});
+for (const input of [paperInput, orientationInput]) {
+  input.addEventListener('change', () => {
+    applyOrientationLimits({ resetToMaximum: true });
+    render();
+  });
+}
 for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridWidthInput, gridColorInput]) {
   input.addEventListener('input', render);
 }
 window.addEventListener('resize', render);
+
+function canvasPoint(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) * canvas.width / rect.width,
+    y: (event.clientY - rect.top) * canvas.height / rect.height
+  };
+}
+
+function gridLineAt(event) {
+  if (!previewGrid) return undefined;
+  const point = canvasPoint(event);
+  const xScale = canvas.width / previewGrid.outputWidthPx;
+  const yScale = canvas.height / previewGrid.outputHeightPx;
+  const hitDistance = 9 * canvas.width / canvas.getBoundingClientRect().width;
+  let vertical;
+  let horizontal;
+
+  for (let index = 1; index < previewGrid.columns; index += 1) {
+    const position = index * previewGrid.panelWidthPx * xScale;
+    const distance = Math.abs(point.x - position);
+    if (distance <= hitDistance && (!vertical || distance < vertical.distance)) {
+      vertical = { index, distance };
+    }
+  }
+  for (let index = 1; index < previewGrid.rows; index += 1) {
+    const position = index * previewGrid.panelHeightPx * yScale;
+    const distance = Math.abs(point.y - position);
+    if (distance <= hitDistance && (!horizontal || distance < horizontal.distance)) {
+      horizontal = { index, distance };
+    }
+  }
+  if (vertical && horizontal) {
+    return {
+      axis: 'both',
+      widthIndex: vertical.index,
+      heightIndex: horizontal.index
+    };
+  }
+  if (vertical) return { axis: 'width', widthIndex: vertical.index };
+  if (horizontal) return { axis: 'height', heightIndex: horizontal.index };
+  return undefined;
+}
+
+function gridCursor(line) {
+  if (line?.axis === 'both') return 'nwse-resize';
+  if (line?.axis === 'width') return 'col-resize';
+  if (line?.axis === 'height') return 'row-resize';
+  return '';
+}
+
+canvas.addEventListener('pointerdown', (event) => {
+  const line = gridLineAt(event);
+  if (!line) return;
+  gridDrag = line;
+  canvas.setPointerCapture(event.pointerId);
+  canvas.classList.add('dragging-grid');
+  event.preventDefault();
+});
+
+canvas.addEventListener('pointermove', (event) => {
+  if (!gridDrag) {
+    const line = gridLineAt(event);
+    canvas.style.cursor = gridCursor(line);
+    return;
+  }
+
+  const point = canvasPoint(event);
+  const v = values();
+  const { maxWidth, maxHeight } = panelLimits();
+  if (gridDrag.axis === 'width' || gridDrag.axis === 'both') {
+    const outputX = point.x * previewGrid.outputWidthPx / canvas.width;
+    const widthIn = outputX / gridDrag.widthIndex / v.dpi;
+    panelWidth.value = Math.min(maxWidth, Math.max(Number(panelWidth.min), widthIn)).toFixed(2);
+  }
+  if (gridDrag.axis === 'height' || gridDrag.axis === 'both') {
+    const outputY = point.y * previewGrid.outputHeightPx / canvas.height;
+    const heightIn = outputY / gridDrag.heightIndex / v.dpi;
+    panelHeight.value = Math.min(maxHeight, Math.max(Number(panelHeight.min), heightIn)).toFixed(2);
+  }
+  render();
+  canvas.style.cursor = gridCursor(gridDrag);
+  event.preventDefault();
+});
+
+function finishGridDrag(event) {
+  if (!gridDrag) return;
+  gridDrag = undefined;
+  canvas.classList.remove('dragging-grid');
+  if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+}
+
+canvas.addEventListener('pointerup', finishGridDrag);
+canvas.addEventListener('pointercancel', finishGridDrag);
+canvas.addEventListener('pointerleave', (event) => {
+  if (!gridDrag) canvas.style.cursor = '';
+  else if (event.buttons === 0) finishGridDrag(event);
+});
 
 for (const eventName of ['dragenter', 'dragover']) {
   dropZone.addEventListener(eventName, (event) => { event.preventDefault(); dropZone.classList.add('dragging'); });
@@ -148,6 +267,7 @@ exportButton.addEventListener('click', async () => {
     const v = values();
     const form = new FormData();
     form.append('image', file);
+    form.append('paper', v.paper);
     form.append('orientation', v.orientation);
     form.append('panelWidthIn', v.panelWidthIn);
     form.append('panelHeightIn', v.panelHeightIn);
