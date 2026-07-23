@@ -6,13 +6,11 @@ import process from 'node:process';
 import sharp from 'sharp';
 
 const PAPER_SIZES_MM = {
-  a4: { width: 210, height: 297, displayName: 'A4' },
   letter: { width: 215.9, height: 279.4, displayName: 'US Letter' },
   legal: { width: 215.9, height: 355.6, displayName: 'US Legal' }
 };
 
 const PANEL_LIMITS_IN = {
-  a4: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
 };
@@ -26,7 +24,7 @@ Usage:
 
 Options:
   --output <directory>       Output directory (default: ./output)
-  --paper <a4|letter|legal>  Paper size and custom-panel limit profile (default: a4)
+  --paper <letter|legal>     Paper size and custom-panel limit profile (default: letter)
   --panel-width-in <number>  Exact exported panel width in inches
   --panel-height-in <number> Exact exported panel height in inches
   --orientation <portrait|landscape>
@@ -57,7 +55,7 @@ Options:
   --help                     Show this help
 
 Examples:
-  node src/index.js poster.png --paper a4 --dpi 300
+  node src/index.js poster.png --paper letter --dpi 300
   node src/index.js poster.png --paper letter --orientation landscape --overlap-mm 5
   node src/index.js poster.png --target-width-mm 1000 --output ./poster-panels
 `);
@@ -66,7 +64,7 @@ Examples:
 function parseArgs(argv) {
   const options = {
     output: 'output',
-    paper: 'a4',
+    paper: 'letter',
     orientation: 'portrait',
     dpi: 300,
     marginMm: 5,
@@ -155,7 +153,7 @@ function parseArgs(argv) {
   options.gridMode = String(options.gridMode).toLowerCase();
 
   if (!input) throw new Error('An input image is required.');
-  if (!PAPER_SIZES_MM[options.paper]) throw new Error('--paper must be a4, letter, or legal.');
+  if (!PAPER_SIZES_MM[options.paper]) throw new Error('--paper must be letter or legal.');
   if (!['portrait', 'landscape'].includes(options.orientation)) {
     throw new Error('--orientation must be portrait or landscape.');
   }

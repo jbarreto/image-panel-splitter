@@ -6,7 +6,7 @@ This document is the authoritative context handoff for continuing the **Image Pa
 
 The project is a Node.js application that takes a large PNG or other Sharp-supported image and divides it into multiple print-sized PNG panels for assembling a large poster.
 
-The main use case is Cricut **Print Then Cut**, where every exported panel must fit inside Cricut's usable printable area instead of using an entire A4 sheet.
+The main use case is Cricut **Print Then Cut**, where every exported panel must fit inside Cricut's usable printable area instead of using an entire paper sheet.
 
 The project provides:
 
@@ -137,7 +137,7 @@ node src/index.js input.png \
 
 Both the CLI and GUI export endpoint validate these limits.
 
-A4 and US Letter use the limits above. US Legal uses:
+US Letter uses the limits above. US Legal uses:
 
 ### Legal landscape
 
@@ -296,7 +296,7 @@ The current CLI supports at least:
 
 ```text
 --output <directory>
---paper a4|letter|legal
+--paper letter|legal
 --panel-width-in <number>
 --panel-height-in <number>
 --orientation portrait|landscape
@@ -357,8 +357,8 @@ The GUI provides:
 Landscape:
 
 ```text
-A4/Letter width slider max:  9.26
-A4/Letter height slider max: 6.55
+Letter width slider max:  9.26
+Letter height slider max: 6.55
 Legal width slider max:      11.84
 Legal height slider max:     6.76
 ```
@@ -366,8 +366,8 @@ Legal height slider max:     6.76
 Portrait:
 
 ```text
-A4/Letter width slider max:  6.55
-A4/Letter height slider max: 9.26
+Letter width slider max:  6.55
+Letter height slider max: 9.26
 Legal width slider max:      6.76
 Legal height slider max:     11.84
 ```
@@ -478,8 +478,8 @@ Do not break these without explicit user approval:
 1. Original PNG transparency is preserved.
 2. Grid lines appear only in `original-with-grid.png`.
 3. Poster panel PNGs do not contain grid lines.
-4. A4/Letter landscape limits are `9.26 × 6.55 in`; Legal landscape limits are `11.84 × 6.76 in`.
-5. A4/Letter portrait limits are `6.55 × 9.26 in`; Legal portrait limits are `6.76 × 11.84 in`.
+4. Letter landscape limits are `9.26 × 6.55 in`; Legal landscape limits are `11.84 × 6.76 in`.
+5. Letter portrait limits are `6.55 × 9.26 in`; Legal portrait limits are `6.76 × 11.84 in`.
 6. Both front-end and server-side validation enforce the same limits.
 7. Default CLI mode does not scale the source image.
 8. Target physical width or height intentionally enables scaling.
@@ -523,8 +523,8 @@ Project summary:
 - --target-width-mm or --target-height-mm intentionally scales the full poster.
 - Preserve source PNG alpha transparency through resizing, cropping, margins, partial panels, and previews.
 - Grid lines must appear only in original-with-grid.png, never in individual poster panel PNGs.
-- A4/Letter landscape max: 9.26 in wide × 6.55 in high.
-- A4/Letter portrait max: 6.55 in wide × 9.26 in high.
+- Letter landscape max: 9.26 in wide × 6.55 in high.
+- Letter portrait max: 6.55 in wide × 9.26 in high.
 - Legal landscape max: 11.84 in wide × 6.76 in high.
 - Legal portrait max: 6.76 in wide × 11.84 in high.
 - GUI sliders and server/CLI validation must enforce the same orientation-aware limits.

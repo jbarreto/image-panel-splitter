@@ -1,6 +1,6 @@
 # Image Panel Splitter
 
-A Node.js command-line tool that takes one large image, divides it into printable **A4** or **US Letter** pages, exports every page as a PNG, and draws an assembly number inside the largest enclosed area bounded by the artwork lines on every panel. By default, the source image is **not resized**: every original pixel is preserved.
+A Node.js command-line tool that takes one large image, divides it into printable **US Letter** or **US Legal** pages, exports every page as a PNG, and draws an assembly number inside the largest enclosed area bounded by the artwork lines on every panel. By default, the source image is **not resized**: every original pixel is preserved.
 
 The numbering runs from left to right and then top to bottom:
 
@@ -31,17 +31,6 @@ node src/index.js /path/to/large-image.png \
 
 `--fit actual` is the default. The program does not resize the image. It only crops the original image into page-sized regions. The PNG panels will be written to `./output`.
 
-## A4 example
-
-```bash
-node src/index.js poster.png \
-  --paper a4 \
-  --orientation portrait \
-  --dpi 300 \
-  --margin-mm 5 \
-  --output ./a4-panels
-```
-
 ## US Letter example
 
 ```bash
@@ -58,7 +47,7 @@ This preserves the image aspect ratio and scales its printed width to 1000 mm:
 
 ```bash
 node src/index.js poster.png \
-  --paper a4 \
+  --paper letter \
   --target-width-mm 1000 \
   --overlap-mm 5 \
   --output ./one-meter-poster
@@ -69,7 +58,7 @@ node src/index.js poster.png \
 | Option | Meaning | Default |
 |---|---|---:|
 | `--output` | Output directory | `output` |
-| `--paper` | `a4`, `letter`, or `legal`; also selects custom-panel limits | `a4` |
+| `--paper` | `letter` or `legal`; also selects custom-panel limits | `letter` |
 | `--orientation` | `portrait` or `landscape` | `portrait` |
 | `--dpi` | Converts paper millimeters into page pixels and writes print-density metadata; it does not resize the source in `actual` mode | `300` |
 | `--margin-mm` | White page margin | `5` |
@@ -116,7 +105,7 @@ Print the PNG files at **100%** or **Actual Size**. Disable **Fit to page**, bec
 
 - `--overlap-mm 5` is useful when trimming and taping large posters.
 - With the default `--fit actual`, the source is never passed through a resize operation.
-- The DPI determines how many pixels fit on an A4/Letter page and the PNG print metadata. It does not alter source pixels.
+- The DPI determines how many pixels fit on a Letter/Legal page and the PNG print metadata. It does not alter source pixels.
 - `--fit width`, `--fit height`, `--target-width-mm`, and `--target-height-mm` intentionally enable scaling. Do not use them when you require strict 1:1 pixels.
 - Very large source images may require significant memory because the scaled image is kept in memory while panels are generated.
 
@@ -125,7 +114,7 @@ Print the PNG files at **100%** or **Actual Size**. Disable **Fit to page**, bec
 Placement inside an enclosed painted-line curve is the default:
 
 ```bash
-node src/index.js poster.png --paper a4 --number-position inside --output ./panels
+node src/index.js poster.png --paper letter --number-position inside --output ./panels
 ```
 
 For 12 panels, the program writes numbers `0` through `11`. Change their printed size with:
@@ -213,7 +202,7 @@ The GUI supports image drag-and-drop, live sliders for panel width and height, d
 
 Custom panel dimensions depend on the selected paper size. The GUI sliders enforce these maximums, and both the CLI and GUI export endpoint reject larger values. Smaller values remain allowed.
 
-### A4 and US Letter
+### US Letter
 
 - Landscape: maximum `9.26 × 6.55 in` (width × height)
 - Portrait: maximum `6.55 × 9.26 in` (width × height)

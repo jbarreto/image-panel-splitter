@@ -25,7 +25,6 @@ let gridDrag;
 const panelLimitText = $('panelLimit');
 
 const PANEL_LIMITS_IN = {
-  a4: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
 };
