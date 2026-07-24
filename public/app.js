@@ -14,7 +14,6 @@ const dpiInput = $('dpi');
 const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
-const printNumbersInput = $('printNumbers');
 const exportButton = $('exportButton');
 const exportProgressWrap = $('exportProgressWrap');
 const exportProgress = $('exportProgress');
@@ -482,7 +481,6 @@ exportButton.addEventListener('click', async () => {
     form.append('gridColor', gridColorInput.value);
     form.append('gridMode', 'overlay');
     form.append('marginMm', '0');
-    form.append('printNumbers', String(printNumbersInput.checked));
     form.append('exportId', exportId);
     const response = await fetch('/api/export', {
       method: 'POST',

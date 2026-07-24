@@ -369,7 +369,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.20.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.21.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -387,7 +387,6 @@ The GUI provides:
 - target poster height in millimeters;
 - grid line width;
 - grid color;
-- optional panel numbers;
 - live grid preview;
 - calculated rows, columns, total panel count, and assembled poster size;
 - a modal live-export progress bar showing generated panels, ZIP creation, and download;
@@ -619,6 +618,7 @@ Do not break these without explicit user approval:
 31. The `Panel Splitter` heading uses a rounded system-font stack rather than a proprietary Cricut font.
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
+34. The GUI does not expose a panel-number setting and its exports omit panel numbers; CLI numbering options remain supported.
 
 ## 17. Reconstructed version history
 
@@ -734,6 +734,11 @@ feature-based milestones so future updates have a clear baseline.
 
 - Applied the rounded system-font family to settings labels, values, controls,
   notes, statistics, modal copy, and actions at font weight `500`.
+
+### v1.21.0 — Simplified GUI exports
+
+- Removed the panel-number setting and its unused frontend code and styles.
+- GUI exports omit panel numbers while CLI numbering options remain available.
 
 ## 18. Recommended next improvements
 

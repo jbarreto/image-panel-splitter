@@ -8,7 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
-- Current application version: 1.20.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
+- Current application version: 1.21.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -41,6 +41,7 @@ Project summary:
 - The modal hint reads "Press Esc to cancel generation." while active and "Press Esc to close" after completion, cancellation, or failure.
 - The CLI and GUI server share src/logger.js. Winston defaults to debug unless LOG_LEVEL overrides it; keep CLI diagnostics on stderr so stdout progress parsing remains stable.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.
+- The GUI does not expose panel numbering and does not request numbers during export; numbering remains available through the CLI.
 - Large target posters, including a 4000 mm target height, can exceed Sharp's default input pixel limit. Preserve the openImage() handling for source and intermediate poster buffers and the disabled pixel limit on the full-size grid composite.
 - GUI temporary paths are rooted at os.tmpdir(), not a hard-coded /tmp path.
 - Delete each generated export directory when the ZIP response finishes, the client connection closes, or the request fails. Delete the uploaded source in the request cleanup.
