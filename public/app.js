@@ -15,6 +15,7 @@ const dpiInput = $('dpi');
 const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
+const floatingPreviewInput = $('floatingPreview');
 const autoGridButton = $('autoGridButton');
 const autoPanelingOptions = $('autoPanelingOptions');
 const autoMaxSideInput = $('autoMaxSide');
@@ -86,6 +87,12 @@ function setPrintNumbers(enabled) {
   printNumbersInput.setAttribute('aria-pressed', String(enabled));
   printNumbersInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
   if (!enabled) hoveredNumberIndex = undefined;
+}
+
+function setFloatingPreview(enabled) {
+  floatingPreviewInput.setAttribute('aria-pressed', String(enabled));
+  floatingPreviewInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
+  previewWrap.classList.toggle('floating', enabled);
 }
 
 function updateOrderControls() {
@@ -201,6 +208,8 @@ function saveDisplaySettings() {
       autoPaneling: autoPanelingPreference,
       autoMaxSideIn,
       autoMinSideIn,
+      floatingPreview: floatingPreviewInput.getAttribute('aria-pressed') === 'true',
+      targetHeightMm: Number(targetHeightInput.value),
       printNumbers: printNumbersEnabled(),
       numberSizePreset: numberSizePresetInput.value
     }));
@@ -241,6 +250,15 @@ function restoreDisplaySettings() {
       );
   if (savedMinimumSide > 0 && savedMinimumSide <= 100) {
     autoMinSideIn = savedMinimumSide;
+  }
+  if (typeof settings.floatingPreview === 'boolean') {
+    setFloatingPreview(settings.floatingPreview);
+  }
+  if (
+    Number.isFinite(Number(settings.targetHeightMm)) &&
+    Number(settings.targetHeightMm) >= 0
+  ) {
+    targetHeightInput.value = String(Number(settings.targetHeightMm));
   }
   if (typeof settings.printNumbers === 'boolean') {
     setPrintNumbers(settings.printNumbers);
@@ -976,7 +994,9 @@ for (const input of [
     if ([autoMaxSideInput, autoMinSideInput, dpiInput, targetHeightInput].includes(input)) {
       recalculateAutoLayout();
     }
-    if ([autoMaxSideInput, autoMinSideInput].includes(input)) saveDisplaySettings();
+    if ([autoMaxSideInput, autoMinSideInput, targetHeightInput].includes(input)) {
+      saveDisplaySettings();
+    }
     render();
   });
 }
@@ -984,6 +1004,11 @@ printNumbersInput.addEventListener('click', () => {
   setPrintNumbers(!printNumbersEnabled());
   saveDisplaySettings();
   render();
+});
+floatingPreviewInput.addEventListener('click', () => {
+  const enabled = floatingPreviewInput.getAttribute('aria-pressed') !== 'true';
+  setFloatingPreview(enabled);
+  saveDisplaySettings();
 });
 numberSizePresetInput.addEventListener('change', () => {
   saveDisplaySettings();

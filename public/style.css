@@ -92,6 +92,7 @@ button:disabled { opacity: .45; cursor: default; }
 .panel-layout-controls .field:last-child { margin-bottom: 2px; }
 .panel-layout-controls .stats { margin-bottom: 2px; }
 .number-controls .toggle-button { background: white; }
+.preview-controls .toggle-button { background: white; }
 .number-size-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 9px 4px 0; color: var(--cricut-green-dark); font-size: 12px; }
 .number-size-field select { width: 120px; padding: 7px 10px; }
 .order-button { margin-top: 10px; padding: 9px 10px; border: 1px solid var(--cricut-green); border-radius: 10px; background: white; color: var(--cricut-green-dark); font-size: 12px; box-shadow: none; }
@@ -116,6 +117,7 @@ button.orientation-option.selected:active:not(:disabled) { border-color: var(--c
 .progress-close { margin-top: 20px; }
 .preview-wrap { min-width: 0; min-height: 500px; display: grid; align-items: center; justify-items: center; overflow: auto; padding: 20px; background-color: #fbfcfb; background-image: linear-gradient(45deg,#edf1ee 25%,transparent 25%),linear-gradient(-45deg,#edf1ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf1ee 75%),linear-gradient(-45deg,transparent 75%,#edf1ee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
 .preview-wrap.requires-scroll { align-items: start; }
+.preview-wrap.floating,
 .preview-wrap.empty { position: sticky; top: 20px; align-self: start; height: calc(100vh - 40px); }
 canvas { max-width: 100%; max-height: calc(100vh - 80px); box-shadow: 0 5px 20px rgb(23 58 42 / .2); touch-action: none; }
 canvas.dragging-grid { cursor: grabbing; }

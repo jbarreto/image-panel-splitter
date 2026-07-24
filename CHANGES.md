@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.32.0**
+**Current release: v1.33.0**
 
 ## 1. Project purpose
 
@@ -897,7 +897,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Ignore these shortcuts while focus is in an editable control or while the
   export modal is open.
 
-### v1.32.0 — Configurable Auto panel sizing (current)
+### v1.32.0 — Configurable Auto panel sizing
 
 - Added **Maximum panel side** for Auto paneling, capped by the selected paper
   profile's longest printable side, limited to a minimum of 0.75 inches, and
@@ -955,6 +955,15 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   fragments so every generated panel meets the configured minimum side.
 - Reject automatic layouts when the entire poster canvas is smaller than the
   minimum panel size or cannot be partitioned without undersized panels.
+
+### v1.33.0 — Floating preview and saved poster height (current)
+
+- Added a **Floating preview** GUI setting that keeps the preview panel visible
+  while the settings column scrolls.
+- Enabled Floating preview by default and persisted the toggle in browser local
+  storage.
+- Persisted the GUI **Poster height (mm)** value in browser local storage and
+  restored it on startup.
 
 ## 18. Recommended next improvements
 

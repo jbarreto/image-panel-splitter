@@ -356,10 +356,15 @@ assembly guides. Press `Shift+O` to start or finish assembly-order editing.
 Press `Ctrl+Enter` on Windows/Linux or `Cmd+Enter` on macOS to export the
 panels ZIP.
 
+The **Preview** settings group includes a **Floating preview** toggle. It is
+enabled by default so the preview follows page scrolling while settings are
+adjusted. Disable it to leave the preview in its normal document position. The
+choice is saved in browser local storage.
+
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
 and **Large** (28 px). Auto paneling, its maximum and minimum sides,
-paper size, unit system, Print Panel Numbers, and the selected number-size
-preset are saved in browser local storage.
+paper size, unit system, Poster height, Floating preview, Print Panel Numbers,
+and the selected number-size preset are saved in browser local storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

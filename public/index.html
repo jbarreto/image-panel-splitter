@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.32.0</span>
+          <span class="app-version">v1.33.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -135,6 +135,18 @@
           <label>Grid color<input id="gridColor" type="color" value="#01a86b" /></label>
         </div>
       </fieldset>
+
+      <fieldset class="settings-group preview-controls">
+        <legend>Preview</legend>
+        <button id="floatingPreview" class="toggle-button" type="button" aria-pressed="true">
+          <span>Floating preview</span>
+          <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-state">On</span>
+            <span class="toggle-knob"></span>
+          </span>
+        </button>
+        <div class="toggle-note">Keeps the preview visible while scrolling through settings.</div>
+      </fieldset>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
       <button id="exportButton" aria-keyshortcuts="Control+Enter Meta+Enter" title="Shortcut: Ctrl/Cmd+Enter" disabled>Export panels ZIP</button>
       <div class="export-shortcut-note">Shortcut: Ctrl/Cmd+Enter.</div>
@@ -152,7 +164,7 @@
       </div>
     </section>
 
-    <section id="previewWrap" class="preview-wrap empty">
+    <section id="previewWrap" class="preview-wrap empty floating">
       <canvas id="preview"></canvas>
     </section>
   </main>
