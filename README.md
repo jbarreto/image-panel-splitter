@@ -31,6 +31,14 @@ curl -fsSL https://raw.githubusercontent.com/jbarreto/image-panel-splitter/main/
 
 This installs the application into `./ronyka-panel-splitter`.
 
+For a fresh installation on Windows, run this native command in PowerShell:
+
+```powershell
+Invoke-RestMethod https://raw.githubusercontent.com/jbarreto/image-panel-splitter/main/scripts/install-update.mjs | node
+```
+
+This installs the application into `.\ronyka-panel-splitter`.
+
 From an existing clone:
 
 ```bash
