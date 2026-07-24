@@ -306,7 +306,7 @@ const progressCleanupTimer = setInterval(() => {
 }, progressCleanupIntervalMs);
 progressCleanupTimer.unref();
 app.listen(port, () => {
-  logger.info('Image Panel Splitter GUI started.', {
+  logger.info('Ronyka Panel Splitter GUI started.', {
     url: `http://localhost:${port}`,
     logLevel: logger.level,
     tempDir
