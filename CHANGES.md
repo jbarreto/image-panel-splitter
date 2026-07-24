@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.29.0**
+**Current release: v1.30.0**
 
 ## 1. Project purpose
 
@@ -651,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.29.0`.
+The history currently runs continuously from `v1.0.0` through `v1.30.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -873,7 +873,7 @@ The history currently runs continuously from `v1.0.0` through `v1.29.0`.
   CLI ordering from pairing an anchor with the wrong crop and ensuring dragged
   preview positions are used by the corresponding exported panel image.
 
-### v1.29.0 — Organized GUI settings (current)
+### v1.29.0 — Organized GUI settings
 
 - Renamed **Auto minimize panels** to the shorter **Auto paneling** label and
   persisted its enabled state in browser local storage.
@@ -883,6 +883,11 @@ The history currently runs continuously from `v1.0.0` through `v1.29.0`.
   **Poster Settings**, and **Grid Appearance** groups.
 - Applied the dark Cricut green theme color to primary setting labels while
   keeping input values, notes, and status text neutral.
+
+### v1.30.0 — Assembly-order selection feedback (current)
+
+- Added a preview-only translucent green tint and dark-green frame to every
+  panel already selected while editing assembly order.
 
 ## 18. Recommended next improvements
 

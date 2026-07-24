@@ -8,7 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
-- Current application version: 1.29.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
+- Current application version: 1.30.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -43,6 +43,7 @@ Project summary:
 - For GUI centered/manual numbers, composite grid lines and all numbers into `original-with-grid.png` in one initial direct-to-disk Sharp pipeline. Do not reopen and recomposite the full-resolution grid after the last panel; 4000 mm posters can otherwise appear stuck at the final generation count.
 - Number panels in natural spatial reading order: cluster automatic panels whose top edges differ by no more than 25% of the median full printable page height—not the variable trimmed crop height—into a visual row, sort that row left-to-right, then process rows top-to-bottom. Apply the identical ordering in browser and CLI before creating or consuming anchor arrays so every output stays synchronized.
 - Manual assembly ordering starts from automatic spatial order. In Edit Assembly Order mode, each unique panel click assigns the next number; finishing early appends unclicked panels in their previous relative order, and Reset Order restores automatic order. Export the complete permutation, validate it contains every panel exactly once, preserve each layout entry's original physical canvas index through CLI spatial normalization and custom reordering, and resolve number anchors by that immutable physical index so all output artifacts remain synchronized.
+- While editing assembly order, panels already selected use a preview-only translucent green fill and dark-green frame in addition to their emphasized number. Do not include this selection feedback in exported artwork.
 - Preserve granular GUI export phases for decoding, scaling, layout calculation, full-grid preview rendering, per-panel generation, ZIP creation, and download. Emit the panel count before full-grid rendering so large 4000 mm exports do not sit behind a generic preparation status.
 - Preview numbers use 50% opacity and regular weight normally, then full opacity and bold weight while hovered or actively dragged so the affected number is visually explicit. Exported plain numbers remain at 50% opacity.
 - The GUI unit selector switches only panel width/height, panel limits, and assembled-poster preview dimensions between centimeters and inches. Poster height and grid width inputs always remain in millimeters; the server contract remains panel inches plus poster/grid millimeters.

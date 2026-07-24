@@ -342,6 +342,23 @@ function render() {
   ctx.restore();
   syncPanelNumberAnchors(previewPanels);
 
+  if (orderEditMode && clickedOrder.length > 0) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 127, 82, 0.12)';
+    ctx.strokeStyle = '#007f52';
+    ctx.lineWidth = 3;
+    for (const panelIndex of clickedOrder) {
+      const panel = previewPanels[panelIndex];
+      const left = panel.left * previewScale;
+      const top = panel.top * previewScale;
+      const width = panel.width * previewScale;
+      const height = panel.height * previewScale;
+      ctx.fillRect(left, top, width, height);
+      ctx.strokeRect(left, top, width, height);
+    }
+    ctx.restore();
+  }
+
   if (v.printNumbers || orderEditMode) {
     const selectedNumberSizePx = selectedPanelNumberSizePx();
     const displayedCanvasWidth = Math.max(1, canvas.getBoundingClientRect().width);
