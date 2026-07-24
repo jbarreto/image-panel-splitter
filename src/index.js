@@ -566,6 +566,7 @@ async function main() {
     throw new Error('Overlap must be smaller than the printable width and height.');
   }
 
+  console.log('Progress: decoding-source');
   const source = openImage(inputPath).rotate().ensureAlpha();
   const sourceImage = await source.png().toBuffer();
   const metadata = await openImage(sourceImage).metadata();
@@ -581,6 +582,7 @@ async function main() {
     options.targetWidthMm !== undefined ||
     options.targetHeightMm !== undefined;
 
+  console.log(`Progress: ${scalingRequested ? 'scaling-poster' : 'preparing-layout'}`);
   // In actual mode, do not call resize at all. Each source pixel is copied
   // unchanged into exactly one page crop (or repeated only by overlap).
   const baseWorkingImage = scalingRequested
@@ -682,91 +684,6 @@ async function main() {
     automatic: Boolean(autoLayout)
   });
 
-  // Build a separate grid preview. Exported panels always come from baseWorkingImage.
-  if (options.gridLines && options.gridMode === 'overlay') {
-    logger.debug('Generating overlay grid preview.');
-    let gridSvg;
-    if (autoLayout) {
-      gridSvg = makePanelLayoutSvg(
-        scaled.width,
-        scaled.height,
-        autoLayout,
-        gridWidthPx,
-        options.gridColor
-      );
-    } else {
-      const verticalLines = [0];
-      const horizontalLines = [0];
-      for (let column = 1; column < columns; column += 1) {
-        verticalLines.push(Math.min(scaled.width - 1, column * stepX));
-      }
-      for (let row = 1; row < rows; row += 1) {
-        horizontalLines.push(Math.min(scaled.height - 1, row * stepY));
-      }
-      verticalLines.push(Math.max(0, scaled.width - 1));
-      horizontalLines.push(Math.max(0, scaled.height - 1));
-      gridSvg = makeGridSvg(
-        scaled.width,
-        scaled.height,
-        [...new Set(verticalLines)],
-        [...new Set(horizontalLines)],
-        gridWidthPx,
-        options.gridColor
-      );
-    }
-    const gridPreviewImage = await openImage(baseWorkingImage)
-      .composite([{ input: gridSvg, left: 0, top: 0, limitInputPixels: false }])
-      .png()
-      .toBuffer();
-
-    await openImage(gridPreviewImage)
-      .png({ compressionLevel: 9 })
-      .withMetadata({ density: options.dpi })
-      .toFile(path.join(outputDir, 'original-with-grid.png'));
-  } else if (options.gridLines && options.gridMode === 'padding' && !autoLayout) {
-    logger.debug('Generating padded grid preview.');
-    const previewWidth = scaled.width + Math.max(0, columns - 1) * gridWidthPx;
-    const previewHeight = scaled.height + Math.max(0, rows - 1) * gridWidthPx;
-    const previewComposites = [];
-    for (let row = 0; row < rows; row += 1) {
-      for (let column = 0; column < columns; column += 1) {
-        const left = column * stepX;
-        const top = row * stepY;
-        const cropWidth = Math.min(contentWidth, scaled.width - left);
-        const cropHeight = Math.min(contentHeight, scaled.height - top);
-        const crop = await openImage(baseWorkingImage)
-          .extract({ left, top, width: cropWidth, height: cropHeight })
-          .png()
-          .toBuffer();
-        previewComposites.push({
-          input: crop,
-          left: column * (contentWidth + gridWidthPx),
-          top: row * (contentHeight + gridWidthPx)
-        });
-      }
-    }
-    for (let column = 1; column < columns; column += 1) {
-      previewComposites.push({
-        input: { create: { width: gridWidthPx, height: previewHeight, channels: 4, background: options.gridColor } },
-        left: column * contentWidth + (column - 1) * gridWidthPx,
-        top: 0
-      });
-    }
-    for (let row = 1; row < rows; row += 1) {
-      previewComposites.push({
-        input: { create: { width: previewWidth, height: gridWidthPx, channels: 4, background: options.gridColor } },
-        left: 0,
-        top: row * contentHeight + (row - 1) * gridWidthPx
-      });
-    }
-    await sharp({
-      create: { width: previewWidth, height: previewHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
-    })
-      .composite(previewComposites)
-      .png({ compressionLevel: 9 })
-      .withMetadata({ density: options.dpi })
-      .toFile(path.join(outputDir, 'original-with-grid.png'));
-  }
   const panelSpecs = autoLayout || Array.from({ length: rows * columns }, (_, index) => {
     const row = Math.floor(index / columns);
     const column = index % columns;
@@ -811,6 +728,122 @@ async function main() {
   const total = panelSpecs.length;
   const lastPanelNumber = total - 1;
   const digits = Math.max(1, String(lastPanelNumber).length);
+  const numberFontSize = options.label
+    ? Math.max(
+        options.numberStyle === 'plain' ? 10 : 24,
+        options.numberSizePx ?? mmToPixels(options.numberSizeMm, options.dpi)
+      )
+    : 0;
+  const gridNumbers = options.gridLines && options.gridMode === 'overlay' &&
+    options.label && options.numberPosition === 'center'
+    ? panelSpecs.map((spec, panel) => ({
+        text: String(panel).padStart(digits, '0'),
+        x: spec.numberAnchor?.x ?? spec.left + spec.width / 2,
+        y: spec.numberAnchor?.y ?? spec.top + spec.height / 2
+      }))
+    : [];
+  console.log(`Progress: layout-ready ${total}`);
+
+  // Build a separate grid preview. Exported panels always come from baseWorkingImage.
+  if (options.gridLines && options.gridMode === 'overlay') {
+    console.log('Progress: rendering-grid-preview');
+    logger.debug('Generating overlay grid preview.');
+    let gridSvg;
+    if (autoLayout) {
+      gridSvg = makePanelLayoutSvg(
+        scaled.width,
+        scaled.height,
+        autoLayout,
+        gridWidthPx,
+        options.gridColor
+      );
+    } else {
+      const verticalLines = [0];
+      const horizontalLines = [0];
+      for (let column = 1; column < columns; column += 1) {
+        verticalLines.push(Math.min(scaled.width - 1, column * stepX));
+      }
+      for (let row = 1; row < rows; row += 1) {
+        horizontalLines.push(Math.min(scaled.height - 1, row * stepY));
+      }
+      verticalLines.push(Math.max(0, scaled.width - 1));
+      horizontalLines.push(Math.max(0, scaled.height - 1));
+      gridSvg = makeGridSvg(
+        scaled.width,
+        scaled.height,
+        [...new Set(verticalLines)],
+        [...new Set(horizontalLines)],
+        gridWidthPx,
+        options.gridColor
+      );
+    }
+    const gridComposites = [{ input: gridSvg, left: 0, top: 0, limitInputPixels: false }];
+    if (gridNumbers.length > 0) {
+      gridComposites.push({
+        input: makeNumberLayoutSvg(
+          scaled.width,
+          scaled.height,
+          gridNumbers,
+          numberFontSize,
+          options.numberStyle,
+          options.numberColor
+        ),
+        left: 0,
+        top: 0,
+        limitInputPixels: false
+      });
+    }
+    await openImage(baseWorkingImage)
+      .composite(gridComposites)
+      .png({ compressionLevel: 9 })
+      .withMetadata({ density: options.dpi })
+      .toFile(path.join(outputDir, 'original-with-grid.png'));
+  } else if (options.gridLines && options.gridMode === 'padding' && !autoLayout) {
+    console.log('Progress: rendering-grid-preview');
+    logger.debug('Generating padded grid preview.');
+    const previewWidth = scaled.width + Math.max(0, columns - 1) * gridWidthPx;
+    const previewHeight = scaled.height + Math.max(0, rows - 1) * gridWidthPx;
+    const previewComposites = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const left = column * stepX;
+        const top = row * stepY;
+        const cropWidth = Math.min(contentWidth, scaled.width - left);
+        const cropHeight = Math.min(contentHeight, scaled.height - top);
+        const crop = await openImage(baseWorkingImage)
+          .extract({ left, top, width: cropWidth, height: cropHeight })
+          .png()
+          .toBuffer();
+        previewComposites.push({
+          input: crop,
+          left: column * (contentWidth + gridWidthPx),
+          top: row * (contentHeight + gridWidthPx)
+        });
+      }
+    }
+    for (let column = 1; column < columns; column += 1) {
+      previewComposites.push({
+        input: { create: { width: gridWidthPx, height: previewHeight, channels: 4, background: options.gridColor } },
+        left: column * contentWidth + (column - 1) * gridWidthPx,
+        top: 0
+      });
+    }
+    for (let row = 1; row < rows; row += 1) {
+      previewComposites.push({
+        input: { create: { width: previewWidth, height: gridWidthPx, channels: 4, background: options.gridColor } },
+        left: 0,
+        top: row * contentHeight + (row - 1) * gridWidthPx
+      });
+    }
+    await sharp({
+      create: { width: previewWidth, height: previewHeight, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
+    })
+      .composite(previewComposites)
+      .png({ compressionLevel: 9 })
+      .withMetadata({ density: options.dpi })
+      .toFile(path.join(outputDir, 'original-with-grid.png'));
+  }
+  if (options.gridLines) console.log('Progress: grid-preview-complete');
   const manifest = [];
 
   console.log(`Input: ${metadata.width} × ${metadata.height} px`);
@@ -827,12 +860,6 @@ async function main() {
     console.log(`Grid lines: ${options.gridLineWidthMm} mm, ${options.gridColor}, mode=${options.gridMode}`);
   }
 
-  const numberFontSize = options.label
-    ? Math.max(
-        options.numberStyle === 'plain' ? 10 : 24,
-        options.numberSizePx ?? mmToPixels(options.numberSizeMm, options.dpi)
-      )
-    : 0;
   for (let panelNumber = 0; panelNumber < panelSpecs.length; panelNumber += 1) {
       const spec = panelSpecs[panelNumber];
       const { left, top } = spec;
@@ -925,22 +952,27 @@ async function main() {
       console.log(`Created ${filename}`);
   }
 
-  if (options.gridLines && options.gridMode === 'overlay' && options.label) {
-    const gridNumbers = manifest
+  if (
+    options.gridLines &&
+    options.gridMode === 'overlay' &&
+    options.label &&
+    options.numberPosition !== 'center'
+  ) {
+    const lateGridNumbers = manifest
       .filter((panel) => panel.numberAnchorSourcePx)
       .map((panel) => ({
         text: String(panel.panel).padStart(digits, '0'),
         x: panel.numberAnchorSourcePx.x,
         y: panel.numberAnchorSourcePx.y
       }));
-    if (gridNumbers.length > 0) {
+    if (lateGridNumbers.length > 0) {
       const gridPath = path.join(outputDir, 'original-with-grid.png');
       const numberedGrid = await openImage(gridPath)
         .composite([{
           input: makeNumberLayoutSvg(
             scaled.width,
             scaled.height,
-            gridNumbers,
+            lateGridNumbers,
             numberFontSize,
             options.numberStyle,
             options.numberColor
@@ -953,7 +985,7 @@ async function main() {
         .withMetadata({ density: options.dpi })
         .toBuffer();
       await fs.writeFile(gridPath, numberedGrid);
-      logger.debug('Added panel numbers to full grid preview.', { numbers: gridNumbers.length });
+      logger.debug('Added panel numbers to full grid preview.', { numbers: lateGridNumbers.length });
     }
   }
 

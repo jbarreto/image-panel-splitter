@@ -309,3 +309,11 @@ preserving the same relative size in exported images.
 
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
 and **Large** (28 px). The selected preset is saved in browser local storage.
+
+For large numbered posters, grid lines and centered/manual numbers are rendered
+together in a single full-poster pass before panel generation. This avoids a
+second full-resolution composite after the final panel.
+
+GUI export progress distinguishes source decoding, full-poster scaling, layout
+calculation, full-grid preview rendering, panel generation, ZIP creation, and
+download. The grid-preview phase displays the calculated panel count.

@@ -903,13 +903,35 @@ async function pollExportProgress(exportId, signal) {
         if (progress.phase === 'generating') {
           const ratio = progress.total > 0 ? progress.completed / progress.total : 0;
           showExportProgress(
-            10 + ratio * 80,
+            20 + ratio * 70,
             progress.total > 0
               ? `Generating panel ${Math.min(progress.completed, progress.total)} of ${progress.total}…`
               : 'Calculating panels…'
           );
         } else if (progress.phase === 'preparing') {
-          showExportProgress(8, 'Preparing poster…');
+          showExportProgress(3, 'Preparing export…');
+        } else if (progress.phase === 'decoding') {
+          showExportProgress(5, 'Decoding source image…');
+        } else if (progress.phase === 'scaling') {
+          showExportProgress(7, 'Scaling full poster…');
+        } else if (progress.phase === 'calculating') {
+          showExportProgress(8, 'Preparing panel layout…');
+        } else if (progress.phase === 'layout') {
+          showExportProgress(
+            10,
+            progress.total > 0
+              ? `Layout calculated: ${progress.total} panels…`
+              : 'Calculating panel layout…'
+          );
+        } else if (progress.phase === 'grid-preview') {
+          showExportProgress(
+            12,
+            progress.total > 0
+              ? `Creating full grid preview for ${progress.total} panels…`
+              : 'Creating full grid preview…'
+          );
+        } else if (progress.phase === 'panels-ready') {
+          showExportProgress(18, 'Full grid preview complete…');
         } else if (progress.phase === 'zipping') {
           showExportProgress(92, 'Creating ZIP…');
         } else if (progress.phase === 'complete') {

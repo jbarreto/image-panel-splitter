@@ -266,6 +266,20 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
     }
 
     await runCli(args, (line) => {
+      if (line === 'Progress: decoding-source') {
+        updateProgress({ phase: 'decoding' });
+      } else if (line === 'Progress: scaling-poster') {
+        updateProgress({ phase: 'scaling' });
+      } else if (line === 'Progress: preparing-layout') {
+        updateProgress({ phase: 'calculating' });
+      } else if (line.startsWith('Progress: layout-ready ')) {
+        const total = Number(line.slice('Progress: layout-ready '.length));
+        updateProgress({ phase: 'layout', total });
+      } else if (line === 'Progress: rendering-grid-preview') {
+        updateProgress({ phase: 'grid-preview' });
+      } else if (line === 'Progress: grid-preview-complete') {
+        updateProgress({ phase: 'panels-ready' });
+      }
       const gridMatch = line.match(/(?:=\s*|Auto layout:\s*)(\d+)\s+(?:mixed-orientation\s+)?panel\(s\)/);
       if (gridMatch) {
         const total = Number(gridMatch[1]);

@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.25.0**
+**Current release: v1.26.0**
 
 ## 1. Project purpose
 
@@ -376,7 +376,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.25.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.26.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -651,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.25.0`.
+The history currently runs continuously from `v1.0.0` through `v1.26.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -803,7 +803,7 @@ The history currently runs continuously from `v1.0.0` through `v1.25.0`.
 - Added `Shift+A` as the keyboard shortcut for toggling automatic mode outside
   editable controls and the export modal.
 
-### v1.25.0 — Small in-artwork panel numbers (current)
+### v1.25.0 — Small in-artwork panel numbers
 
 - Added a **Print Panel Numbers** GUI toggle directly below automatic layout
   controls to render small zero-based panel numbers inside the
@@ -829,6 +829,16 @@ The history currently runs continuously from `v1.0.0` through `v1.25.0`.
 - Added Small (`14 px`), Medium (`20 px`), and Large (`28 px`) predefined
   number-size settings, persisted the selection, and kept export sizing
   proportional to the chosen visible preview size.
+
+### v1.26.0 — Large numbered-export completion (current)
+
+- Moved centered/manual full-grid number overlays into the initial grid render,
+  eliminating the redundant full-resolution composite after the final panel.
+- Wrote the numbered grid directly to disk instead of encoding and decoding a
+  giant intermediate PNG buffer, reducing peak work for 4000 mm posters.
+- Replaced the generic preparation message with live decoding, scaling, layout,
+  full-grid preview, panel-generation, ZIP, and download phases, including the
+  calculated panel count before the slow full-grid render.
 
 ## 18. Recommended next improvements
 
