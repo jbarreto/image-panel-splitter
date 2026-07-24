@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.31.0</span>
+          <span class="app-version">v1.32.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -42,39 +42,56 @@
       </div>
       <fieldset class="settings-group panel-layout-controls">
         <legend>Panel Layout</legend>
-        <div class="auto-layout-control">
-          <button id="autoGridButton" class="toggle-button" type="button" aria-pressed="false" disabled>
-            <span>Auto paneling</span>
+        <div class="auto-layout-control auto-paneling-group">
+          <div class="auto-paneling-heading">Auto paneling</div>
+          <button id="autoGridButton" class="toggle-button" type="button" aria-pressed="false" aria-expanded="false" aria-controls="autoPanelingOptions" disabled>
+            <span>Enable</span>
             <span class="toggle-track" aria-hidden="true">
               <span class="toggle-state">Off</span>
               <span class="toggle-knob"></span>
             </span>
           </button>
           <div class="toggle-note">Detects visible artwork, skips empty canvas areas, and selects portrait or landscape for each panel. Shortcut: Shift+A.</div>
-        </div>
-        <div class="field">
-          <span id="orientationLabel">Panel orientation</span>
-          <input id="orientation" type="hidden" value="landscape" autocomplete="off" />
-          <div class="orientation-picker" role="group" aria-labelledby="orientationLabel">
-            <button type="button" class="orientation-option selected" data-orientation="landscape" aria-pressed="true">
-              <span class="orientation-shape landscape-shape" aria-hidden="true"></span>
-              <span>Landscape</span>
-            </button>
-            <button type="button" class="orientation-option" data-orientation="portrait" aria-pressed="false">
-              <span class="orientation-shape portrait-shape" aria-hidden="true"></span>
-              <span>Portrait</span>
-            </button>
+          <div id="autoPanelingOptions" class="auto-paneling-options collapsed" aria-hidden="true">
+            <div class="field auto-maximum-side">
+              <div><label id="autoMaxSideLabel" for="autoMaxSide">Maximum panel side (in)</label><output id="autoMaxSideValue"></output></div>
+              <input id="autoMaxSide" type="range" min="0.75" max="9.26" step="0.01" value="9.26" />
+            </div>
+            <div class="field auto-minimum-side">
+              <div><label id="autoMinSideLabel" for="autoMinSide">Minimum panel side (in)</label><output id="autoMinSideValue"></output></div>
+              <input id="autoMinSide" type="range" min="0.25" max="9.26" step="0.01" value="0.25" />
+            </div>
+            <div class="auto-minimum-note">The minimum side must allow non-overlapping artwork partitions.</div>
+            <div id="autoMinimumError" class="auto-minimum-error" role="alert" hidden></div>
           </div>
-          <div id="panelLimit" class="field-note"></div>
         </div>
-        <div class="field">
-          <div><label id="panelWidthLabel" for="panelWidth">Panel width (in)</label><output id="panelWidthValue"></output></div>
-          <input id="panelWidth" type="range" min="2" max="9.26" step="0.01" value="9.26" />
+        <div id="manualPanelingGroup" class="manual-paneling-group">
+          <div class="manual-paneling-heading">Manual paneling</div>
+          <div class="field">
+            <span id="orientationLabel">Panel orientation</span>
+            <input id="orientation" type="hidden" value="landscape" autocomplete="off" />
+            <div class="orientation-picker" role="group" aria-labelledby="orientationLabel">
+              <button type="button" class="orientation-option selected" data-orientation="landscape" aria-pressed="true">
+                <span class="orientation-shape landscape-shape" aria-hidden="true"></span>
+                <span>Landscape</span>
+              </button>
+              <button type="button" class="orientation-option" data-orientation="portrait" aria-pressed="false">
+                <span class="orientation-shape portrait-shape" aria-hidden="true"></span>
+                <span>Portrait</span>
+              </button>
+            </div>
+            <div id="panelLimit" class="field-note"></div>
+          </div>
+          <div class="field">
+            <div><label id="panelWidthLabel" for="panelWidth">Panel width (in)</label><output id="panelWidthValue"></output></div>
+            <input id="panelWidth" type="range" min="2" max="9.26" step="0.01" value="9.26" />
+          </div>
+          <div class="field">
+            <div><label id="panelHeightLabel" for="panelHeight">Panel height (in)</label><output id="panelHeightValue"></output></div>
+            <input id="panelHeight" type="range" min="2" max="6.55" step="0.01" value="6.55" />
+          </div>
         </div>
-        <div class="field">
-          <div><label id="panelHeightLabel" for="panelHeight">Panel height (in)</label><output id="panelHeightValue"></output></div>
-          <input id="panelHeight" type="range" min="2" max="6.55" step="0.01" value="6.55" />
-        </div>
+        <div id="stats" class="stats">Choose an image to preview the grid.</div>
       </fieldset>
 
       <fieldset class="settings-group number-controls">
@@ -118,7 +135,6 @@
           <label>Grid color<input id="gridColor" type="color" value="#01a86b" /></label>
         </div>
       </fieldset>
-      <div id="stats" class="stats">Choose an image to preview the grid.</div>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
       <button id="exportButton" aria-keyshortcuts="Control+Enter Meta+Enter" title="Shortcut: Ctrl/Cmd+Enter" disabled>Export panels ZIP</button>
       <div class="export-shortcut-note">Shortcut: Ctrl/Cmd+Enter.</div>
@@ -136,7 +152,7 @@
       </div>
     </section>
 
-    <section class="preview-wrap">
+    <section id="previewWrap" class="preview-wrap empty">
       <canvas id="preview"></canvas>
     </section>
   </main>

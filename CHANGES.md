@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.31.0**
+**Current release: v1.32.0**
 
 ## 1. Project purpose
 
@@ -636,7 +636,7 @@ Do not break these without explicit user approval:
 27. Switching the GUI unit system displays panel dimensions and limits plus the assembled-poster preview summary in centimeters or inches; poster height and grid width inputs remain in millimeters.
 28. Imperial (`in`) is the default GUI display unit.
 29. The assembled-poster preview summary displays poster dimensions on a separate line and labels their order as `(W × H)`.
-30. Paper size, metric/imperial selection, Auto paneling, the Print Panel Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
+30. Paper size, metric/imperial selection, Auto paneling with its maximum and minimum sides, the Print Panel Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
 31. The `Panel Splitter` heading uses a rounded system-font stack rather than a proprietary Cricut font.
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
@@ -889,13 +889,72 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Added a preview-only translucent green tint and dark-green frame to every
   panel already selected while editing assembly order.
 
-### v1.31.0 — GUI action shortcuts (current)
+### v1.31.0 — GUI action shortcuts
 
 - Added `Shift+O` to start or finish assembly-order editing.
 - Added `Ctrl+Enter` on Windows/Linux and `Cmd+Enter` on macOS to export the
   panels ZIP.
 - Ignore these shortcuts while focus is in an editable control or while the
   export modal is open.
+
+### v1.32.0 — Configurable Auto panel sizing (current)
+
+- Added **Maximum panel side** for Auto paneling, capped by the selected paper
+  profile's longest printable side, limited to a minimum of 0.75 inches, and
+  persisted in browser local storage.
+- Grouped the enable toggle, Maximum panel side, and Minimum panel side
+  controls inside a dedicated **Auto paneling** subsection.
+- Grouped Panel orientation, Panel width, and Panel height inside a dedicated
+  **Manual paneling** subsection.
+- Kept loaded artwork centered when the preview fits without scrolling, then
+  top-aligned it when the preview area exceeds the available viewport height.
+- Kept the original empty-canvas preview graphic centered within the visible
+  viewport until an image is loaded.
+- Auto paneling derives its long side from that setting and its short side from
+  the smaller of that value and the paper profile's shorter printable limit.
+  Panel width and Panel height now apply only to the uniform grid.
+- Removed remaining coupling between Manual panel width/height and Auto
+  paneling maximum/minimum controls, including Custom paper, and hand off the
+  independently derived Auto dimensions during export.
+- Reset Maximum panel side to the selected paper profile's longest printable
+  dimension whenever Paper size changes.
+- Changed Maximum panel side precision to 0.01 inches so exact paper limits
+  such as US Legal's 11.84 inches are reachable instead of snapping to 11.75.
+- Kept Custom paper's Maximum panel side limit at 100 inches while resetting
+  its selected/default value to 9.26 inches.
+- Added a single Auto paneling **Minimum panel side** slider that applies to
+  both dimensions, defaults to 2 inches, follows the selected unit system, and
+  persists in browser local storage.
+- Placed Minimum panel side at the same level as Maximum panel side instead of
+  nesting it in a separate subgroup.
+- Allowed Minimum panel side to reach the selected paper profile's longest
+  side, with 0.01-inch precision, and synchronized the minimum/maximum controls
+  when either constraint crosses the other.
+- Changed Minimum panel side's default to its `0.25 in` lower limit and reset
+  both Auto paneling side controls to their paper defaults for every new image.
+- Reset Manual paneling's Panel width and Panel height to the selected paper
+  and orientation maximums whenever a new image is loaded.
+- Migrated previously stored width/height minimums to the larger value so
+  existing saved constraints are not weakened.
+- Moved the live panel-count and poster-dimension summary into the **Panel
+  Layout** group.
+- Replaced uncaught minimum-size partition errors with an inline Auto paneling
+  restriction message and retained the previous valid grid while settings are
+  adjusted.
+- Disabled and animated the complete **Manual paneling** subsection—orientation,
+  width, and height—out of view while Auto paneling is active.
+- Added an animated disclosure effect that hides Auto paneling options while
+  the toggle is off and slides/fades them open when enabled.
+- Applied the restored Auto paneling preference to disclosure and Manual
+  paneling visibility immediately at website startup, before an image loads.
+- Kept the Auto paneling artwork-detection description and `Shift+A` shortcut
+  visible regardless of toggle state.
+- Changing either minimum dimension immediately regenerates the active Auto
+  paneling grid.
+- Auto paneling reserves non-overlapping canvas space around small artwork
+  fragments so every generated panel meets the configured minimum side.
+- Reject automatic layouts when the entire poster canvas is smaller than the
+  minimum panel size or cannot be partitioned without undersized panels.
 
 ## 18. Recommended next improvements
 

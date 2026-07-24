@@ -4,6 +4,7 @@ const paperInput = $('paper');
 const unitSystemInput = $('unitSystem');
 const orientationInput = $('orientation');
 const orientationButtons = [...document.querySelectorAll('.orientation-option')];
+const manualPanelingGroup = $('manualPanelingGroup');
 const panelWidth = $('panelWidth');
 const panelHeight = $('panelHeight');
 const panelWidthValue = $('panelWidthValue');
@@ -15,6 +16,14 @@ const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
 const autoGridButton = $('autoGridButton');
+const autoPanelingOptions = $('autoPanelingOptions');
+const autoMaxSideInput = $('autoMaxSide');
+const autoMaxSideLabel = $('autoMaxSideLabel');
+const autoMaxSideValue = $('autoMaxSideValue');
+const autoMinSideInput = $('autoMinSide');
+const autoMinSideLabel = $('autoMinSideLabel');
+const autoMinSideValue = $('autoMinSideValue');
+const autoMinimumError = $('autoMinimumError');
 const printNumbersInput = $('printNumbers');
 const numberSizePresetInput = $('numberSizePreset');
 const editOrderButton = $('editOrderButton');
@@ -28,6 +37,7 @@ const exportProgressPercent = $('exportProgressPercent');
 const exportProgressClose = $('exportProgressClose');
 const exportProgressHint = $('exportProgressHint');
 const imageDimensions = $('imageDimensions');
+const previewWrap = $('previewWrap');
 const canvas = $('preview');
 const ctx = canvas.getContext('2d');
 const stats = $('stats');
@@ -40,6 +50,8 @@ let activeExport;
 let canvasHovered = false;
 let autoLayout;
 let autoPanelingPreference = false;
+let autoMaxSideIn = 100;
+let autoMinSideIn = 0.25;
 let previewPanelRects = [];
 let panelNumberAnchors = [];
 let panelNumberLayoutKey = '';
@@ -54,9 +66,16 @@ let clickedOrder = [];
 
 function setAutoLayout(layout) {
   autoLayout = layout;
-  autoGridButton.setAttribute('aria-pressed', String(Boolean(layout)));
-  autoGridButton.querySelector('.toggle-state').textContent = layout ? 'On' : 'Off';
+  const autoPanelingEnabled = Boolean(layout) || autoPanelingPreference;
+  autoGridButton.setAttribute('aria-pressed', String(autoPanelingEnabled));
+  autoGridButton.setAttribute('aria-expanded', String(autoPanelingEnabled));
+  autoGridButton.querySelector('.toggle-state').textContent = autoPanelingEnabled ? 'On' : 'Off';
   updateOrientationAvailability();
+}
+
+function setAutoMinimumError(message = '') {
+  autoMinimumError.textContent = message;
+  autoMinimumError.hidden = !message;
 }
 
 function printNumbersEnabled() {
@@ -171,6 +190,8 @@ const PANEL_LIMITS_IN = {
   legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } },
   custom: { landscape: { width: 100, height: 100 }, portrait: { width: 100, height: 100 } }
 };
+const AUTO_CUSTOM_DEFAULT_SIDE_IN = 9.26;
+const AUTO_MIN_SIDE_IN = 0.25;
 
 function saveDisplaySettings() {
   try {
@@ -178,6 +199,8 @@ function saveDisplaySettings() {
       paper: paperInput.value,
       unitSystem: unitSystemInput.value,
       autoPaneling: autoPanelingPreference,
+      autoMaxSideIn,
+      autoMinSideIn,
       printNumbers: printNumbersEnabled(),
       numberSizePreset: numberSizePresetInput.value
     }));
@@ -203,6 +226,22 @@ function restoreDisplaySettings() {
     autoGridButton.setAttribute('aria-pressed', String(autoPanelingPreference));
     autoGridButton.querySelector('.toggle-state').textContent = autoPanelingPreference ? 'On' : 'Off';
   }
+  if (
+    Number.isFinite(Number(settings.autoMaxSideIn)) &&
+    Number(settings.autoMaxSideIn) > 0 &&
+    Number(settings.autoMaxSideIn) <= 100
+  ) {
+    autoMaxSideIn = Number(settings.autoMaxSideIn);
+  }
+  const savedMinimumSide = Number.isFinite(Number(settings.autoMinSideIn))
+    ? Number(settings.autoMinSideIn)
+    : Math.max(
+        Number(settings.autoMinWidthIn) || 0,
+        Number(settings.autoMinHeightIn) || 0
+      );
+  if (savedMinimumSide > 0 && savedMinimumSide <= 100) {
+    autoMinSideIn = savedMinimumSide;
+  }
   if (typeof settings.printNumbers === 'boolean') {
     setPrintNumbers(settings.printNumbers);
   }
@@ -216,12 +255,47 @@ function panelLimits() {
   return { maxWidth: limits.width, maxHeight: limits.height };
 }
 
+function autoPanelPaperLimits() {
+  if (paperInput.value === 'custom') {
+    return { long: 100, short: 100 };
+  }
+  const limits = PANEL_LIMITS_IN[paperInput.value];
+  const sides = [
+    limits.landscape.width,
+    limits.landscape.height,
+    limits.portrait.width,
+    limits.portrait.height
+  ];
+  return {
+    long: Math.max(...sides),
+    short: Math.min(...sides)
+  };
+}
+
+function clampAutoMaxSide() {
+  const { long } = autoPanelPaperLimits();
+  autoMaxSideIn = Math.min(long, Math.max(0.75, autoMaxSideIn));
+}
+
+function autoPanelDimensions(v) {
+  const paperLimits = autoPanelPaperLimits();
+  const long = Math.min(v.autoMaxSideIn, paperLimits.long);
+  const short = Math.min(v.autoMaxSideIn, paperLimits.short);
+  return v.orientation === 'landscape'
+    ? { width: long, height: short }
+    : { width: short, height: long };
+}
+
 function usesMetricUnits() {
   return unitSystemInput.value === 'metric';
 }
 
 function inchesToDisplay(inches) {
   return usesMetricUnits() ? inches * 2.54 : inches;
+}
+
+function displayToInches(value) {
+  return usesMetricUnits() ? value / 2.54 : value;
 }
 
 function clampPanelDimensions() {
@@ -253,11 +327,14 @@ function applyOrientationLimits({ resetToMaximum = false } = {}) {
 
 function values() {
   clampPanelDimensions();
+  clampAutoMaxSide();
   return {
     paper: paperInput.value,
     orientation: orientationInput.value,
     panelWidthIn: Number(panelWidth.value),
     panelHeightIn: Number(panelHeight.value),
+    autoMaxSideIn,
+    autoMinSideIn,
     dpi: Number(dpiInput.value),
     targetHeightMm: Number(targetHeightInput.value),
     gridWidthMm: Number(gridWidthInput.value),
@@ -267,20 +344,38 @@ function values() {
 
 function updateLabels() {
   clampPanelDimensions();
+  clampAutoMaxSide();
   const metric = usesMetricUnits();
   const unit = metric ? 'cm' : 'in';
+  const autoPanelLimits = autoPanelPaperLimits();
+  autoMinSideIn = Math.min(autoPanelLimits.long, autoMinSideIn);
   panelWidthLabel.textContent = `Panel width (${unit})`;
   panelHeightLabel.textContent = `Panel height (${unit})`;
+  autoMaxSideLabel.textContent = `Maximum panel side (${unit})`;
+  autoMinSideLabel.textContent = `Minimum panel side (${unit})`;
+  autoMinSideInput.min = String(inchesToDisplay(0.25));
+  autoMinSideInput.max = String(inchesToDisplay(autoPanelLimits.long));
+  autoMinSideInput.step = String(inchesToDisplay(0.01));
+  autoMinSideInput.value = inchesToDisplay(autoMinSideIn).toFixed(2);
+  autoMinSideValue.value = `${inchesToDisplay(autoMinSideIn).toFixed(2)} ${unit}`;
   panelWidthValue.value = `${inchesToDisplay(Number(panelWidth.value)).toFixed(2)} ${unit}`;
   panelHeightValue.value = `${inchesToDisplay(Number(panelHeight.value)).toFixed(2)} ${unit}`;
+  autoMaxSideInput.min = String(inchesToDisplay(0.75));
+  autoMaxSideInput.max = String(inchesToDisplay(autoPanelLimits.long));
+  autoMaxSideInput.step = String(inchesToDisplay(0.01));
+  autoMaxSideInput.value = inchesToDisplay(autoMaxSideIn).toFixed(2);
+  autoMaxSideValue.value = `${inchesToDisplay(autoMaxSideIn).toFixed(2)} ${unit}`;
 }
 
 function render() {
   updateLabels();
   if (!image) {
     previewGrid = undefined;
+    previewWrap.classList.add('empty');
+    previewWrap.classList.remove('requires-scroll');
     return;
   }
+  previewWrap.classList.remove('empty');
   const v = values();
   const targetHeightPx = v.targetHeightMm > 0
     ? Math.round((v.targetHeightMm / 25.4) * v.dpi)
@@ -414,11 +509,22 @@ function render() {
   stats.textContent = autoLayout
     ? `Auto layout = ${autoLayout.panels.length} mixed-orientation panels\nPoster ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit} (W × H)`
     : `${columns} columns × ${rows} rows = ${columns * rows} panels\nPoster ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit} (W × H)`;
+  const previewBounds = previewWrap.getBoundingClientRect();
+  const viewportAvailableHeight = Math.max(1, window.innerHeight - 40);
+  const requiresScroll =
+    previewWrap.scrollHeight > previewWrap.clientHeight + 1 ||
+    previewBounds.height > viewportAvailableHeight;
+  previewWrap.classList.toggle('requires-scroll', requiresScroll);
 }
 
 async function loadFile(selected) {
   if (!selected) return;
   resetExportProgress();
+  applyOrientationLimits({ resetToMaximum: true });
+  autoMaxSideIn = paperInput.value === 'custom'
+    ? AUTO_CUSTOM_DEFAULT_SIDE_IN
+    : autoPanelPaperLimits().long;
+  autoMinSideIn = AUTO_MIN_SIDE_IN;
   setAutoLayout(undefined);
   hoveredNumberIndex = undefined;
   file = selected;
@@ -431,7 +537,10 @@ async function loadFile(selected) {
     editOrderButton.disabled = false;
     resetOrderButton.disabled = false;
     imageDimensions.textContent = `${file.name} · ${image.naturalWidth} × ${image.naturalHeight} px`;
-    if (autoPanelingPreference) setAutoLayout(buildAutoLayout());
+    if (autoPanelingPreference) {
+      const restoredLayout = tryBuildAutoLayout();
+      if (restoredLayout) setAutoLayout(restoredLayout);
+    }
     render();
   };
   image.src = url;
@@ -482,9 +591,26 @@ function buildAutoLayout() {
     : image.naturalHeight;
   const outputWidth = Math.round(image.naturalWidth * targetHeight / image.naturalHeight);
   const outputHeight = targetHeight;
+  const minimumPanelSidePixels = Math.round(v.autoMinSideIn * v.dpi);
+  const minimumPanelWidthPixels = minimumPanelSidePixels;
+  const minimumPanelHeightPixels = minimumPanelSidePixels;
+  const minimumUnit = usesMetricUnits() ? 'cm' : 'in';
+  const minimumLabel = `${inchesToDisplay(v.autoMinSideIn).toFixed(2)} ${minimumUnit} per side`;
+  if (outputWidth < minimumPanelWidthPixels || outputHeight < minimumPanelHeightPixels) {
+    throw new Error(`Auto paneling requires a poster canvas of at least ${minimumLabel}.`);
+  }
   const mask = artworkMask();
-  const baseWidth = v.panelWidthIn * v.dpi;
-  const baseHeight = v.panelHeightIn * v.dpi;
+  const minimumPanelWidthCells = Math.max(
+    1,
+    Math.ceil(minimumPanelWidthPixels * mask.width / outputWidth)
+  );
+  const minimumPanelHeightCells = Math.max(
+    1,
+    Math.ceil(minimumPanelHeightPixels * mask.height / outputHeight)
+  );
+  const autoDimensions = autoPanelDimensions(v);
+  const baseWidth = autoDimensions.width * v.dpi;
+  const baseHeight = autoDimensions.height * v.dpi;
   const orientations = [
     { width: baseWidth, height: baseHeight },
     { width: baseHeight, height: baseWidth }
@@ -521,10 +647,35 @@ function buildAutoLayout() {
     const width = bounds.right - bounds.left;
     const height = bounds.bottom - bounds.top;
     return orientations
-      .filter((orientation) => width <= orientation.widthCells && height <= orientation.heightCells)
+      .filter((orientation) =>
+        width <= Math.max(orientation.widthCells, minimumPanelWidthCells) &&
+        height <= Math.max(orientation.heightCells, minimumPanelHeightCells)
+      )
       .sort((a, b) =>
         a.widthCells * a.heightCells - b.widthCells * b.heightCells
       )[0];
+  }
+
+  function expandToMinimum(bounds, container) {
+    const targetWidth = Math.min(
+      container.right - container.left,
+      Math.max(minimumPanelWidthCells, bounds.right - bounds.left)
+    );
+    const targetHeight = Math.min(
+      container.bottom - container.top,
+      Math.max(minimumPanelHeightCells, bounds.bottom - bounds.top)
+    );
+    const centerX = (bounds.left + bounds.right) / 2;
+    const centerY = (bounds.top + bounds.bottom) / 2;
+    const left = Math.max(
+      container.left,
+      Math.min(container.right - targetWidth, Math.round(centerX - targetWidth / 2))
+    );
+    const top = Math.max(
+      container.top,
+      Math.min(container.bottom - targetHeight, Math.round(centerY - targetHeight / 2))
+    );
+    return { left, top, right: left + targetWidth, bottom: top + targetHeight };
   }
 
   function estimatedPanels(bounds) {
@@ -552,27 +703,43 @@ function buildAutoLayout() {
     return count;
   }
 
-  function splitBounds(bounds) {
+  function splitBounds(bounds, container) {
     const candidates = [];
     for (let x = bounds.left + 1; x < bounds.right; x += 1) {
-      const first = trim({ ...bounds, right: x });
-      const second = trim({ ...bounds, left: x });
+      const firstContainer = { ...container, right: x };
+      const secondContainer = { ...container, left: x };
+      if (
+        firstContainer.right - firstContainer.left < minimumPanelWidthCells ||
+        secondContainer.right - secondContainer.left < minimumPanelWidthCells
+      ) continue;
+      const first = trim(firstContainer);
+      const second = trim(secondContainer);
       if (!first || !second) continue;
       candidates.push({
         first,
         second,
+        firstContainer,
+        secondContainer,
         estimate: estimatedPanels(first) + estimatedPanels(second),
         ink: cutInk('vertical', x, bounds),
         imbalance: Math.abs((first.right - first.left) - (second.right - second.left))
       });
     }
     for (let y = bounds.top + 1; y < bounds.bottom; y += 1) {
-      const first = trim({ ...bounds, bottom: y });
-      const second = trim({ ...bounds, top: y });
+      const firstContainer = { ...container, bottom: y };
+      const secondContainer = { ...container, top: y };
+      if (
+        firstContainer.bottom - firstContainer.top < minimumPanelHeightCells ||
+        secondContainer.bottom - secondContainer.top < minimumPanelHeightCells
+      ) continue;
+      const first = trim(firstContainer);
+      const second = trim(secondContainer);
       if (!first || !second) continue;
       candidates.push({
         first,
         second,
+        firstContainer,
+        secondContainer,
         estimate: estimatedPanels(first) + estimatedPanels(second),
         ink: cutInk('horizontal', y, bounds),
         imbalance: Math.abs((first.bottom - first.top) - (second.bottom - second.top))
@@ -588,49 +755,100 @@ function buildAutoLayout() {
   function partition(rawBounds) {
     const bounds = trim(rawBounds);
     if (!bounds) return;
-    const orientation = bestOrientation(bounds);
+    const expandedBounds = expandToMinimum(bounds, rawBounds);
+    const orientation = bestOrientation(expandedBounds);
     if (orientation) {
-      leaves.push({ bounds, orientation });
+      leaves.push({ bounds: expandedBounds, container: rawBounds, orientation });
       return;
     }
-    const split = splitBounds(bounds);
-    if (!split) throw new Error('Could not partition the visible artwork into non-overlapping panels.');
-    partition(split.first);
-    partition(split.second);
+    const split = splitBounds(bounds, rawBounds);
+    if (!split) {
+      throw new Error(
+        `Could not partition the visible artwork into non-overlapping panels of at least ${minimumLabel}.`
+      );
+    }
+    partition(split.firstContainer);
+    partition(split.secondContainer);
   }
   partition({ left: 0, top: 0, right: mask.width, bottom: mask.height });
 
-  const panels = leaves.map(({ bounds, orientation }) => {
-    const left = Math.floor(bounds.left * outputWidth / mask.width);
-    const top = Math.floor(bounds.top * outputHeight / mask.height);
+  const panels = leaves.map(({ bounds, container, orientation }) => {
+    const rawLeft = Math.floor(bounds.left * outputWidth / mask.width);
+    const rawTop = Math.floor(bounds.top * outputHeight / mask.height);
     const right = Math.floor(bounds.right * outputWidth / mask.width);
     const bottom = Math.floor(bounds.bottom * outputHeight / mask.height);
+    const containerLeft = Math.floor(container.left * outputWidth / mask.width);
+    const containerTop = Math.floor(container.top * outputHeight / mask.height);
+    const containerRight = Math.floor(container.right * outputWidth / mask.width);
+    const containerBottom = Math.floor(container.bottom * outputHeight / mask.height);
     const pageWidth = Math.round(orientation.width);
     const pageHeight = Math.round(orientation.height);
+    const width = Math.min(
+      pageWidth,
+      containerRight - containerLeft,
+      Math.max(minimumPanelWidthPixels, right - rawLeft)
+    );
+    const height = Math.min(
+      pageHeight,
+      containerBottom - containerTop,
+      Math.max(minimumPanelHeightPixels, bottom - rawTop)
+    );
+    const left = Math.max(
+      containerLeft,
+      Math.min(containerRight - width, Math.round((rawLeft + right - width) / 2))
+    );
+    const top = Math.max(
+      containerTop,
+      Math.min(containerBottom - height, Math.round((rawTop + bottom - height) / 2))
+    );
     return {
       left,
       top,
-      width: Math.max(1, Math.min(pageWidth, right - left)),
-      height: Math.max(1, Math.min(pageHeight, bottom - top)),
+      width: Math.max(1, width),
+      height: Math.max(1, height),
       pageWidth,
       pageHeight,
       orientation: orientation.width >= orientation.height ? 'landscape' : 'portrait'
     };
   });
+  if (panels.some((panel) =>
+    panel.width < minimumPanelWidthPixels ||
+    panel.height < minimumPanelHeightPixels
+  )) {
+    throw new Error(`Could not satisfy the ${minimumLabel} Auto paneling minimum.`);
+  }
   const orderedPanels = panelsInReadingOrder(panels);
   return { outputWidth, outputHeight: targetHeight, panels: orderedPanels };
 }
 
+function tryBuildAutoLayout() {
+  try {
+    const layout = buildAutoLayout();
+    setAutoMinimumError();
+    return layout;
+  } catch (error) {
+    const fallback = autoLayout
+      ? 'The previous valid grid is unchanged.'
+      : 'No automatic grid was applied.';
+    setAutoMinimumError(
+      `${error.message} Adjust Minimum panel side. ${fallback}`
+    );
+    return undefined;
+  }
+}
+
 autoGridButton.addEventListener('click', () => {
   if (!image) return;
-  if (autoLayout) {
+  if (autoLayout || autoPanelingPreference) {
     autoPanelingPreference = false;
     setAutoLayout(undefined);
+    setAutoMinimumError();
     saveDisplaySettings();
     render();
     return;
   }
-  const generated = buildAutoLayout();
+  const generated = tryBuildAutoLayout();
+  if (!generated) return;
   if (generated.panels.length === 0) {
     window.alert('No visible artwork was detected. Use an image with transparency or a plain background.');
     return;
@@ -678,13 +896,31 @@ function selectOrientation(orientation, { dispatchChange = true } = {}) {
 }
 
 function updateOrientationAvailability() {
-  const disabled = paperInput.value === 'custom' || Boolean(autoLayout);
+  const autoPanelingEnabled = Boolean(autoLayout) || autoPanelingPreference;
+  const disabled = paperInput.value === 'custom' || autoPanelingEnabled;
+  autoGridButton.setAttribute('aria-pressed', String(autoPanelingEnabled));
+  autoGridButton.setAttribute('aria-expanded', String(autoPanelingEnabled));
+  autoGridButton.querySelector('.toggle-state').textContent = autoPanelingEnabled ? 'On' : 'Off';
   for (const option of orientationButtons) option.disabled = disabled;
+  panelWidth.disabled = autoPanelingEnabled;
+  panelHeight.disabled = autoPanelingEnabled;
+  manualPanelingGroup.classList.toggle('collapsed', autoPanelingEnabled);
+  manualPanelingGroup.setAttribute('aria-disabled', String(autoPanelingEnabled));
+  manualPanelingGroup.setAttribute('aria-hidden', String(autoPanelingEnabled));
+  autoPanelingOptions.classList.toggle('collapsed', !autoPanelingEnabled);
+  autoPanelingOptions.setAttribute('aria-hidden', String(!autoPanelingEnabled));
+  autoMaxSideInput.disabled = !autoPanelingEnabled;
+  autoMinSideInput.disabled = !autoPanelingEnabled;
 }
 
 function recalculateAutoLayout() {
-  if (!autoLayout || !image) return;
-  setAutoLayout(buildAutoLayout());
+  if (
+    (!autoLayout && !autoPanelingPreference) ||
+    !image?.complete ||
+    !image.naturalHeight
+  ) return;
+  const recalculatedLayout = tryBuildAutoLayout();
+  if (recalculatedLayout) setAutoLayout(recalculatedLayout);
 }
 
 for (const button of orientationButtons) {
@@ -696,6 +932,11 @@ for (const input of [paperInput, orientationInput]) {
   input.addEventListener('change', () => {
     updateOrientationAvailability();
     applyOrientationLimits({ resetToMaximum: paperInput.value !== 'custom' });
+    if (input === paperInput) {
+      autoMaxSideIn = paperInput.value === 'custom'
+        ? AUTO_CUSTOM_DEFAULT_SIDE_IN
+        : autoPanelPaperLimits().long;
+    }
     recalculateAutoLayout();
     render();
     if (input === paperInput) saveDisplaySettings();
@@ -705,11 +946,37 @@ unitSystemInput.addEventListener('change', () => {
   render();
   saveDisplaySettings();
 });
-for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridWidthInput, gridColorInput]) {
+for (const input of [
+  panelWidth,
+  panelHeight,
+  autoMaxSideInput,
+  autoMinSideInput,
+  dpiInput,
+  targetHeightInput,
+  gridWidthInput,
+  gridColorInput
+]) {
   input.addEventListener('input', () => {
-    if ([panelWidth, panelHeight, dpiInput, targetHeightInput].includes(input)) {
+    if (input === autoMaxSideInput) {
+      autoMaxSideIn = Math.min(
+        autoPanelPaperLimits().long,
+        Math.max(
+          displayToInches(Number(autoMaxSideInput.min)),
+          displayToInches(Number(autoMaxSideInput.value))
+        )
+      );
+      autoMinSideIn = Math.min(autoMinSideIn, autoMaxSideIn);
+    } else if (input === autoMinSideInput) {
+      autoMinSideIn = Math.min(autoPanelPaperLimits().long, Math.max(
+        displayToInches(Number(autoMinSideInput.min)),
+        displayToInches(Number(autoMinSideInput.value))
+      ));
+      autoMaxSideIn = Math.max(autoMaxSideIn, autoMinSideIn);
+    }
+    if ([autoMaxSideInput, autoMinSideInput, dpiInput, targetHeightInput].includes(input)) {
       recalculateAutoLayout();
     }
+    if ([autoMaxSideInput, autoMinSideInput].includes(input)) saveDisplaySettings();
     render();
   });
 }
@@ -1123,12 +1390,15 @@ exportButton.addEventListener('click', async () => {
   const progressPolling = pollExportProgress(exportId, progressController.signal);
   try {
     const v = values();
+    const exportedPanelDimensions = autoLayout
+      ? autoPanelDimensions(v)
+      : { width: v.panelWidthIn, height: v.panelHeightIn };
     const form = new FormData();
     form.append('image', file);
     form.append('paper', v.paper);
     form.append('orientation', v.orientation);
-    form.append('panelWidthIn', v.panelWidthIn);
-    form.append('panelHeightIn', v.panelHeightIn);
+    form.append('panelWidthIn', exportedPanelDimensions.width);
+    form.append('panelHeightIn', exportedPanelDimensions.height);
     form.append('dpi', v.dpi);
     form.append('targetHeightMm', v.targetHeightMm);
     form.append('gridLineWidthMm', v.gridWidthMm);

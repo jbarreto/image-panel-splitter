@@ -285,6 +285,37 @@ After loading an image, toggle **Auto paneling** on to generate an
 artwork-aware layout; toggle it off to restore the uniform grid. The generator detects visible artwork against
 transparency or a plain corner-matched background, omits empty canvas regions,
 and chooses portrait or landscape independently for each sheet.
+The **Manual paneling** subsection—orientation, width, and height—collapses out
+of view while Auto paneling is enabled and returns when it is disabled.
+Automatic panels choose portrait or landscape independently.
+**Maximum panel side** replaces Panel width and Panel height for automatic
+layouts. Its maximum is the selected paper profile's longest printable side;
+the automatic short side is capped by the paper's shorter printable limit. Its
+minimum is `0.75 in`.
+Manual Panel width/height changes do not alter Maximum panel side or Minimum
+panel side.
+Changing Paper size resets Maximum panel side to that profile's longest
+printable dimension.
+For Custom paper, Maximum panel side allows up to `100 in` but resets to a
+default selected value of `9.26 in`.
+The enable toggle, maximum side, and minimum-size sliders are grouped together
+in the **Auto paneling** subsection of Panel Layout.
+When Auto paneling is off, its sizing options collapse; enabling it slides and
+fades those controls into view.
+The saved toggle state applies this disclosure immediately when the website
+starts, even before an image is selected.
+Panel orientation, Panel width, and Panel height are grouped in the neighboring
+**Manual paneling** subsection. Loading a new image resets Panel width and
+Panel height to the selected paper and orientation's maximum values.
+Use **Minimum panel side** to prevent undersized automatic panel crops in
+either dimension. It defaults to its allowed minimum of `0.25 in` for every
+new image and follows the selected metric or imperial unit system. It appears
+at the same level as Maximum panel side inside
+Auto paneling and can reach the selected paper profile's longest side. Raising
+it above Maximum panel side raises the maximum to match; lowering Maximum panel
+side below it lowers the minimum. The minimum must permit a non-overlapping
+partition. If it does not, the GUI shows an inline explanation and keeps the
+previous valid grid.
 
 This uses a deterministic artwork-aware partitioning algorithm. It aims to
 reduce the number of sheets, but arbitrary-shape rectangle partitioning is
@@ -293,10 +324,10 @@ guaranteed global minimum. Generated regions never overlap, so a source-image
 segment cannot be repeated across exported panels. The preview rectangles,
 exported PNG panels, grid preview, and assembly guide all use the same layout.
 While the toggle remains on, changing panel dimensions, DPI, poster height,
-or paper size automatically recalculates the layout. The orientation control
-is disabled because automatic mode chooses portrait or landscape separately
-for each generated panel. Press `Shift+A` outside an input control to toggle
-automatic mode from the keyboard.
+or paper size automatically recalculates the layout. The enabled orientation
+control sets the preferred/base orientation, while automatic mode may choose
+portrait or landscape separately for each generated panel. Press `Shift+A`
+outside an input control to toggle automatic mode from the keyboard.
 
 When **Print Panel Numbers** is toggled on, each number can
 be dragged independently in the preview. Its source-canvas position is clamped
@@ -326,8 +357,9 @@ Press `Ctrl+Enter` on Windows/Linux or `Cmd+Enter` on macOS to export the
 panels ZIP.
 
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
-and **Large** (28 px). Auto paneling, paper size, unit system, Print Panel
-Numbers, and the selected number-size preset are saved in browser local storage.
+and **Large** (28 px). Auto paneling, its maximum and minimum sides,
+paper size, unit system, Print Panel Numbers, and the selected number-size
+preset are saved in browser local storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

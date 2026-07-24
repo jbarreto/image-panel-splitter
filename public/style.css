@@ -73,11 +73,24 @@ button:disabled { opacity: .45; cursor: default; }
 .toggle-button[aria-pressed="true"] .toggle-knob { transform: translateX(28px); }
 .toggle-button[aria-pressed="true"] .toggle-state { right: auto; left: 8px; color: white; }
 .auto-layout-control { margin-top: 4px; }
+.auto-paneling-group { padding: 11px 12px 12px; border: 1px solid #cfe8dc; border-radius: 12px; background: white; }
+.auto-paneling-heading { margin-bottom: 8px; color: var(--cricut-green-dark); font-size: 13px; font-weight: 500; }
+.auto-paneling-options { max-height: 480px; opacity: 1; overflow: hidden; transform: translateY(0); transition: max-height .28s ease, opacity .2s ease, transform .28s ease; }
+.auto-paneling-options.collapsed { max-height: 0; opacity: 0; transform: translateY(-7px); pointer-events: none; }
+.manual-paneling-group { max-height: 520px; margin-top: 12px; padding: 11px 12px 2px; overflow: hidden; border: 1px solid #cfe8dc; border-radius: 12px; background: white; opacity: 1; transform: translateY(0); transition: max-height .28s ease, margin .28s ease, padding .28s ease, border-width .28s ease, opacity .2s ease, transform .28s ease; }
+.manual-paneling-group.collapsed { max-height: 0; margin-top: 0; padding-top: 0; padding-bottom: 0; border-width: 0; opacity: 0; transform: translateY(-7px); pointer-events: none; }
+.manual-paneling-heading { margin-bottom: 4px; color: var(--cricut-green-dark); font-size: 13px; font-weight: 500; }
+.auto-maximum-side { margin: 12px 0 4px; }
+.auto-minimum-side { margin: 12px 0 4px; }
+.auto-minimum-note { margin: 4px 0 7px; color: #777; font-size: 10px; line-height: 1.35; }
+.auto-minimum-error { margin: 7px 0; padding: 8px 9px; border: 1px solid #e6b8b8; border-radius: 8px; background: #fff4f4; color: #9b2c2c; font-size: 10px; line-height: 1.4; }
+.auto-minimum-error[hidden] { display: none; }
 .toggle-note { margin: 6px 4px 0; color: #777; font-size: 11px; line-height: 1.35; }
 .settings-group { min-width: 0; margin: 18px 0; padding: 14px; border: 1px solid #dceee5; border-radius: 14px; background: var(--cricut-mint-light); }
 .settings-group legend { padding: 0 7px; color: var(--cricut-green-dark); font-size: 14px; font-weight: 500; }
 .settings-group > .row { margin: 2px 0; }
 .panel-layout-controls .field:last-child { margin-bottom: 2px; }
+.panel-layout-controls .stats { margin-bottom: 2px; }
 .number-controls .toggle-button { background: white; }
 .number-size-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 9px 4px 0; color: var(--cricut-green-dark); font-size: 12px; }
 .number-size-field select { width: 120px; padding: 7px 10px; }
@@ -101,7 +114,9 @@ button.orientation-option.selected:active:not(:disabled) { border-color: var(--c
 .progress-modal progress { display: block; width: 100%; height: 14px; accent-color: var(--cricut-green); }
 .progress-cancel-hint { margin-top: 10px; color: #777; font-size: 12px; text-align: center; }
 .progress-close { margin-top: 20px; }
-.preview-wrap { min-width: 0; min-height: 500px; display: grid; place-items: center; overflow: auto; padding: 20px; background-color: #fbfcfb; background-image: linear-gradient(45deg,#edf1ee 25%,transparent 25%),linear-gradient(-45deg,#edf1ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf1ee 75%),linear-gradient(-45deg,transparent 75%,#edf1ee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
+.preview-wrap { min-width: 0; min-height: 500px; display: grid; align-items: center; justify-items: center; overflow: auto; padding: 20px; background-color: #fbfcfb; background-image: linear-gradient(45deg,#edf1ee 25%,transparent 25%),linear-gradient(-45deg,#edf1ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf1ee 75%),linear-gradient(-45deg,transparent 75%,#edf1ee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
+.preview-wrap.requires-scroll { align-items: start; }
+.preview-wrap.empty { position: sticky; top: 20px; align-self: start; height: calc(100vh - 40px); }
 canvas { max-width: 100%; max-height: calc(100vh - 80px); box-shadow: 0 5px 20px rgb(23 58 42 / .2); touch-action: none; }
 canvas.dragging-grid { cursor: grabbing; }
 @media (max-width: 850px) { main { grid-template-columns: 1fr; } .preview-wrap { min-height: 420px; } canvas { max-height: 70vh; } }
