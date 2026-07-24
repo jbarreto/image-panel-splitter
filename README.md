@@ -320,7 +320,10 @@ panels in the desired `0, 1, 2, …` sequence. Finishing early keeps all unclick
 panels in their previous relative order. **Reset Order** restores the automatic
 spatial order. Custom order is applied consistently to preview numbers, manual
 number anchors, filenames, panel PNGs, `original-with-grid.png`, and both
-assembly guides.
+assembly guides. Press `Shift+O` to start or finish assembly-order editing.
+
+Press `Ctrl+Enter` on Windows/Linux or `Cmd+Enter` on macOS to export the
+panels ZIP.
 
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
 and **Large** (28 px). Auto paneling, paper size, unit system, Print Panel

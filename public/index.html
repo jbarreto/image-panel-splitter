@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.30.0</span>
+          <span class="app-version">v1.31.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -95,7 +95,8 @@
             <option value="large">Large</option>
           </select>
         </label>
-        <button id="editOrderButton" class="order-button" type="button" aria-pressed="false" disabled>Edit Assembly Order</button>
+        <button id="editOrderButton" class="order-button" type="button" aria-pressed="false" aria-keyshortcuts="Shift+O" title="Shortcut: Shift+O" disabled>Edit Assembly Order</button>
+        <div class="toggle-note">Shortcut: Shift+O.</div>
         <div class="order-status-row">
           <span id="orderStatus" class="toggle-note">Automatic reading order is active.</span>
           <button id="resetOrderButton" class="order-reset-link" type="button" disabled hidden>Reset</button>
@@ -119,7 +120,8 @@
       </fieldset>
       <div id="stats" class="stats">Choose an image to preview the grid.</div>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
-      <button id="exportButton" disabled>Export panels ZIP</button>
+      <button id="exportButton" aria-keyshortcuts="Control+Enter Meta+Enter" title="Shortcut: Ctrl/Cmd+Enter" disabled>Export panels ZIP</button>
+      <div class="export-shortcut-note">Shortcut: Ctrl/Cmd+Enter.</div>
 
       <div id="exportProgressWrap" class="progress-modal" role="dialog" aria-modal="true" aria-labelledby="exportProgressText" hidden>
         <div class="progress-modal-card">

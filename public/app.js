@@ -643,21 +643,28 @@ autoGridButton.addEventListener('click', () => {
 
 document.addEventListener('keydown', (event) => {
   const editingControl = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+  if (event.repeat || editingControl || !exportProgressWrap.hidden || event.altKey) return;
+
   if (
-    event.repeat ||
-    editingControl ||
-    !exportProgressWrap.hidden ||
-    autoGridButton.disabled ||
-    event.ctrlKey ||
-    event.metaKey ||
-    event.altKey ||
-    !event.shiftKey ||
-    event.key.toLowerCase() !== 'a'
+    event.key === 'Enter' &&
+    (event.ctrlKey || event.metaKey) &&
+    !event.shiftKey &&
+    !exportButton.disabled
   ) {
+    event.preventDefault();
+    exportButton.click();
     return;
   }
-  event.preventDefault();
-  autoGridButton.click();
+
+  if (!event.shiftKey || event.ctrlKey || event.metaKey) return;
+  const shortcut = event.key.toLowerCase();
+  if (shortcut === 'a' && !autoGridButton.disabled) {
+    event.preventDefault();
+    autoGridButton.click();
+  } else if (shortcut === 'o' && !editOrderButton.disabled) {
+    event.preventDefault();
+    editOrderButton.click();
+  }
 });
 
 function selectOrientation(orientation, { dispatchChange = true } = {}) {

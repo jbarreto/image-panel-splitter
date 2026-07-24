@@ -8,7 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
-- Current application version: 1.30.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
+- Current application version: 1.31.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -36,6 +36,7 @@ Project summary:
 - While **Auto paneling** remains enabled, changes to panel dimensions, DPI, poster height, or paper size must recalculate the automatic layout instead of disabling the toggle.
 - Disable the global GUI orientation control while **Auto paneling** is enabled because automatic panels choose orientation independently; restore it when automatic mode is disabled unless Custom paper still requires it to remain disabled.
 - `Shift+A` toggles **Auto paneling** unless focus is in an editable control or the export modal is open.
+- `Shift+O` starts or finishes assembly-order editing. `Ctrl+Enter` on Windows/Linux and `Cmd+Enter` on macOS starts ZIP export. Ignore action shortcuts while focus is in an editable control or the export modal is open, and never invoke a disabled action.
 - The **Print Panel Numbers** GUI control is a switch-style toggle directly below **Auto paneling**. Enabled numbers are zero-based plain text with a white outline, use the selected visible-size preset and grid-line color, and derive the corresponding export-pixel font size from the output-to-displayed-preview scale so preview and export have the same relative artwork size in uniform and automatic layouts.
 - Panel-number size presets are Small (14 visible px), Medium (20 visible px, default), and Large (28 visible px). Persist the selected preset and derive its proportional output-pixel size for export.
 - Each enabled preview number is independently draggable and clamped inside its panel. Export must receive the complete source-coordinate anchor list, validate it against the final panel crops, place each number at the matching local coordinate, and record the anchors in the assembly guide.

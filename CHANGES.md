@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.30.0**
+**Current release: v1.31.0**
 
 ## 1. Project purpose
 
@@ -651,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.30.0`.
+The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -884,10 +884,18 @@ The history currently runs continuously from `v1.0.0` through `v1.30.0`.
 - Applied the dark Cricut green theme color to primary setting labels while
   keeping input values, notes, and status text neutral.
 
-### v1.30.0 — Assembly-order selection feedback (current)
+### v1.30.0 — Assembly-order selection feedback
 
 - Added a preview-only translucent green tint and dark-green frame to every
   panel already selected while editing assembly order.
+
+### v1.31.0 — GUI action shortcuts (current)
+
+- Added `Shift+O` to start or finish assembly-order editing.
+- Added `Ctrl+Enter` on Windows/Linux and `Cmd+Enter` on macOS to export the
+  panels ZIP.
+- Ignore these shortcuts while focus is in an editable control or while the
+  export modal is open.
 
 ## 18. Recommended next improvements
 
