@@ -273,3 +273,17 @@ Select `Custom` in the GUI to set panel width and height freely, up to
 `--panel-width-in` and `--panel-height-in`.
 
 The GUI updates the slider maximums when the paper size or orientation changes. The CLI and GUI export endpoint enforce the same mappings.
+
+## Automatic mixed-orientation layout
+
+After loading an image, toggle **Auto minimize panels** on to generate an
+artwork-aware layout; toggle it off to restore the uniform grid. The generator detects visible artwork against
+transparency or a plain corner-matched background, omits empty canvas regions,
+and chooses portrait or landscape independently for each sheet.
+
+This uses a deterministic artwork-aware partitioning algorithm. It aims to
+reduce the number of sheets, but arbitrary-shape rectangle partitioning is
+computationally hard, so the result is an optimized layout rather than a
+guaranteed global minimum. Generated regions never overlap, so a source-image
+segment cannot be repeated across exported panels. The preview rectangles,
+exported PNG panels, grid preview, and assembly guide all use the same layout.

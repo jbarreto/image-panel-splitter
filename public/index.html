@@ -72,6 +72,13 @@
         <label>Grid width (mm)<input id="gridWidth" type="number" min="0.1" step="0.1" value="1" /></label>
         <label>Grid color<input id="gridColor" type="color" value="#01a86b" /></label>
       </div>
+      <button id="autoGridButton" class="toggle-button" type="button" aria-pressed="false" disabled>
+        <span>Auto minimize panels</span>
+        <span class="toggle-track" aria-hidden="true">
+          <span class="toggle-state">Off</span>
+          <span class="toggle-knob"></span>
+        </span>
+      </button>
       <div id="stats" class="stats">Choose an image to preview the grid.</div>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
       <button id="exportButton" disabled>Export panels ZIP</button>

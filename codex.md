@@ -32,6 +32,7 @@ Project summary:
 - GUI sliders and server/CLI validation must enforce the same paper-profile limits.
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
 - While the preview canvas is hovered, Left/Right adjust panel width and Up/Down adjust panel height; the grid line must move in the pressed arrow's visual direction and remain within the active limits.
+- The GUI Auto minimize panels control is a toggle: enabling it generates the artwork-aware layout, while disabling it restores the uniform grid. It detects visible artwork against transparency or a plain background, omits empty canvas regions, and uses a deterministic non-overlapping partition that independently chooses portrait or landscape for each sheet. No source-image segment may occur in more than one generated panel. Preserve the exact generated rectangle list through preview, GUI-server handoff, CLI export, grid preview, and assembly-guide output.
 - The GUI unit selector switches only panel width/height, panel limits, and assembled-poster preview dimensions between centimeters and inches. Poster height and grid width inputs always remain in millimeters; the server contract remains panel inches plus poster/grid millimeters.
 - Imperial (`in`) is selected by default in the GUI unit selector.
 - Only paper size and unit-system selection persist in browser local storage under ronyka-panel-splitter.display-settings.v1.

@@ -781,6 +781,20 @@ The history currently runs continuously from `v1.0.0` through `v1.23.0`.
 - Added hover-based arrow-key adjustment for preview grid width and height,
   with arrow directions matching the visual movement of the grid lines.
 
+### Unreleased — Artwork-aware mixed-orientation layouts
+
+- Added an **Auto minimize panels** GUI toggle that detects visible artwork
+  when enabled and restores the uniform grid when disabled. It
+  omits empty canvas regions, and partitions the remaining artwork into
+  independently rotated portrait or landscape sheets.
+- Added arbitrary panel-rectangle previews and matching ZIP exports, including
+  per-panel orientation and source coordinates in the assembly guide.
+- Added CLI layout-file support and GUI-server handoff so preview and export
+  use the same generated rectangles.
+- Replaced overlapping set-cover placement with disjoint recursive artwork
+  partitioning and added CLI overlap rejection, preventing duplicate image
+  segments across exported panels.
+
 ## 18. Recommended next improvements
 
 These items were discussed or are natural next steps, but should not be assumed implemented:

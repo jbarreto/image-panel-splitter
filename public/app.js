@@ -14,6 +14,7 @@ const dpiInput = $('dpi');
 const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
+const autoGridButton = $('autoGridButton');
 const exportButton = $('exportButton');
 const exportProgressWrap = $('exportProgressWrap');
 const exportProgress = $('exportProgress');
@@ -32,6 +33,13 @@ let previewGrid;
 let gridDrag;
 let activeExport;
 let canvasHovered = false;
+let autoLayout;
+
+function setAutoLayout(layout) {
+  autoLayout = layout;
+  autoGridButton.setAttribute('aria-pressed', String(Boolean(layout)));
+  autoGridButton.querySelector('.toggle-state').textContent = layout ? 'On' : 'Off';
+}
 
 const panelLimitText = $('panelLimit');
 const DISPLAY_SETTINGS_KEY = 'ronyka-panel-splitter.display-settings.v1';
@@ -137,7 +145,9 @@ function render() {
     return;
   }
   const v = values();
-  const targetHeightPx = v.targetHeightMm > 0 ? (v.targetHeightMm / 25.4) * v.dpi : image.naturalHeight;
+  const targetHeightPx = v.targetHeightMm > 0
+    ? Math.round((v.targetHeightMm / 25.4) * v.dpi)
+    : image.naturalHeight;
   const scaleToOutput = targetHeightPx / image.naturalHeight;
   const outputWidthPx = image.naturalWidth * scaleToOutput;
   const outputHeightPx = image.naturalHeight * scaleToOutput;
@@ -158,13 +168,24 @@ function render() {
   ctx.strokeStyle = gridColorInput.value;
   const gridLineWidthCanvas = Math.max(1, v.gridWidthMm / 25.4 * v.dpi * previewScale);
   ctx.lineWidth = gridLineWidthCanvas;
-  for (let column = 0; column <= columns; column += 1) {
-    const x = Math.min(canvas.width, column * panelWidthPx * previewScale);
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-  }
-  for (let row = 0; row <= rows; row += 1) {
-    const y = Math.min(canvas.height, row * panelHeightPx * previewScale);
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+  if (autoLayout) {
+    for (const panel of autoLayout.panels) {
+      ctx.strokeRect(
+        panel.left * previewScale,
+        panel.top * previewScale,
+        panel.width * previewScale,
+        panel.height * previewScale
+      );
+    }
+  } else {
+    for (let column = 0; column <= columns; column += 1) {
+      const x = Math.min(canvas.width, column * panelWidthPx * previewScale);
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+    }
+    for (let row = 0; row <= rows; row += 1) {
+      const y = Math.min(canvas.height, row * panelHeightPx * previewScale);
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+    }
   }
   ctx.restore();
 
@@ -183,18 +204,22 @@ function render() {
   const unit = usesMetricUnits() ? 'cm' : 'in';
   const displayedWidth = inchesToDisplay(widthIn);
   const displayedHeight = inchesToDisplay(heightIn);
-  stats.textContent = `${columns} columns × ${rows} rows = ${columns * rows} panels\nPoster ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit} (W × H)`;
+  stats.textContent = autoLayout
+    ? `Auto layout = ${autoLayout.panels.length} mixed-orientation panels\nPoster ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit} (W × H)`
+    : `${columns} columns × ${rows} rows = ${columns * rows} panels\nPoster ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit} (W × H)`;
 }
 
 async function loadFile(selected) {
   if (!selected) return;
   resetExportProgress();
+  setAutoLayout(undefined);
   file = selected;
   const url = URL.createObjectURL(file);
   image = new Image();
   image.onload = () => {
     URL.revokeObjectURL(url);
     exportButton.disabled = false;
+    autoGridButton.disabled = false;
     imageDimensions.textContent = `${file.name} · ${image.naturalWidth} × ${image.naturalHeight} px`;
     render();
   };
@@ -202,6 +227,201 @@ async function loadFile(selected) {
 }
 
 imageInput.addEventListener('change', () => loadFile(imageInput.files[0]));
+
+function artworkMask() {
+  const maximumSide = 192;
+  const scale = Math.min(1, maximumSide / Math.max(image.naturalWidth, image.naturalHeight));
+  const width = Math.max(1, Math.round(image.naturalWidth * scale));
+  const height = Math.max(1, Math.round(image.naturalHeight * scale));
+  const maskCanvas = document.createElement('canvas');
+  maskCanvas.width = width;
+  maskCanvas.height = height;
+  const maskContext = maskCanvas.getContext('2d', { willReadFrequently: true });
+  maskContext.drawImage(image, 0, 0, width, height);
+  const pixels = maskContext.getImageData(0, 0, width, height).data;
+  const cornerIndexes = [0, width - 1, (height - 1) * width, height * width - 1];
+  const background = cornerIndexes.reduce(
+    (sum, index) => ({
+      r: sum.r + pixels[index * 4],
+      g: sum.g + pixels[index * 4 + 1],
+      b: sum.b + pixels[index * 4 + 2],
+      a: sum.a + pixels[index * 4 + 3]
+    }),
+    { r: 0, g: 0, b: 0, a: 0 }
+  );
+  for (const key of Object.keys(background)) background[key] /= cornerIndexes.length;
+  const transparentBackground = background.a < 128;
+  const occupied = new Uint8Array(width * height);
+  for (let index = 0; index < occupied.length; index += 1) {
+    const alpha = pixels[index * 4 + 3];
+    const colorDistance = Math.max(
+      Math.abs(pixels[index * 4] - background.r),
+      Math.abs(pixels[index * 4 + 1] - background.g),
+      Math.abs(pixels[index * 4 + 2] - background.b)
+    );
+    occupied[index] = alpha > 16 && (transparentBackground || colorDistance > 20) ? 1 : 0;
+  }
+  return { width, height, occupied };
+}
+
+function buildAutoLayout() {
+  const v = values();
+  const targetHeight = v.targetHeightMm > 0
+    ? Math.round((v.targetHeightMm / 25.4) * v.dpi)
+    : image.naturalHeight;
+  const outputWidth = Math.round(image.naturalWidth * targetHeight / image.naturalHeight);
+  const outputHeight = targetHeight;
+  const mask = artworkMask();
+  const baseWidth = v.panelWidthIn * v.dpi;
+  const baseHeight = v.panelHeightIn * v.dpi;
+  const orientations = [
+    { width: baseWidth, height: baseHeight },
+    { width: baseHeight, height: baseWidth }
+  ].filter((candidate, index, all) =>
+    index === 0 || candidate.width !== all[0].width || candidate.height !== all[0].height
+  ).map((orientation) => ({
+    ...orientation,
+    widthCells: Math.max(1, Math.floor(orientation.width * mask.width / outputWidth)),
+    heightCells: Math.max(1, Math.floor(orientation.height * mask.height / outputHeight))
+  }));
+
+  function trim(bounds) {
+    let { left, top, right, bottom } = bounds;
+    const columnHasArtwork = (x) => {
+      for (let y = top; y < bottom; y += 1) {
+        if (mask.occupied[y * mask.width + x]) return true;
+      }
+      return false;
+    };
+    const rowHasArtwork = (y) => {
+      for (let x = left; x < right; x += 1) {
+        if (mask.occupied[y * mask.width + x]) return true;
+      }
+      return false;
+    };
+    while (left < right && !columnHasArtwork(left)) left += 1;
+    while (left < right && !columnHasArtwork(right - 1)) right -= 1;
+    while (top < bottom && !rowHasArtwork(top)) top += 1;
+    while (top < bottom && !rowHasArtwork(bottom - 1)) bottom -= 1;
+    return left < right && top < bottom ? { left, top, right, bottom } : undefined;
+  }
+
+  function bestOrientation(bounds) {
+    const width = bounds.right - bounds.left;
+    const height = bounds.bottom - bounds.top;
+    return orientations
+      .filter((orientation) => width <= orientation.widthCells && height <= orientation.heightCells)
+      .sort((a, b) =>
+        a.widthCells * a.heightCells - b.widthCells * b.heightCells
+      )[0];
+  }
+
+  function estimatedPanels(bounds) {
+    if (!bounds) return 0;
+    const width = bounds.right - bounds.left;
+    const height = bounds.bottom - bounds.top;
+    return Math.min(...orientations.map((orientation) =>
+      Math.ceil(width / orientation.widthCells) * Math.ceil(height / orientation.heightCells)
+    ));
+  }
+
+  function cutInk(axis, position, bounds) {
+    let count = 0;
+    if (axis === 'vertical') {
+      for (let y = bounds.top; y < bounds.bottom; y += 1) {
+        count += mask.occupied[y * mask.width + position - 1];
+        count += mask.occupied[y * mask.width + position];
+      }
+    } else {
+      for (let x = bounds.left; x < bounds.right; x += 1) {
+        count += mask.occupied[(position - 1) * mask.width + x];
+        count += mask.occupied[position * mask.width + x];
+      }
+    }
+    return count;
+  }
+
+  function splitBounds(bounds) {
+    const candidates = [];
+    for (let x = bounds.left + 1; x < bounds.right; x += 1) {
+      const first = trim({ ...bounds, right: x });
+      const second = trim({ ...bounds, left: x });
+      if (!first || !second) continue;
+      candidates.push({
+        first,
+        second,
+        estimate: estimatedPanels(first) + estimatedPanels(second),
+        ink: cutInk('vertical', x, bounds),
+        imbalance: Math.abs((first.right - first.left) - (second.right - second.left))
+      });
+    }
+    for (let y = bounds.top + 1; y < bounds.bottom; y += 1) {
+      const first = trim({ ...bounds, bottom: y });
+      const second = trim({ ...bounds, top: y });
+      if (!first || !second) continue;
+      candidates.push({
+        first,
+        second,
+        estimate: estimatedPanels(first) + estimatedPanels(second),
+        ink: cutInk('horizontal', y, bounds),
+        imbalance: Math.abs((first.bottom - first.top) - (second.bottom - second.top))
+      });
+    }
+    candidates.sort((a, b) =>
+      a.estimate - b.estimate || a.ink - b.ink || a.imbalance - b.imbalance
+    );
+    return candidates[0];
+  }
+
+  const leaves = [];
+  function partition(rawBounds) {
+    const bounds = trim(rawBounds);
+    if (!bounds) return;
+    const orientation = bestOrientation(bounds);
+    if (orientation) {
+      leaves.push({ bounds, orientation });
+      return;
+    }
+    const split = splitBounds(bounds);
+    if (!split) throw new Error('Could not partition the visible artwork into non-overlapping panels.');
+    partition(split.first);
+    partition(split.second);
+  }
+  partition({ left: 0, top: 0, right: mask.width, bottom: mask.height });
+
+  const panels = leaves.map(({ bounds, orientation }) => {
+    const left = Math.floor(bounds.left * outputWidth / mask.width);
+    const top = Math.floor(bounds.top * outputHeight / mask.height);
+    const right = Math.floor(bounds.right * outputWidth / mask.width);
+    const bottom = Math.floor(bounds.bottom * outputHeight / mask.height);
+    return {
+      left,
+      top,
+      width: Math.max(1, right - left),
+      height: Math.max(1, bottom - top),
+      pageWidth: Math.round(orientation.width),
+      pageHeight: Math.round(orientation.height),
+      orientation: orientation.width >= orientation.height ? 'landscape' : 'portrait'
+    };
+  });
+  return { outputWidth, outputHeight: targetHeight, panels };
+}
+
+autoGridButton.addEventListener('click', () => {
+  if (!image) return;
+  if (autoLayout) {
+    setAutoLayout(undefined);
+    render();
+    return;
+  }
+  const generated = buildAutoLayout();
+  if (generated.panels.length === 0) {
+    window.alert('No visible artwork was detected. Use an image with transparency or a plain background.');
+    return;
+  }
+  setAutoLayout(generated);
+  render();
+});
 
 function selectOrientation(orientation, { dispatchChange = true } = {}) {
   orientationInput.value = orientation;
@@ -225,6 +445,7 @@ for (const button of orientationButtons) {
 }
 for (const input of [paperInput, orientationInput]) {
   input.addEventListener('change', () => {
+    setAutoLayout(undefined);
     updateOrientationAvailability();
     applyOrientationLimits({ resetToMaximum: paperInput.value !== 'custom' });
     render();
@@ -236,7 +457,12 @@ unitSystemInput.addEventListener('change', () => {
   saveDisplaySettings();
 });
 for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridWidthInput, gridColorInput]) {
-  input.addEventListener('input', render);
+  input.addEventListener('input', () => {
+    if ([panelWidth, panelHeight, dpiInput, targetHeightInput].includes(input)) {
+      setAutoLayout(undefined);
+    }
+    render();
+  });
 }
 window.addEventListener('resize', render);
 
@@ -249,7 +475,7 @@ canvas.addEventListener('pointerleave', () => {
 });
 
 window.addEventListener('keydown', (event) => {
-  if (!canvasHovered || !image || !exportProgressWrap.hidden) return;
+  if (!canvasHovered || !image || autoLayout || !exportProgressWrap.hidden) return;
   const adjustments = {
     ArrowLeft: { input: panelWidth, direction: -1 },
     ArrowRight: { input: panelWidth, direction: 1 },
@@ -277,7 +503,7 @@ function canvasPoint(event) {
 }
 
 function gridLineAt(event) {
-  if (!previewGrid) return undefined;
+  if (!previewGrid || autoLayout) return undefined;
   const point = canvasPoint(event);
   const xScale = canvas.width / previewGrid.outputWidthPx;
   const yScale = canvas.height / previewGrid.outputHeightPx;
@@ -330,6 +556,7 @@ function gridCursor(line, dragging = false) {
 canvas.addEventListener('pointerdown', (event) => {
   const line = gridLineAt(event);
   if (!line) return;
+  setAutoLayout(undefined);
   gridDrag = {
     ...line,
     startPoint: canvasPoint(event),
@@ -520,6 +747,7 @@ exportButton.addEventListener('click', async () => {
     form.append('gridMode', 'overlay');
     form.append('marginMm', '0');
     form.append('exportId', exportId);
+    if (autoLayout) form.append('panelLayout', JSON.stringify(autoLayout));
     const response = await fetch('/api/export', {
       method: 'POST',
       body: form,

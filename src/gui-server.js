@@ -230,6 +230,19 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
       '--grid-line-width-mm', String(gridLineWidthMm),
       '--grid-color', req.body.gridColor || '#01a86b'
     ];
+    if (req.body.panelLayout) {
+      const panelLayout = JSON.parse(req.body.panelLayout);
+      if (!Array.isArray(panelLayout?.panels) || panelLayout.panels.length < 1 || panelLayout.panels.length > 10000) {
+        throw new Error('Invalid automatic panel layout.');
+      }
+      const layoutPath = path.join(workDir, 'panel-layout.json');
+      await fsp.writeFile(layoutPath, `${JSON.stringify(panelLayout)}\n`, 'utf8');
+      args.push('--layout-file', layoutPath);
+      logger.debug('Automatic panel layout accepted.', {
+        exportId,
+        panels: panelLayout.panels.length
+      });
+    }
     if (targetHeightMm > 0) args.push('--target-height-mm', String(targetHeightMm));
     else args.push('--fit', 'actual');
     if (req.body.printNumbers !== 'true') args.push('--no-number');
@@ -239,7 +252,7 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
     }
 
     await runCli(args, (line) => {
-      const gridMatch = line.match(/=\s*(\d+)\s+panel\(s\)/);
+      const gridMatch = line.match(/(?:=\s*|Auto layout:\s*)(\d+)\s+(?:mixed-orientation\s+)?panel\(s\)/);
       if (gridMatch) {
         const total = Number(gridMatch[1]);
         logger.debug('Panel layout calculated.', { exportId, total });
