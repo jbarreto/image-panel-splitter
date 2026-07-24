@@ -17,6 +17,7 @@
         <strong>Drop image here</strong>
         <span>or click to choose a PNG</span>
       </label>
+      <div id="imageDimensions" class="image-dimensions" aria-live="polite"></div>
 
       <div class="field">
         <label for="paper">Paper size</label>
@@ -62,7 +63,6 @@
       <div id="stats" class="stats">Choose an image to preview the grid.</div>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, or drag diagonally anywhere inside a panel to adjust width and height together.</div>
       <button id="exportButton" disabled>Export panels ZIP</button>
-      <div id="status" class="status" aria-live="polite"></div>
 
       <div id="exportProgressWrap" class="progress-modal" role="dialog" aria-modal="true" aria-labelledby="exportProgressText" hidden>
         <div class="progress-modal-card">
@@ -71,7 +71,7 @@
             <span id="exportProgressPercent">0%</span>
           </div>
           <progress id="exportProgress" max="100" value="0">0%</progress>
-          <div class="progress-cancel-hint">Press Esc to cancel generation.</div>
+          <div id="exportProgressHint" class="progress-cancel-hint">Press Esc to cancel generation.</div>
           <button id="exportProgressClose" class="progress-close" type="button" hidden>Close</button>
         </div>
       </div>

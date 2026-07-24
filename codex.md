@@ -25,6 +25,9 @@ Project summary:
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
 - GUI ZIP export uses a modal progress bar, a unique export ID, and polling through /api/export-progress/:id; preserve actual per-panel progress plus preparing, zipping, completion, cancellation, and error phases.
 - Pressing Escape during an active export must abort the browser request, call DELETE /api/export/:id, terminate the matching CLI process, and remove partial temporary output. A second Escape press dismisses the modal without allowing the asynchronous cancellation result to reopen it.
+- Keep all export status feedback inside the modal; do not restore a status-text area beneath the Export panels ZIP button.
+- Keep the selected-image filename and original pixel dimensions in the dedicated label beneath the image picker.
+- The modal hint reads "Press Esc to cancel generation." while active and "Press Esc to close" after completion, cancellation, or failure.
 - The CLI and GUI server share src/logger.js. Winston defaults to debug unless LOG_LEVEL overrides it; keep CLI diagnostics on stderr so stdout progress parsing remains stable.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.
 - Large target posters, including a 4000 mm target height, can exceed Sharp's default input pixel limit. Preserve the openImage() handling for source and intermediate poster buffers and the disabled pixel limit on the full-size grid composite.

@@ -18,10 +18,11 @@ const exportProgress = $('exportProgress');
 const exportProgressText = $('exportProgressText');
 const exportProgressPercent = $('exportProgressPercent');
 const exportProgressClose = $('exportProgressClose');
+const exportProgressHint = $('exportProgressHint');
+const imageDimensions = $('imageDimensions');
 const canvas = $('preview');
 const ctx = canvas.getContext('2d');
 const stats = $('stats');
-const status = $('status');
 const dropZone = $('dropZone');
 let file;
 let image;
@@ -144,7 +145,7 @@ async function loadFile(selected) {
   image.onload = () => {
     URL.revokeObjectURL(url);
     exportButton.disabled = false;
-    status.textContent = `${file.name} · ${image.naturalWidth} × ${image.naturalHeight} px`;
+    imageDimensions.textContent = `${file.name} · ${image.naturalWidth} × ${image.naturalHeight} px`;
     render();
   };
   image.src = url;
@@ -323,6 +324,7 @@ function showExportProgress(value, text) {
   exportProgress.textContent = `${percent}%`;
   exportProgressPercent.textContent = `${percent}%`;
   exportProgressText.textContent = text;
+  exportProgressHint.textContent = 'Press Esc to cancel generation.';
   exportProgressClose.hidden = true;
 }
 
@@ -332,11 +334,13 @@ function resetExportProgress() {
   exportProgress.textContent = '0%';
   exportProgressPercent.textContent = '0%';
   exportProgressText.textContent = 'Preparing export…';
+  exportProgressHint.textContent = 'Press Esc to cancel generation.';
   exportProgressClose.hidden = true;
 }
 
 function finishExportProgress(success, text = success ? 'Export complete.' : 'Export failed.') {
   showExportProgress(success ? 100 : 0, text);
+  exportProgressHint.textContent = 'Press Esc to close';
   exportProgressClose.hidden = false;
   exportProgressClose.focus();
 }
@@ -400,7 +404,6 @@ async function pollExportProgress(exportId, signal) {
 exportButton.addEventListener('click', async () => {
   if (!file) return;
   exportButton.disabled = true;
-  status.textContent = 'Generating panels…';
   showExportProgress(2, 'Uploading image…');
   const exportId = crypto.randomUUID();
   const progressController = new AbortController();
@@ -447,12 +450,10 @@ exportButton.addEventListener('click', async () => {
     link.click();
     URL.revokeObjectURL(url);
     finishExportProgress(true);
-    status.textContent = 'Export complete.';
   } catch (error) {
     const canceled = activeExport?.id === exportId && activeExport.canceling;
     const dismissed = activeExport?.id === exportId && activeExport.dismissOnFinish;
-    if (!dismissed) finishExportProgress(false, canceled ? 'Export canceled.' : 'Export failed.');
-    status.textContent = canceled ? 'Export canceled.' : error.message;
+    if (!dismissed) finishExportProgress(false, canceled ? 'Export canceled.' : error.message);
   } finally {
     progressController.abort();
     await progressPolling;

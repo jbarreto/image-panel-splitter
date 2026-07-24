@@ -10,6 +10,7 @@ p { margin: 0 0 18px; color: #666; line-height: 1.4; }
 .drop-zone.dragging { border-color: #111; background: #f3f3f3; }
 .drop-zone input { display: none; }
 .drop-zone span { color: #777; margin-top: 5px; }
+.image-dimensions { min-height: 18px; margin: -12px 0 16px; color: #666; font-size: 12px; text-align: center; }
 .field { margin: 18px 0; }
 .field > div { display: flex; justify-content: space-between; margin-bottom: 7px; }
 .field > .field-note { display: block; margin: 6px 0 0; color: #777; font-size: 11px; line-height: 1.3; }
@@ -37,7 +38,6 @@ button:disabled { opacity: .45; cursor: default; }
 .progress-modal progress { display: block; width: 100%; height: 14px; accent-color: #111; }
 .progress-cancel-hint { margin-top: 10px; color: #777; font-size: 12px; text-align: center; }
 .progress-close { margin-top: 20px; }
-.status { min-height: 24px; margin-top: 10px; color: #555; font-size: 13px; }
 .preview-wrap { min-width: 0; min-height: 500px; display: grid; place-items: center; overflow: auto; padding: 20px; background-image: linear-gradient(45deg,#eee 25%,transparent 25%),linear-gradient(-45deg,#eee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#eee 75%),linear-gradient(-45deg,transparent 75%,#eee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
 canvas { max-width: 100%; max-height: calc(100vh - 76px); box-shadow: 0 3px 16px rgb(0 0 0 / .24); touch-action: none; }
 canvas.dragging-grid { cursor: grabbing; }

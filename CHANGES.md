@@ -368,6 +368,7 @@ The GUI provides:
 
 - drag-and-drop image selection;
 - regular file-picker input;
+- a selected-image label showing the filename and original pixel dimensions beneath the image picker;
 - orientation selection;
 - panel width slider;
 - panel height slider;
@@ -381,6 +382,11 @@ The GUI provides:
 - calculated rows, columns, total panel count, and assembled poster size;
 - a modal live-export progress bar showing generated panels, ZIP creation, and download;
 - ZIP export.
+
+Export status text is not rendered beneath the ZIP button. Preparing,
+generation, ZIP, completion, cancellation, and error feedback belongs in the
+modal. The selected-image filename and pixel dimensions remain visible in their
+own label beneath the image picker.
 
 ### GUI orientation limits
 
@@ -435,7 +441,9 @@ DELETE /api/export/:id
 The server terminates the matching CLI child process, aborts ZIP creation when
 applicable, marks progress as canceled, and removes partial temporary output.
 A second Escape press dismisses the modal; completed and failed modals can also
-be dismissed with Escape or the Close button.
+be dismissed with Escape or the Close button. While generation is active, the
+hint reads `Press Esc to cancel generation.` Once the export completes, is
+canceled, or fails, it changes to `Press Esc to close`.
 
 The server:
 
@@ -587,6 +595,9 @@ Do not break these without explicit user approval:
 17. GUI export progress reflects actual CLI panel creation rather than only displaying an indeterminate animation.
 18. Escape cancels an active modal export on both the browser and server and cleans up partial output.
 19. Shared Winston logging defaults to debug, and CLI diagnostic logs do not interfere with stdout panel-progress parsing.
+20. Export feedback appears only in the modal; the area below the ZIP button contains no status text.
+21. The selected image filename and original pixel dimensions remain visible beneath the image picker.
+22. Terminal modal states use the `Press Esc to close` hint instead of the generation-cancellation hint.
 
 ## 17. Recommended next improvements
 
@@ -596,8 +607,6 @@ These items were discussed or are natural next steps, but should not be assumed 
 - batch-oriented SVG manifest for non-Cricut cutters;
 - authentication for public GUI access;
 - upload-size and image-dimension limits;
-- progress indicator for large exports;
-- cancellation support;
 - automated tests using synthetic transparent PNG fixtures;
 - visual regression tests for panel boundaries and alpha preservation;
 - end-to-end browser testing of ZIP export;
