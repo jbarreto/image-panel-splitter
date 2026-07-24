@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.24.0</span>
+          <span class="app-version">v1.25.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -49,6 +49,24 @@
           </span>
         </button>
         <div class="toggle-note">Detects visible artwork, skips empty canvas areas, and selects portrait or landscape for each panel. Shortcut: Shift+A.</div>
+      </div>
+      <div class="number-toggle-control">
+        <button id="printNumbers" class="toggle-button" type="button" aria-pressed="false">
+          <span>Print Panel Numbers</span>
+          <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-state">Off</span>
+            <span class="toggle-knob"></span>
+          </span>
+        </button>
+        <div class="toggle-note">Drag each number in the preview to choose its exported position.</div>
+        <label class="number-size-field">
+          <span>Number size</span>
+          <select id="numberSizePreset">
+            <option value="small">Small</option>
+            <option value="medium" selected>Medium</option>
+            <option value="large">Large</option>
+          </select>
+        </label>
       </div>
       <div class="field">
         <span id="orientationLabel">Panel orientation</span>

@@ -15,6 +15,8 @@ const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
 const autoGridButton = $('autoGridButton');
+const printNumbersInput = $('printNumbers');
+const numberSizePresetInput = $('numberSizePreset');
 const exportButton = $('exportButton');
 const exportProgressWrap = $('exportProgressWrap');
 const exportProgress = $('exportProgress');
@@ -34,6 +36,12 @@ let gridDrag;
 let activeExport;
 let canvasHovered = false;
 let autoLayout;
+let previewPanelRects = [];
+let panelNumberAnchors = [];
+let panelNumberLayoutKey = '';
+let numberDrag;
+let hoveredNumberIndex;
+let panelNumberExportSizePx = 20;
 
 function setAutoLayout(layout) {
   autoLayout = layout;
@@ -42,8 +50,41 @@ function setAutoLayout(layout) {
   updateOrientationAvailability();
 }
 
+function printNumbersEnabled() {
+  return printNumbersInput.getAttribute('aria-pressed') === 'true';
+}
+
+function setPrintNumbers(enabled) {
+  printNumbersInput.setAttribute('aria-pressed', String(enabled));
+  printNumbersInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
+  if (!enabled) hoveredNumberIndex = undefined;
+}
+
+function syncPanelNumberAnchors(panels) {
+  const layoutKey = panels
+    .map((panel) => [panel.left, panel.top, panel.width, panel.height].map(Math.round).join(','))
+    .join(';');
+  if (layoutKey !== panelNumberLayoutKey) {
+    panelNumberLayoutKey = layoutKey;
+    panelNumberAnchors = panels.map((panel) => ({
+      x: panel.left + panel.width / 2,
+      y: panel.top + panel.height / 2
+    }));
+  }
+  previewPanelRects = panels;
+}
+
 const panelLimitText = $('panelLimit');
 const DISPLAY_SETTINGS_KEY = 'ronyka-panel-splitter.display-settings.v1';
+const PANEL_NUMBER_SIZE_PRESETS_PX = {
+  small: 14,
+  medium: 20,
+  large: 28
+};
+
+function selectedPanelNumberSizePx() {
+  return PANEL_NUMBER_SIZE_PRESETS_PX[numberSizePresetInput.value] || PANEL_NUMBER_SIZE_PRESETS_PX.medium;
+}
 
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
@@ -55,7 +96,9 @@ function saveDisplaySettings() {
   try {
     localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
       paper: paperInput.value,
-      unitSystem: unitSystemInput.value
+      unitSystem: unitSystemInput.value,
+      printNumbers: printNumbersEnabled(),
+      numberSizePreset: numberSizePresetInput.value
     }));
   } catch {
     // Keep the GUI functional when browser storage is unavailable.
@@ -73,6 +116,12 @@ function restoreDisplaySettings() {
   if (PANEL_LIMITS_IN[settings.paper]) paperInput.value = settings.paper;
   if (['metric', 'imperial'].includes(settings.unitSystem)) {
     unitSystemInput.value = settings.unitSystem;
+  }
+  if (typeof settings.printNumbers === 'boolean') {
+    setPrintNumbers(settings.printNumbers);
+  }
+  if (settings.numberSizePreset in PANEL_NUMBER_SIZE_PRESETS_PX) {
+    numberSizePresetInput.value = settings.numberSizePreset;
   }
 }
 
@@ -125,7 +174,8 @@ function values() {
     panelHeightIn: Number(panelHeight.value),
     dpi: Number(dpiInput.value),
     targetHeightMm: Number(targetHeightInput.value),
-    gridWidthMm: Number(gridWidthInput.value)
+    gridWidthMm: Number(gridWidthInput.value),
+    printNumbers: printNumbersEnabled()
   };
 }
 
@@ -169,8 +219,10 @@ function render() {
   ctx.strokeStyle = gridColorInput.value;
   const gridLineWidthCanvas = Math.max(1, v.gridWidthMm / 25.4 * v.dpi * previewScale);
   ctx.lineWidth = gridLineWidthCanvas;
+  let previewPanels;
   if (autoLayout) {
-    for (const panel of autoLayout.panels) {
+    previewPanels = autoLayout.panels;
+    for (const panel of previewPanels) {
       ctx.strokeRect(
         panel.left * previewScale,
         panel.top * previewScale,
@@ -179,6 +231,19 @@ function render() {
       );
     }
   } else {
+    previewPanels = [];
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const left = column * panelWidthPx;
+        const top = row * panelHeightPx;
+        previewPanels.push({
+          left,
+          top,
+          width: Math.min(panelWidthPx, outputWidthPx - left),
+          height: Math.min(panelHeightPx, outputHeightPx - top)
+        });
+      }
+    }
     for (let column = 0; column <= columns; column += 1) {
       const x = Math.min(canvas.width, column * panelWidthPx * previewScale);
       ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
@@ -189,6 +254,40 @@ function render() {
     }
   }
   ctx.restore();
+  syncPanelNumberAnchors(previewPanels);
+
+  if (v.printNumbers) {
+    const selectedNumberSizePx = selectedPanelNumberSizePx();
+    const displayedCanvasWidth = Math.max(1, canvas.getBoundingClientRect().width);
+    const backingToDisplayScale = canvas.width / displayedCanvasWidth;
+    const outputToDisplayScale = displayedCanvasWidth / outputWidthPx;
+    panelNumberExportSizePx = Math.max(
+      selectedNumberSizePx,
+      Math.round(selectedNumberSizePx / outputToDisplayScale)
+    );
+    panelNumberAnchors = panelNumberAnchors.map((anchor, index) =>
+      clampNumberAnchor(previewPanels[index], anchor, panelNumberExportSizePx / 2)
+    );
+    const fontSize = selectedNumberSizePx * backingToDisplayScale;
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = Math.max(2, Math.round(selectedNumberSizePx * 0.18)) * backingToDisplayScale;
+    ctx.strokeStyle = 'white';
+    ctx.fillStyle = gridColorInput.value;
+    previewPanels.forEach((panel, index) => {
+      const emphasized = hoveredNumberIndex === index || numberDrag?.index === index;
+      ctx.font = `${emphasized ? 900 : 500} ${fontSize}px Arial, Helvetica, sans-serif`;
+      ctx.globalAlpha = emphasized ? 1 : 0.5;
+      const x = panelNumberAnchors[index].x * previewScale;
+      const y = panelNumberAnchors[index].y * previewScale;
+      ctx.strokeText(String(index), x, y);
+      ctx.fillText(String(index), x, y);
+    });
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
 
   previewGrid = {
     outputWidthPx,
@@ -214,6 +313,7 @@ async function loadFile(selected) {
   if (!selected) return;
   resetExportProgress();
   setAutoLayout(undefined);
+  hoveredNumberIndex = undefined;
   file = selected;
   const url = URL.createObjectURL(file);
   image = new Image();
@@ -489,6 +589,15 @@ for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridW
     render();
   });
 }
+printNumbersInput.addEventListener('click', () => {
+  setPrintNumbers(!printNumbersEnabled());
+  saveDisplaySettings();
+  render();
+});
+numberSizePresetInput.addEventListener('change', () => {
+  saveDisplaySettings();
+  render();
+});
 window.addEventListener('resize', render);
 
 canvas.addEventListener('pointerenter', () => {
@@ -525,6 +634,48 @@ function canvasPoint(event) {
     x: (event.clientX - rect.left) * canvas.width / rect.width,
     y: (event.clientY - rect.top) * canvas.height / rect.height
   };
+}
+
+function numberAt(event) {
+  if (!printNumbersEnabled() || !previewGrid) return undefined;
+  const point = canvasPoint(event);
+  const hitRadius = 16 * canvas.width / canvas.getBoundingClientRect().width;
+  let match;
+  panelNumberAnchors.forEach((anchor, index) => {
+    const x = anchor.x * canvas.width / previewGrid.outputWidthPx;
+    const y = anchor.y * canvas.height / previewGrid.outputHeightPx;
+    const distance = Math.hypot(point.x - x, point.y - y);
+    if (distance <= hitRadius && (!match || distance < match.distance)) {
+      match = { index, distance };
+    }
+  });
+  return match;
+}
+
+function clampNumberAnchor(panel, anchor, halfText) {
+  const minimumX = Math.min(panel.left + halfText, panel.left + panel.width / 2);
+  const maximumX = Math.max(panel.left + panel.width - halfText, panel.left + panel.width / 2);
+  const minimumY = Math.min(panel.top + halfText, panel.top + panel.height / 2);
+  const maximumY = Math.max(panel.top + panel.height - halfText, panel.top + panel.height / 2);
+  return {
+    x: Math.min(maximumX, Math.max(minimumX, anchor.x)),
+    y: Math.min(maximumY, Math.max(minimumY, anchor.y))
+  };
+}
+
+function moveDraggedNumber(event) {
+  if (!numberDrag || !previewGrid) return false;
+  const point = canvasPoint(event);
+  const panel = previewPanelRects[numberDrag.index];
+  const halfText = panelNumberExportSizePx / 2;
+  panelNumberAnchors[numberDrag.index] = clampNumberAnchor(panel, {
+    x: point.x * previewGrid.outputWidthPx / canvas.width,
+    y: point.y * previewGrid.outputHeightPx / canvas.height
+  }, halfText);
+  render();
+  canvas.style.cursor = 'grabbing';
+  event.preventDefault();
+  return true;
 }
 
 function gridLineAt(event) {
@@ -579,6 +730,16 @@ function gridCursor(line, dragging = false) {
 }
 
 canvas.addEventListener('pointerdown', (event) => {
+  const number = numberAt(event);
+  if (number) {
+    numberDrag = { index: number.index };
+    hoveredNumberIndex = number.index;
+    render();
+    canvas.style.cursor = 'grabbing';
+    canvas.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    return;
+  }
   const line = gridLineAt(event);
   if (!line) return;
   setAutoLayout(undefined);
@@ -595,9 +756,15 @@ canvas.addEventListener('pointerdown', (event) => {
 });
 
 canvas.addEventListener('pointermove', (event) => {
+  if (moveDraggedNumber(event)) return;
   if (!gridDrag) {
-    const line = gridLineAt(event);
-    canvas.style.cursor = gridCursor(line);
+    const number = numberAt(event);
+    const nextHoveredIndex = number?.index;
+    if (nextHoveredIndex !== hoveredNumberIndex) {
+      hoveredNumberIndex = nextHoveredIndex;
+      render();
+    }
+    canvas.style.cursor = number ? 'grab' : gridCursor(gridLineAt(event));
     return;
   }
 
@@ -636,6 +803,15 @@ canvas.addEventListener('pointermove', (event) => {
 });
 
 function finishGridDrag(event) {
+  if (numberDrag) {
+    numberDrag = undefined;
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    const number = numberAt(event);
+    hoveredNumberIndex = number?.index;
+    render();
+    canvas.style.cursor = number ? 'grab' : '';
+    return;
+  }
   if (!gridDrag) return;
   gridDrag = undefined;
   canvas.classList.remove('dragging-grid');
@@ -646,7 +822,12 @@ function finishGridDrag(event) {
 canvas.addEventListener('pointerup', finishGridDrag);
 canvas.addEventListener('pointercancel', finishGridDrag);
 canvas.addEventListener('pointerleave', (event) => {
-  if (!gridDrag) canvas.style.cursor = '';
+  if (hoveredNumberIndex !== undefined && !numberDrag) {
+    hoveredNumberIndex = undefined;
+    render();
+  }
+  if (!gridDrag && !numberDrag) canvas.style.cursor = '';
+  else if (numberDrag && event.buttons === 0) finishGridDrag(event);
   else if (event.buttons === 0) finishGridDrag(event);
 });
 
@@ -772,6 +953,14 @@ exportButton.addEventListener('click', async () => {
     form.append('gridMode', 'overlay');
     form.append('marginMm', '0');
     form.append('exportId', exportId);
+    form.append('printNumbers', String(v.printNumbers));
+    if (v.printNumbers) {
+      form.append('numberPosition', 'center');
+      form.append('numberSizePx', String(panelNumberExportSizePx));
+      form.append('numberStyle', 'plain');
+      form.append('numberColor', gridColorInput.value);
+      form.append('numberAnchors', JSON.stringify(panelNumberAnchors));
+    }
     if (autoLayout) form.append('panelLayout', JSON.stringify(autoLayout));
     const response = await fetch('/api/export', {
       method: 'POST',

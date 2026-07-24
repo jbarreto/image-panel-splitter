@@ -8,7 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
-- Current application version: 1.24.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
+- Current application version: 1.25.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -36,9 +36,14 @@ Project summary:
 - While Auto minimize panels remains enabled, changes to panel dimensions, DPI, poster height, or paper size must recalculate the automatic layout instead of disabling the toggle.
 - Disable the global GUI orientation control while Auto minimize panels is enabled because automatic panels choose orientation independently; restore it when automatic mode is disabled unless Custom paper still requires it to remain disabled.
 - `Shift+A` toggles Auto minimize panels unless focus is in an editable control or the export modal is open.
+- The **Print Panel Numbers** GUI control is a switch-style toggle directly below Auto minimize panels. Enabled numbers are zero-based plain text with a white outline, use the selected visible-size preset and grid-line color, and derive the corresponding export-pixel font size from the output-to-displayed-preview scale so preview and export have the same relative artwork size in uniform and automatic layouts.
+- Panel-number size presets are Small (14 visible px), Medium (20 visible px, default), and Large (28 visible px). Persist the selected preset and derive its proportional output-pixel size for export.
+- Each enabled preview number is independently draggable and clamped inside its panel. Export must receive the complete source-coordinate anchor list, validate it against the final panel crops, place each number at the matching local coordinate, and record the anchors in the assembly guide.
+- When GUI panel numbering is enabled, `original-with-grid.png` must include every number at the same final source-canvas anchor as the browser preview and corresponding exported panel.
+- Preview numbers use 50% opacity and regular weight normally, then full opacity and bold weight while hovered or actively dragged so the affected number is visually explicit. Exported plain numbers remain at 50% opacity.
 - The GUI unit selector switches only panel width/height, panel limits, and assembled-poster preview dimensions between centimeters and inches. Poster height and grid width inputs always remain in millimeters; the server contract remains panel inches plus poster/grid millimeters.
 - Imperial (`in`) is selected by default in the GUI unit selector.
-- Only paper size and unit-system selection persist in browser local storage under ronyka-panel-splitter.display-settings.v1.
+- Paper size, unit-system selection, the Print Panel Numbers toggle, and its size preset persist in browser local storage under ronyka-panel-splitter.display-settings.v1. Other GUI settings, number positions, and uploaded image data remain transient.
 - The assembled-poster preview summary places poster dimensions on a separate line ending with `(W × H)`.
 - GUI ZIP export uses a modal progress bar, a unique export ID, and polling through /api/export-progress/:id; preserve actual per-panel progress plus preparing, zipping, completion, cancellation, and error phases.
 - Pressing Escape during an active export must abort the browser request, call DELETE /api/export/:id, terminate the matching CLI process, and remove partial temporary output. A second Escape press dismisses the modal without allowing the asynchronous cancellation result to reopen it.
@@ -48,7 +53,6 @@ Project summary:
 - The CLI and GUI server share src/logger.js. Winston defaults to debug unless LOG_LEVEL overrides it; keep CLI diagnostics on stderr so stdout progress parsing remains stable.
 - scripts/install-update.mjs supports Windows/macOS installs and updates from GitHub archives without Git; preserve its safe archive extraction and npm ci behavior.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.
-- The GUI does not expose panel numbering and does not request numbers during export; numbering remains available through the CLI.
 - Large target posters, including a 4000 mm target height, can exceed Sharp's default input pixel limit. Preserve the openImage() handling for source and intermediate poster buffers and the disabled pixel limit on the full-size grid composite.
 - GUI temporary paths are rooted at os.tmpdir(), not a hard-coded /tmp path.
 - Delete each generated export directory when the ZIP response finishes, the client connection closes, or the request fails. Delete the uploaded source in the request cleanup.

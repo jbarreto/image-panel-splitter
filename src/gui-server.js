@@ -243,12 +243,26 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
         panels: panelLayout.panels.length
       });
     }
+    if (req.body.numberAnchors) {
+      const numberAnchors = JSON.parse(req.body.numberAnchors);
+      if (!Array.isArray(numberAnchors) || numberAnchors.length < 1 || numberAnchors.length > 10000) {
+        throw new Error('Invalid panel-number anchors.');
+      }
+      const numberAnchorsPath = path.join(workDir, 'number-anchors.json');
+      await fsp.writeFile(numberAnchorsPath, `${JSON.stringify(numberAnchors)}\n`, 'utf8');
+      args.push('--number-anchors-file', numberAnchorsPath);
+    }
     if (targetHeightMm > 0) args.push('--target-height-mm', String(targetHeightMm));
     else args.push('--fit', 'actual');
     if (req.body.printNumbers !== 'true') args.push('--no-number');
     else {
       args.push('--number-position', req.body.numberPosition || 'inside');
-      args.push('--number-size-mm', String(Number(req.body.numberSizeMm || 30)));
+      args.push('--number-size-mm', String(Number(req.body.numberSizeMm || 4)));
+      if (Number(req.body.numberSizePx) > 0) {
+        args.push('--number-size-px', String(Number(req.body.numberSizePx)));
+      }
+      args.push('--number-style', req.body.numberStyle === 'plain' ? 'plain' : 'badge');
+      args.push('--number-color', req.body.numberColor || req.body.gridColor || '#01a86b');
     }
 
     await runCli(args, (line) => {

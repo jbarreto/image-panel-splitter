@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.24.0**
+**Current release: v1.25.0**
 
 ## 1. Project purpose
 
@@ -376,7 +376,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.24.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.25.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -401,6 +401,8 @@ The GUI provides:
 - grid color;
 - live grid preview;
 - calculated rows, columns, total panel count, and assembled poster size;
+- optional small zero-based panel numbers rendered consistently in the preview
+  and exported artwork;
 - a modal live-export progress bar showing generated panels, ZIP creation, and download;
 - ZIP export.
 
@@ -634,11 +636,11 @@ Do not break these without explicit user approval:
 27. Switching the GUI unit system displays panel dimensions and limits plus the assembled-poster preview summary in centimeters or inches; poster height and grid width inputs remain in millimeters.
 28. Imperial (`in`) is the default GUI display unit.
 29. The assembled-poster preview summary displays poster dimensions on a separate line and labels their order as `(W × H)`.
-30. Paper size and metric/imperial selection persist in browser local storage; other GUI settings and uploaded image data do not.
+30. Paper size, metric/imperial selection, the Print Panel Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
 31. The `Panel Splitter` heading uses a rounded system-font stack rather than a proprietary Cricut font.
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
-34. The GUI does not expose a panel-number setting and its exports omit panel numbers; CLI numbering options remain supported.
+34. The GUI optionally renders small zero-based plain panel numbers in both the preview and exported artwork; CLI badge numbering remains the default.
 35. `scripts/install-update.mjs` runs on Windows and macOS, installs or updates directly from a GitHub source archive without requiring Git, replaces archive-managed application files, and installs locked dependencies with `npm ci`.
 36. Custom paper mode preserves the current panel dimensions, allows dimensions up to `100 × 100 in`, disables GUI orientation selection, and requires both custom panel dimensions in the CLI.
 37. While the pointer is over the preview canvas, Left/Right adjust panel width and Up/Down adjust panel height so grid lines move in the pressed direction without bypassing dimension limits.
@@ -649,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.24.0`.
+The history currently runs continuously from `v1.0.0` through `v1.25.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -781,7 +783,7 @@ The history currently runs continuously from `v1.0.0` through `v1.24.0`.
 - Added hover-based arrow-key adjustment for preview grid width and height,
   with arrow directions matching the visual movement of the grid lines.
 
-### v1.24.0 — Artwork-aware mixed-orientation layouts (current)
+### v1.24.0 — Artwork-aware mixed-orientation layouts
 
 - Added an **Auto minimize panels** GUI toggle that detects visible artwork
   when enabled and restores the uniform grid when disabled. It
@@ -800,6 +802,33 @@ The history currently runs continuously from `v1.0.0` through `v1.24.0`.
   because each generated panel selects its own orientation.
 - Added `Shift+A` as the keyboard shortcut for toggling automatic mode outside
   editable controls and the export modal.
+
+### v1.25.0 — Small in-artwork panel numbers (current)
+
+- Added a **Print Panel Numbers** GUI toggle directly below automatic layout
+  controls to render small zero-based panel numbers inside the
+  artwork in both the live preview and exported panel PNGs.
+- Added a plain outlined number style for legibility over light or dark
+  artwork while preserving the CLI badge style as the default.
+- Kept GUI numbers visibly `20 px`, derived the corresponding export-pixel
+  size from the poster preview scale, matched text to the selected grid-line
+  color, and recorded the shared artwork-relative anchor in the assembly guide.
+- Added independent number dragging in the canvas preview and preserved each
+  validated source-coordinate anchor in the corresponding exported panel.
+- Added bold hover and held-drag emphasis to identify the number currently
+  affected by pointer movement.
+- Rendered plain numbers at 50% opacity in preview and export, while making the
+  active preview number fully opaque for clearer drag feedback.
+- Added all enabled panel numbers to `original-with-grid.png` at the same final
+  source-canvas anchors used by the panel PNGs and browser preview.
+- Persisted the **Print Panel Numbers** toggle with paper size and unit system
+  in browser local storage.
+- Corrected large-poster numbering so a visible 20 px preview number is
+  converted to the equivalent larger output-pixel size during export instead
+  of shrinking to an effectively invisible preview glyph.
+- Added Small (`14 px`), Medium (`20 px`), and Large (`28 px`) predefined
+  number-size settings, persisted the selection, and kept export sizing
+  proportional to the chosen visible preview size.
 
 ## 18. Recommended next improvements
 

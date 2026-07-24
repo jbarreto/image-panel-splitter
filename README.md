@@ -101,12 +101,16 @@ node src/index.js poster.png \
 |---|---|---:|
 | `--output` | Output directory | `output` |
 | `--paper` | `letter`, `legal`, or `custom`; also selects custom-panel limits | `letter` |
+| `--number-style` | `badge` or plain outlined `plain` text | `badge` |
 | `--orientation` | `portrait` or `landscape` | `portrait` |
 | `--dpi` | Converts paper millimeters into page pixels and writes print-density metadata; it does not resize the source in `actual` mode | `300` |
 | `--margin-mm` | White page margin | `5` |
 | `--overlap-mm` | Repeated edge area for alignment | `0` |
 | `--number-position` | `inside`, `center`, `top`, or `bottom` | `inside` |
 | `--number-size-mm` | Center number height | `30` |
+| `--number-size-px` | Exact output-pixel font size; overrides millimeters | unset |
+| `--number-color` | CSS color used for number text | `black` |
+| `--number-anchors-file` | JSON array of per-panel source-coordinate anchors | unset |
 | `--label-height-mm` | Label-strip height for top/bottom mode | `10` |
 | `--fit` | `actual` preserves source pixels; `width` or `height` intentionally resizes | `actual` |
 | `--target-width-mm` | Desired final printed image width; intentionally enables scaling | unset |
@@ -292,3 +296,16 @@ or paper size automatically recalculates the layout. The orientation control
 is disabled because automatic mode chooses portrait or landscape separately
 for each generated panel. Press `Shift+A` outside an input control to toggle
 automatic mode from the keyboard.
+
+When **Print Panel Numbers** is toggled on, each number can
+be dragged independently in the preview. Its source-canvas position is clamped
+inside that panel, passed to export, recorded in the assembly guide, and drawn
+at the same location in `original-with-grid.png`. A number is normally rendered
+at 50% opacity, then becomes fully opaque and bold while hovered or dragged to
+identify the active target. The toggle state is restored from browser local
+storage on refresh. The preview keeps numbers at the selected visible size and
+calculates the equivalent output-pixel font size from the poster preview scale,
+preserving the same relative size in exported images.
+
+The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
+and **Large** (28 px). The selected preset is saved in browser local storage.

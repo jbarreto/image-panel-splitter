@@ -42,6 +42,12 @@ Options:
                              white region bounded by painted lines (default: inside)
   --label-height-mm <number> Label strip height for top/bottom mode (default: 10)
   --number-size-mm <number>  Centered number height (default: 30)
+  --number-size-px <number>  Exact number font size in output pixels
+  --number-style <badge|plain>
+                             Number appearance (default: badge)
+  --number-color <css-color> Number text color (default: black)
+  --number-anchors-file <path>
+                             Per-panel source-coordinate number anchors
   --fit <actual|width|height>
                              Scaling mode. 'actual' preserves every source pixel
                              without resizing (default: actual)
@@ -77,6 +83,10 @@ function parseArgs(argv) {
     labelHeightMm: 10,
     numberPosition: 'inside',
     numberSizeMm: 30,
+    numberSizePx: undefined,
+    numberStyle: 'badge',
+    numberColor: 'black',
+    numberAnchorsFile: undefined,
     fit: 'actual',
     prefix: 'panel',
     label: true,
@@ -103,6 +113,10 @@ function parseArgs(argv) {
     ['--number-position', 'numberPosition'],
     ['--label-position', 'numberPosition'],
     ['--number-size-mm', 'numberSizeMm'],
+    ['--number-size-px', 'numberSizePx'],
+    ['--number-style', 'numberStyle'],
+    ['--number-color', 'numberColor'],
+    ['--number-anchors-file', 'numberAnchorsFile'],
     ['--fit', 'fit'],
     ['--target-width-mm', 'targetWidthMm'],
     ['--target-height-mm', 'targetHeightMm'],
@@ -144,7 +158,7 @@ function parseArgs(argv) {
     else throw new Error(`Unexpected argument: ${arg}`);
   }
 
-  for (const key of ['dpi', 'marginMm', 'overlapMm', 'labelHeightMm', 'numberSizeMm', 'targetWidthMm', 'targetHeightMm', 'panelWidthIn', 'panelHeightIn', 'gridLineWidthMm']) {
+  for (const key of ['dpi', 'marginMm', 'overlapMm', 'labelHeightMm', 'numberSizeMm', 'numberSizePx', 'targetWidthMm', 'targetHeightMm', 'panelWidthIn', 'panelHeightIn', 'gridLineWidthMm']) {
     if (options[key] !== undefined) {
       options[key] = Number(options[key]);
       if (!Number.isFinite(options[key]) || options[key] < 0) {
@@ -156,6 +170,7 @@ function parseArgs(argv) {
   options.paper = String(options.paper).toLowerCase();
   options.orientation = String(options.orientation).toLowerCase();
   options.numberPosition = String(options.numberPosition).toLowerCase();
+  options.numberStyle = String(options.numberStyle).toLowerCase();
   options.fit = String(options.fit).toLowerCase();
   options.gridMode = String(options.gridMode).toLowerCase();
 
@@ -166,6 +181,9 @@ function parseArgs(argv) {
   }
   if (!['inside', 'center', 'top', 'bottom'].includes(options.numberPosition)) {
     throw new Error('--number-position must be inside, center, top, or bottom.');
+  }
+  if (!['badge', 'plain'].includes(options.numberStyle)) {
+    throw new Error('--number-style must be badge or plain.');
   }
   if (!['actual', 'width', 'height'].includes(options.fit)) {
     throw new Error('--fit must be actual, width, or height.');
@@ -230,18 +248,25 @@ function makeLabelSvg(width, height, label, fontSize) {
 }
 
 
-function makeNumberSvg(width, height, number, fontSize, centerX, centerY) {
+function makeNumberSvg(width, height, number, fontSize, centerX, centerY, style = 'badge', color = 'black') {
   centerX = Math.round(centerX);
   centerY = Math.round(centerY);
   const circleRadius = Math.round(fontSize * 0.72);
+  const background = style === 'plain'
+    ? ''
+    : `<circle cx="${centerX}" cy="${centerY}" r="${circleRadius}"
+        fill="white" fill-opacity="0.82" stroke="black" stroke-width="${Math.max(2, Math.round(fontSize * 0.045))}"/>`;
+  const textStroke = style === 'plain'
+    ? `stroke="white" stroke-width="${Math.max(2, Math.round(fontSize * 0.18))}" paint-order="stroke"`
+    : '';
   return Buffer.from(`
     <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${centerX}" cy="${centerY}" r="${circleRadius}"
-        fill="white" fill-opacity="0.82" stroke="black" stroke-width="${Math.max(2, Math.round(fontSize * 0.045))}"/>
+      ${background}
       <text x="${centerX}" y="${centerY}"
         dominant-baseline="middle" text-anchor="middle"
         font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}"
-        font-weight="700" fill="black">${escapeXml(number)}</text>
+        font-weight="700" fill="${escapeXml(color)}" opacity="${style === 'plain' ? '0.5' : '1'}"
+        ${textStroke}>${escapeXml(number)}</text>
     </svg>
   `);
 }
@@ -278,6 +303,32 @@ function makePanelLayoutSvg(width, height, panels, strokeWidth, color) {
          stroke-linecap="square" shape-rendering="crispEdges">
         ${rectangles}
       </g>
+    </svg>
+  `);
+}
+
+function makeNumberLayoutSvg(width, height, numbers, fontSize, style, color) {
+  const elements = numbers.map(({ text, x, y }) => {
+    const centerX = Math.round(x);
+    const centerY = Math.round(y);
+    const circleRadius = Math.round(fontSize * 0.72);
+    const background = style === 'plain'
+      ? ''
+      : `<circle cx="${centerX}" cy="${centerY}" r="${circleRadius}"
+          fill="white" fill-opacity="0.82" stroke="black"
+          stroke-width="${Math.max(2, Math.round(fontSize * 0.045))}"/>`;
+    const textStroke = style === 'plain'
+      ? `stroke="white" stroke-width="${Math.max(2, Math.round(fontSize * 0.18))}" paint-order="stroke"`
+      : '';
+    return `${background}
+      <text x="${centerX}" y="${centerY}" dominant-baseline="middle" text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif" font-size="${fontSize}" font-weight="700"
+        fill="${escapeXml(color)}" opacity="${style === 'plain' ? '0.5' : '1'}"
+        ${textStroke}>${escapeXml(text)}</text>`;
+  }).join('\n');
+  return Buffer.from(`
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      ${elements}
     </svg>
   `);
 }
@@ -735,6 +786,28 @@ async function main() {
       column: column + 1
     };
   });
+  if (options.numberAnchorsFile) {
+    const anchors = JSON.parse(await fs.readFile(path.resolve(options.numberAnchorsFile), 'utf8'));
+    if (!Array.isArray(anchors) || anchors.length !== panelSpecs.length) {
+      throw new Error('Panel-number anchors must match the generated panel count.');
+    }
+    anchors.forEach((anchor, index) => {
+      const spec = panelSpecs[index];
+      const x = Number(anchor?.x);
+      const y = Number(anchor?.y);
+      if (
+        !Number.isFinite(x) ||
+        !Number.isFinite(y) ||
+        x < spec.left ||
+        x > spec.left + spec.width ||
+        y < spec.top ||
+        y > spec.top + spec.height
+      ) {
+        throw new Error(`Panel-number anchor ${index + 1} is outside its source crop.`);
+      }
+      spec.numberAnchor = { x, y };
+    });
+  }
   const total = panelSpecs.length;
   const lastPanelNumber = total - 1;
   const digits = Math.max(1, String(lastPanelNumber).length);
@@ -754,6 +827,12 @@ async function main() {
     console.log(`Grid lines: ${options.gridLineWidthMm} mm, ${options.gridColor}, mode=${options.gridMode}`);
   }
 
+  const numberFontSize = options.label
+    ? Math.max(
+        options.numberStyle === 'plain' ? 10 : 24,
+        options.numberSizePx ?? mmToPixels(options.numberSizeMm, options.dpi)
+      )
+    : 0;
   for (let panelNumber = 0; panelNumber < panelSpecs.length; panelNumber += 1) {
       const spec = panelSpecs[panelNumber];
       const { left, top } = spec;
@@ -784,20 +863,31 @@ async function main() {
 
       const imageTop = options.numberPosition === 'top' ? margin + labelHeight : margin;
       const composites = [{ input: tile, left: margin, top: imageTop }];
+      let appliedNumberAnchor;
 
       if (options.label && ['center', 'inside'].includes(options.numberPosition)) {
-        const fontSize = Math.max(24, mmToPixels(options.numberSizeMm, options.dpi));
         const placement = options.numberPosition === 'inside'
-          ? await findInsideNumberPosition(tile, spec.contentWidth, spec.contentHeight, fontSize)
-          : { x: spec.contentWidth / 2, y: spec.contentHeight / 2, strategy: 'panel-center' };
+          ? await findInsideNumberPosition(tile, spec.contentWidth, spec.contentHeight, numberFontSize)
+          : spec.numberAnchor
+            ? {
+                x: spec.numberAnchor.x - left,
+                y: spec.numberAnchor.y - top,
+                strategy: 'manual-source-anchor'
+              }
+          : options.numberStyle === 'plain'
+            ? { x: cropWidth / 2, y: cropHeight / 2, strategy: 'artwork-crop-center' }
+            : { x: spec.contentWidth / 2, y: spec.contentHeight / 2, strategy: 'panel-center' };
         const numberSvg = makeNumberSvg(
           spec.contentWidth,
           spec.contentHeight,
           numberText,
-          fontSize,
+          numberFontSize,
           placement.x,
-          placement.y
+          placement.y,
+          options.numberStyle,
+          options.numberColor
         );
+        appliedNumberAnchor = { x: left + placement.x, y: top + placement.y };
         composites.push({ input: numberSvg, left: margin, top: imageTop });
       } else if (options.label) {
         const labelSvg = makeLabelSvg(
@@ -829,9 +919,42 @@ async function main() {
         column: spec.column,
         orientation: spec.orientation,
         filename,
-        sourceCropPx: { left, top, width: cropWidth, height: cropHeight }
+        sourceCropPx: { left, top, width: cropWidth, height: cropHeight },
+        numberAnchorSourcePx: appliedNumberAnchor
       });
       console.log(`Created ${filename}`);
+  }
+
+  if (options.gridLines && options.gridMode === 'overlay' && options.label) {
+    const gridNumbers = manifest
+      .filter((panel) => panel.numberAnchorSourcePx)
+      .map((panel) => ({
+        text: String(panel.panel).padStart(digits, '0'),
+        x: panel.numberAnchorSourcePx.x,
+        y: panel.numberAnchorSourcePx.y
+      }));
+    if (gridNumbers.length > 0) {
+      const gridPath = path.join(outputDir, 'original-with-grid.png');
+      const numberedGrid = await openImage(gridPath)
+        .composite([{
+          input: makeNumberLayoutSvg(
+            scaled.width,
+            scaled.height,
+            gridNumbers,
+            numberFontSize,
+            options.numberStyle,
+            options.numberColor
+          ),
+          left: 0,
+          top: 0,
+          limitInputPixels: false
+        }])
+        .png({ compressionLevel: 9 })
+        .withMetadata({ density: options.dpi })
+        .toBuffer();
+      await fs.writeFile(gridPath, numberedGrid);
+      logger.debug('Added panel numbers to full grid preview.', { numbers: gridNumbers.length });
+    }
   }
 
   const guide = {
@@ -857,7 +980,14 @@ async function main() {
       marginMm: options.marginMm,
       overlapMm: options.overlapMm,
       numberPosition: options.numberPosition,
-      numberSizeMm: options.label && ['center', 'inside'].includes(options.numberPosition) ? options.numberSizeMm : 0,
+      numberStyle: options.label ? options.numberStyle : null,
+      numberColor: options.label ? options.numberColor : null,
+      numberSizeMm: options.label && ['center', 'inside'].includes(options.numberPosition) && options.numberSizePx === undefined
+        ? options.numberSizeMm
+        : null,
+      numberSizePx: options.label && ['center', 'inside'].includes(options.numberPosition)
+        ? options.numberSizePx ?? null
+        : null,
       labelHeightMm: usesLabelStrip ? options.labelHeightMm : 0,
       numbering: autoLayout ? 'Automatic panel order' : 'Left to right, then top to bottom',
       gridLines: options.gridLines,
