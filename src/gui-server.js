@@ -243,6 +243,15 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
         panels: panelLayout.panels.length
       });
     }
+    if (req.body.panelOrder) {
+      const panelOrder = JSON.parse(req.body.panelOrder);
+      if (!Array.isArray(panelOrder) || panelOrder.length < 1 || panelOrder.length > 10000) {
+        throw new Error('Invalid assembly panel order.');
+      }
+      const panelOrderPath = path.join(workDir, 'panel-order.json');
+      await fsp.writeFile(panelOrderPath, `${JSON.stringify(panelOrder)}\n`, 'utf8');
+      args.push('--panel-order-file', panelOrderPath);
+    }
     if (req.body.numberAnchors) {
       const numberAnchors = JSON.parse(req.body.numberAnchors);
       if (!Array.isArray(numberAnchors) || numberAnchors.length < 1 || numberAnchors.length > 10000) {

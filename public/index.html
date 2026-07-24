@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.27.0</span>
+          <span class="app-version">v1.28.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -50,7 +50,8 @@
         </button>
         <div class="toggle-note">Detects visible artwork, skips empty canvas areas, and selects portrait or landscape for each panel. Shortcut: Shift+A.</div>
       </div>
-      <div class="number-toggle-control">
+      <fieldset class="number-controls">
+        <legend>Panel Numbers &amp; Assembly Order</legend>
         <button id="printNumbers" class="toggle-button" type="button" aria-pressed="false">
           <span>Print Panel Numbers</span>
           <span class="toggle-track" aria-hidden="true">
@@ -67,7 +68,12 @@
             <option value="large">Large</option>
           </select>
         </label>
-      </div>
+        <button id="editOrderButton" class="order-button" type="button" aria-pressed="false" disabled>Edit Assembly Order</button>
+        <div class="order-status-row">
+          <span id="orderStatus" class="toggle-note">Automatic reading order is active.</span>
+          <button id="resetOrderButton" class="order-reset-link" type="button" disabled hidden>Reset</button>
+        </div>
+      </fieldset>
       <div class="field">
         <span id="orientationLabel">Panel orientation</span>
         <input id="orientation" type="hidden" value="landscape" autocomplete="off" />

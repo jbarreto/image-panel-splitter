@@ -73,9 +73,19 @@ button:disabled { opacity: .45; cursor: default; }
 .toggle-button[aria-pressed="true"] .toggle-state { right: auto; left: 8px; color: white; }
 .auto-layout-control { margin-top: 4px; }
 .toggle-note { margin: 6px 4px 0; color: #777; font-size: 11px; line-height: 1.35; }
-.number-toggle-control { margin-top: 12px; }
+.number-controls { min-width: 0; margin: 18px 0; padding: 14px; border: 1px solid #dceee5; border-radius: 14px; background: var(--cricut-mint-light); }
+.number-controls legend { padding: 0 7px; color: var(--cricut-green-dark); font-size: 14px; font-weight: 500; }
+.number-controls .toggle-button { background: white; }
 .number-size-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 9px 4px 0; color: var(--cricut-green-dark); font-size: 12px; }
 .number-size-field select { width: 120px; padding: 7px 10px; }
+.order-button { margin-top: 10px; padding: 9px 10px; border: 1px solid var(--cricut-green); border-radius: 10px; background: white; color: var(--cricut-green-dark); font-size: 12px; box-shadow: none; }
+.order-button:hover:not(:disabled) { background: var(--cricut-mint-light); color: var(--cricut-green-dark); transform: none; }
+.order-button[aria-pressed="true"] { background: var(--cricut-green-dark); color: white; }
+.order-status-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.order-status-row .toggle-note { margin-right: 0; }
+.order-reset-link { width: auto; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--cricut-green-dark); font-size: 11px; text-decoration: underline; box-shadow: none; }
+.order-reset-link:hover:not(:disabled) { background: transparent; color: var(--cricut-green); transform: none; }
+.order-reset-link[hidden] { display: none; }
 button.orientation-option:hover:not(:disabled) { border-color: #7ac9a8; background: var(--cricut-mint-light); color: var(--cricut-green-dark); box-shadow: none; transform: none; }
 button.orientation-option:active:not(:disabled) { border-color: var(--cricut-green); background: var(--cricut-mint); color: var(--cricut-green-dark); transform: none; }
 button.orientation-option.selected,

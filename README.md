@@ -111,6 +111,7 @@ node src/index.js poster.png \
 | `--number-size-px` | Exact output-pixel font size; overrides millimeters | unset |
 | `--number-color` | CSS color used for number text | `black` |
 | `--number-anchors-file` | JSON array of per-panel source-coordinate anchors | unset |
+| `--panel-order-file` | JSON permutation of panel indexes in assembly order | unset |
 | `--label-height-mm` | Label-strip height for top/bottom mode | `10` |
 | `--fit` | `actual` preserves source pixels; `width` or `height` intentionally resizes | `actual` |
 | `--target-width-mm` | Desired final printed image width; intentionally enables scaling | unset |
@@ -313,6 +314,13 @@ edges into visual rows using the stable full printable page height rather than
 the variable trimmed artwork height. Each row is then sorted left-to-right, so
 small vertical offsets do not produce unnatural numbering. Preview numbering,
 filenames, and assembly guides use the same order.
+
+To override that starting order, select **Edit Assembly Order** and click
+panels in the desired `0, 1, 2, …` sequence. Finishing early keeps all unclicked
+panels in their previous relative order. **Reset Order** restores the automatic
+spatial order. Custom order is applied consistently to preview numbers, manual
+number anchors, filenames, panel PNGs, `original-with-grid.png`, and both
+assembly guides.
 
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
 and **Large** (28 px). The selected preset is saved in browser local storage.

@@ -17,6 +17,9 @@ const gridColorInput = $('gridColor');
 const autoGridButton = $('autoGridButton');
 const printNumbersInput = $('printNumbers');
 const numberSizePresetInput = $('numberSizePreset');
+const editOrderButton = $('editOrderButton');
+const resetOrderButton = $('resetOrderButton');
+const orderStatus = $('orderStatus');
 const exportButton = $('exportButton');
 const exportProgressWrap = $('exportProgressWrap');
 const exportProgress = $('exportProgress');
@@ -42,6 +45,11 @@ let panelNumberLayoutKey = '';
 let numberDrag;
 let hoveredNumberIndex;
 let panelNumberExportSizePx = 20;
+let panelOrder = [];
+let automaticPanelOrder = [];
+let orderEditMode = false;
+let orderBeforeEdit = [];
+let clickedOrder = [];
 
 function setAutoLayout(layout) {
   autoLayout = layout;
@@ -60,6 +68,55 @@ function setPrintNumbers(enabled) {
   if (!enabled) hoveredNumberIndex = undefined;
 }
 
+function updateOrderControls() {
+  editOrderButton.setAttribute('aria-pressed', String(orderEditMode));
+  editOrderButton.textContent = orderEditMode ? 'Finish Ordering' : 'Edit Assembly Order';
+  if (orderEditMode) {
+    orderStatus.textContent = `Click the panel for number ${clickedOrder.length}.`;
+    resetOrderButton.hidden = true;
+  } else {
+    const customized = panelOrder.some((panel, index) => panel !== automaticPanelOrder[index]);
+    orderStatus.textContent = customized
+      ? 'Custom order is active.'
+      : 'Automatic reading order is active.';
+    resetOrderButton.hidden = !customized;
+  }
+}
+
+function enterOrderEditMode() {
+  if (previewPanelRects.length === 0) return;
+  orderEditMode = true;
+  orderBeforeEdit = [...panelOrder];
+  clickedOrder = [];
+  updateOrderControls();
+  render();
+}
+
+function exitOrderEditMode() {
+  orderEditMode = false;
+  orderBeforeEdit = [];
+  clickedOrder = [];
+  updateOrderControls();
+}
+
+function resetPanelOrder() {
+  panelOrder = [...automaticPanelOrder];
+  exitOrderEditMode();
+  render();
+}
+
+function choosePanelForOrder(panelIndex) {
+  if (!orderEditMode || clickedOrder.includes(panelIndex)) return;
+  clickedOrder.push(panelIndex);
+  panelOrder = [
+    ...clickedOrder,
+    ...orderBeforeEdit.filter((index) => !clickedOrder.includes(index))
+  ];
+  if (clickedOrder.length === previewPanelRects.length) exitOrderEditMode();
+  else updateOrderControls();
+  render();
+}
+
 function syncPanelNumberAnchors(panels) {
   const layoutKey = panels
     .map((panel) => [panel.left, panel.top, panel.width, panel.height].map(Math.round).join(','))
@@ -70,6 +127,9 @@ function syncPanelNumberAnchors(panels) {
       x: panel.left + panel.width / 2,
       y: panel.top + panel.height / 2
     }));
+    automaticPanelOrder = panels.map((_, index) => index);
+    panelOrder = [...automaticPanelOrder];
+    exitOrderEditMode();
   }
   previewPanelRects = panels;
 }
@@ -275,7 +335,7 @@ function render() {
   ctx.restore();
   syncPanelNumberAnchors(previewPanels);
 
-  if (v.printNumbers) {
+  if (v.printNumbers || orderEditMode) {
     const selectedNumberSizePx = selectedPanelNumberSizePx();
     const displayedCanvasWidth = Math.max(1, canvas.getBoundingClientRect().width);
     const backingToDisplayScale = canvas.width / displayedCanvasWidth;
@@ -296,13 +356,17 @@ function render() {
     ctx.strokeStyle = 'white';
     ctx.fillStyle = gridColorInput.value;
     previewPanels.forEach((panel, index) => {
-      const emphasized = hoveredNumberIndex === index || numberDrag?.index === index;
+      const emphasized =
+        hoveredNumberIndex === index ||
+        numberDrag?.index === index ||
+        (orderEditMode && clickedOrder.includes(index));
       ctx.font = `${emphasized ? 900 : 500} ${fontSize}px Arial, Helvetica, sans-serif`;
       ctx.globalAlpha = emphasized ? 1 : 0.5;
       const x = panelNumberAnchors[index].x * previewScale;
       const y = panelNumberAnchors[index].y * previewScale;
-      ctx.strokeText(String(index), x, y);
-      ctx.fillText(String(index), x, y);
+      const assemblyNumber = panelOrder.indexOf(index);
+      ctx.strokeText(String(assemblyNumber), x, y);
+      ctx.fillText(String(assemblyNumber), x, y);
     });
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -340,6 +404,8 @@ async function loadFile(selected) {
     URL.revokeObjectURL(url);
     exportButton.disabled = false;
     autoGridButton.disabled = false;
+    editOrderButton.disabled = false;
+    resetOrderButton.disabled = false;
     imageDimensions.textContent = `${file.name} · ${image.naturalWidth} × ${image.naturalHeight} px`;
     render();
   };
@@ -514,13 +580,15 @@ function buildAutoLayout() {
     const top = Math.floor(bounds.top * outputHeight / mask.height);
     const right = Math.floor(bounds.right * outputWidth / mask.width);
     const bottom = Math.floor(bounds.bottom * outputHeight / mask.height);
+    const pageWidth = Math.round(orientation.width);
+    const pageHeight = Math.round(orientation.height);
     return {
       left,
       top,
-      width: Math.max(1, right - left),
-      height: Math.max(1, bottom - top),
-      pageWidth: Math.round(orientation.width),
-      pageHeight: Math.round(orientation.height),
+      width: Math.max(1, Math.min(pageWidth, right - left)),
+      height: Math.max(1, Math.min(pageHeight, bottom - top)),
+      pageWidth,
+      pageHeight,
       orientation: orientation.width >= orientation.height ? 'landscape' : 'portrait'
     };
   });
@@ -618,6 +686,12 @@ numberSizePresetInput.addEventListener('change', () => {
   saveDisplaySettings();
   render();
 });
+editOrderButton.addEventListener('click', () => {
+  if (orderEditMode) exitOrderEditMode();
+  else enterOrderEditMode();
+  render();
+});
+resetOrderButton.addEventListener('click', resetPanelOrder);
 window.addEventListener('resize', render);
 
 canvas.addEventListener('pointerenter', () => {
@@ -657,7 +731,7 @@ function canvasPoint(event) {
 }
 
 function numberAt(event) {
-  if (!printNumbersEnabled() || !previewGrid) return undefined;
+  if ((!printNumbersEnabled() && !orderEditMode) || !previewGrid) return undefined;
   const point = canvasPoint(event);
   const hitRadius = 16 * canvas.width / canvas.getBoundingClientRect().width;
   let match;
@@ -670,6 +744,19 @@ function numberAt(event) {
     }
   });
   return match;
+}
+
+function panelAt(event) {
+  if (!previewGrid) return undefined;
+  const point = canvasPoint(event);
+  const x = point.x * previewGrid.outputWidthPx / canvas.width;
+  const y = point.y * previewGrid.outputHeightPx / canvas.height;
+  return previewPanelRects.findIndex((panel) =>
+    x >= panel.left &&
+    x <= panel.left + panel.width &&
+    y >= panel.top &&
+    y <= panel.top + panel.height
+  );
 }
 
 function clampNumberAnchor(panel, anchor, halfText) {
@@ -750,6 +837,14 @@ function gridCursor(line, dragging = false) {
 }
 
 canvas.addEventListener('pointerdown', (event) => {
+  if (orderEditMode) {
+    const panelIndex = panelAt(event);
+    if (panelIndex >= 0) {
+      choosePanelForOrder(panelIndex);
+      event.preventDefault();
+    }
+    return;
+  }
   const number = numberAt(event);
   if (number) {
     numberDrag = { index: number.index };
@@ -777,6 +872,16 @@ canvas.addEventListener('pointerdown', (event) => {
 
 canvas.addEventListener('pointermove', (event) => {
   if (moveDraggedNumber(event)) return;
+  if (orderEditMode) {
+    const panelIndex = panelAt(event);
+    const nextHoveredIndex = panelIndex >= 0 ? panelIndex : undefined;
+    if (nextHoveredIndex !== hoveredNumberIndex) {
+      hoveredNumberIndex = nextHoveredIndex;
+      render();
+    }
+    canvas.style.cursor = panelIndex >= 0 ? 'pointer' : '';
+    return;
+  }
   if (!gridDrag) {
     const number = numberAt(event);
     const nextHoveredIndex = number?.index;
@@ -995,6 +1100,7 @@ exportButton.addEventListener('click', async () => {
     form.append('gridMode', 'overlay');
     form.append('marginMm', '0');
     form.append('exportId', exportId);
+    form.append('panelOrder', JSON.stringify(panelOrder));
     form.append('printNumbers', String(v.printNumbers));
     if (v.printNumbers) {
       form.append('numberPosition', 'center');

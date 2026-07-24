@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.27.0**
+**Current release: v1.28.0**
 
 ## 1. Project purpose
 
@@ -651,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.27.0`.
+The history currently runs continuously from `v1.0.0` through `v1.28.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -840,7 +840,7 @@ The history currently runs continuously from `v1.0.0` through `v1.27.0`.
   full-grid preview, panel-generation, ZIP, and download phases, including the
   calculated panel count before the slow full-grid render.
 
-### v1.27.0 — Spatial panel-number order (current)
+### v1.27.0 — Spatial panel-number order
 
 - Clustered automatic-layout panels with nearby top edges into visual rows,
   then sorted each row left-to-right and the rows top-to-bottom. This prevents
@@ -853,6 +853,25 @@ The history currently runs continuously from `v1.0.0` through `v1.27.0`.
 - Tuned that row tolerance to 25% of printable page height after the real
   `fantasma.png` regression showed that a 50% tolerance merged visibly
   staggered rows and produced sequences such as `0, 3, 1, 2`.
+
+### v1.28.0 — Manual assembly ordering (current)
+
+- Added **Edit Assembly Order** canvas mode for clicking panels in the exact
+  desired sequence, with immediate preview renumbering and early-finish support
+  that preserves the remaining panels' prior relative order.
+- Added **Reset Order** to restore automatic spatial reading order.
+- Grouped panel-number and assembly-order controls into a dedicated settings
+  section, using one Edit/Finish button and showing Reset as an inline action
+  only while a custom order is active.
+- Added validated CLI/server panel-permutation handoff and applied custom order
+  consistently to anchors, filenames, panel PNGs, full-grid numbers, and
+  assembly-guide entries.
+- Fixed one-pixel auto-layout rounding at printable panel edges that could
+  reject a valid number anchor or pass negative right/bottom padding to Sharp.
+- Kept number anchors associated with immutable physical canvas-panel indexes
+  while applying custom assembly order, preventing independently normalized
+  CLI ordering from pairing an anchor with the wrong crop and ensuring dragged
+  preview positions are used by the corresponding exported panel image.
 
 ## 18. Recommended next improvements
 
