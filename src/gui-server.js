@@ -227,7 +227,7 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
       '--grid-lines',
       '--grid-mode', req.body.gridMode || 'overlay',
       '--grid-line-width-mm', String(gridLineWidthMm),
-      '--grid-color', req.body.gridColor || 'red'
+      '--grid-color', req.body.gridColor || '#01a86b'
     ];
     if (targetHeightMm > 0) args.push('--target-height-mm', String(targetHeightMm));
     else args.push('--fit', 'actual');

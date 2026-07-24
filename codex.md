@@ -12,11 +12,14 @@ Project summary:
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
 - GUI front end: public/index.html, public/app.js, public/style.css.
+- The browser title is "Ronyka Panel Splitter"; the visible heading beside public/ronyka-logo.jpg is "Panel Splitter". Preserve the supplied logo asset unless the user requests a replacement.
+- The GUI uses a Cricut-inspired green, charcoal, white, mint, and neutral color system without including Cricut logos or proprietary assets.
 - It splits a large image into physical poster panels and exports PNGs plus assembly guides.
 - Default --fit actual must not resize source pixels.
 - --target-width-mm or --target-height-mm intentionally scales the full poster.
 - Preserve source PNG alpha transparency through resizing, cropping, margins, partial panels, and previews.
 - Grid lines must appear only in original-with-grid.png, never in individual poster panel PNGs.
+- The default grid-line color is rgb(1, 168, 107), represented as #01a86b in the GUI, CLI, and server fallback.
 - Letter landscape max: 9.26 in wide × 6.55 in high.
 - Letter portrait max: 6.55 in wide × 9.26 in high.
 - Legal landscape max: 11.84 in wide × 6.76 in high.

@@ -249,6 +249,7 @@ This is a critical current requirement.
 
 Current meaning:
 
+- the default grid color is `rgb(1, 168, 107)` / `#01a86b`;
 - `overlay`: draws grid lines over the full preview artwork;
 - `padding`: inserts separator strips in the full preview without replacing artwork pixels;
 - neither mode may change panel crop positions, panel dimensions, panel count, or panel pixels;
@@ -366,6 +367,12 @@ http://localhost:4173
 
 The GUI provides:
 
+- Ronyka branding in the page title and control-panel header, using the local
+  `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
+  and the visible heading `Panel Splitter`;
+- a Cricut-inspired color treatment built around green primary actions, dark
+  charcoal text, clean white cards, pale mint surfaces, and subtle neutral
+  borders, without using Cricut logos or proprietary assets;
 - drag-and-drop image selection;
 - regular file-picker input;
 - a selected-image label showing the filename and original pixel dimensions beneath the image picker;
@@ -598,6 +605,9 @@ Do not break these without explicit user approval:
 20. Export feedback appears only in the modal; the area below the ZIP button contains no status text.
 21. The selected image filename and original pixel dimensions remain visible beneath the image picker.
 22. Terminal modal states use the `Press Esc to close` hint instead of the generation-cancellation hint.
+23. GUI styling keeps its Cricut-inspired green, charcoal, white, mint, and neutral visual system.
+24. The CLI, GUI, and GUI server fallback use `#01a86b` as the default grid-line color.
+25. The browser title uses `Ronyka Panel Splitter`; the heading beside the supplied Ronyka Piñatas logo uses `Panel Splitter`.
 
 ## 17. Recommended next improvements
 

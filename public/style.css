@@ -1,44 +1,67 @@
-:root { font-family: Inter, system-ui, sans-serif; color: #161616; background: #ececec; }
+:root {
+  font-family: Inter, "Helvetica Neue", Arial, system-ui, sans-serif;
+  color: #262626;
+  background: #f5f5f2;
+  --cricut-green: #00a86b;
+  --cricut-green-dark: #007f52;
+  --cricut-mint: #e7f6ef;
+  --cricut-mint-light: #f4fbf7;
+  --cricut-charcoal: #262626;
+  --cricut-gray: #666;
+  --cricut-border: #d9ddd9;
+}
 * { box-sizing: border-box; }
-body { margin: 0; }
-main { min-height: 100vh; display: grid; grid-template-columns: 390px 1fr; gap: 18px; padding: 18px; }
-.controls, .preview-wrap { background: white; border-radius: 16px; box-shadow: 0 8px 30px rgb(0 0 0 / .08); }
-.controls { padding: 22px; overflow: auto; }
-h1 { margin: 0 0 6px; font-size: 24px; }
-p { margin: 0 0 18px; color: #666; line-height: 1.4; }
-.drop-zone { min-height: 130px; border: 2px dashed #aaa; border-radius: 12px; display: grid; place-content: center; text-align: center; cursor: pointer; margin-bottom: 20px; }
-.drop-zone.dragging { border-color: #111; background: #f3f3f3; }
+body { margin: 0; background: linear-gradient(145deg, #f7f7f4, #eef7f2); }
+main { min-height: 100vh; display: grid; grid-template-columns: 390px 1fr; gap: 20px; padding: 20px; }
+.controls, .preview-wrap { background: white; border: 1px solid #e3e5e2; border-radius: 20px; box-shadow: 0 10px 32px rgb(27 57 43 / .08); }
+.controls { padding: 24px; overflow: auto; }
+.brand-header { display: flex; align-items: center; gap: 14px; margin-bottom: 6px; }
+.brand-logo { width: 86px; height: 86px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
+h1 { margin: 0; color: var(--cricut-charcoal); font-size: 27px; font-weight: 750; letter-spacing: -.6px; line-height: 1.05; }
+p { margin: 0 0 18px; color: var(--cricut-gray); line-height: 1.45; }
+.drop-zone { min-height: 130px; border: 2px dashed #7ac9a8; border-radius: 16px; display: grid; place-content: center; text-align: center; cursor: pointer; margin-bottom: 20px; color: var(--cricut-green-dark); background: var(--cricut-mint-light); transition: border-color .18s ease, background .18s ease, box-shadow .18s ease; }
+.drop-zone:hover { border-color: var(--cricut-green); background: var(--cricut-mint); box-shadow: 0 8px 22px rgb(0 168 107 / .1); }
+.drop-zone.dragging { border-color: var(--cricut-green-dark); background: var(--cricut-mint); }
 .drop-zone input { display: none; }
-.drop-zone span { color: #777; margin-top: 5px; }
-.image-dimensions { min-height: 18px; margin: -12px 0 16px; color: #666; font-size: 12px; text-align: center; }
+.drop-zone strong { font-size: 16px; }
+.drop-zone span { color: var(--cricut-gray); margin-top: 5px; }
+.image-dimensions { min-height: 18px; margin: -12px 0 16px; color: var(--cricut-green-dark); font-size: 12px; font-weight: 650; text-align: center; }
 .field { margin: 18px 0; }
 .field > div { display: flex; justify-content: space-between; margin-bottom: 7px; }
 .field > .field-note { display: block; margin: 6px 0 0; color: #777; font-size: 11px; line-height: 1.3; }
 .field > .orientation-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 7px 0 0; }
-.orientation-option { display: grid; place-items: center; gap: 6px; width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 9px; background: #fff; color: #555; font-size: 12px; font-weight: 600; }
-.orientation-option:hover { background: #f5f5f5; }
-.orientation-option.selected { border-color: #111; background: #f0f0f0; color: #111; box-shadow: inset 0 0 0 1px #111; }
-.orientation-option:focus-visible { outline: 3px solid rgb(0 90 255 / .3); outline-offset: 2px; }
+.orientation-option { display: grid; place-items: center; gap: 6px; width: 100%; padding: 10px; border: 1px solid var(--cricut-border); border-radius: 12px; background: #fff; color: #555; font-size: 12px; font-weight: 650; box-shadow: none; }
+.orientation-option:hover { border-color: #7ac9a8; background: var(--cricut-mint-light); }
+.orientation-option.selected { border-color: var(--cricut-green); background: var(--cricut-mint); color: var(--cricut-green-dark); box-shadow: inset 0 0 0 1px var(--cricut-green); }
+.orientation-option:focus-visible { outline: 3px solid rgb(0 168 107 / .22); outline-offset: 2px; }
 .orientation-shape { display: block; border: 2px solid currentColor; border-radius: 2px; }
 .landscape-shape { width: 32px; height: 20px; }
 .portrait-shape { width: 20px; height: 32px; }
-input[type="range"] { width: 100%; }
+input[type="range"] { width: 100%; accent-color: var(--cricut-green); }
 .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 0; }
 .row label { display: grid; gap: 6px; font-size: 13px; }
-input[type="number"], input[type="color"] { width: 100%; min-height: 38px; border: 1px solid #ccc; border-radius: 8px; padding: 8px; }
+input[type="number"], input[type="color"], select { width: 100%; min-height: 40px; border: 1px solid var(--cricut-border); border-radius: 10px; padding: 8px; background: white; color: var(--cricut-charcoal); }
+input[type="number"]:focus, input[type="color"]:focus, select:focus { border-color: var(--cricut-green); outline: 3px solid rgb(0 168 107 / .14); }
+input[type="checkbox"] { accent-color: var(--cricut-green); }
 .check { display: flex; gap: 8px; margin: 16px 0; }
-.stats { background: #f5f5f5; border-radius: 10px; padding: 12px; margin: 15px 0; line-height: 1.4; }
+.stats { background: var(--cricut-mint-light); border: 1px solid #dceee5; border-radius: 12px; padding: 12px; margin: 15px 0; line-height: 1.4; }
 .grid-drag-note { margin: -7px 0 15px; color: #777; font-size: 11px; line-height: 1.35; }
-button { width: 100%; border: 0; border-radius: 10px; padding: 13px; font-size: 16px; font-weight: 700; background: #111; color: white; cursor: pointer; }
+button { width: 100%; border: 0; border-radius: 999px; padding: 13px; font-size: 16px; font-weight: 700; background: var(--cricut-green); color: white; cursor: pointer; box-shadow: 0 7px 18px rgb(0 127 82 / .18); transition: background .18s ease, transform .18s ease; }
+button:hover:not(:disabled) { background: var(--cricut-green-dark); transform: translateY(-1px); }
 button:disabled { opacity: .45; cursor: default; }
-.progress-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgb(0 0 0 / .48); }
+button.orientation-option:hover:not(:disabled) { border-color: #7ac9a8; background: var(--cricut-mint-light); color: var(--cricut-green-dark); box-shadow: none; transform: none; }
+button.orientation-option:active:not(:disabled) { border-color: var(--cricut-green); background: var(--cricut-mint); color: var(--cricut-green-dark); transform: none; }
+button.orientation-option.selected,
+button.orientation-option.selected:hover:not(:disabled),
+button.orientation-option.selected:active:not(:disabled) { border-color: var(--cricut-green); background: var(--cricut-mint); color: var(--cricut-green-dark); box-shadow: inset 0 0 0 1px var(--cricut-green); transform: none; }
+.progress-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgb(27 39 33 / .5); backdrop-filter: blur(3px); }
 .progress-modal[hidden] { display: none; }
-.progress-modal-card { width: min(440px, 100%); padding: 24px; border-radius: 14px; background: white; box-shadow: 0 18px 60px rgb(0 0 0 / .3); }
-.export-progress-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: #333; font-size: 14px; font-weight: 600; }
-.progress-modal progress { display: block; width: 100%; height: 14px; accent-color: #111; }
+.progress-modal-card { width: min(440px, 100%); padding: 26px; border: 1px solid #dbe6e0; border-radius: 20px; background: white; box-shadow: 0 20px 65px rgb(17 48 34 / .3); }
+.export-progress-label { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 10px; color: var(--cricut-charcoal); font-size: 14px; font-weight: 700; }
+.progress-modal progress { display: block; width: 100%; height: 14px; accent-color: var(--cricut-green); }
 .progress-cancel-hint { margin-top: 10px; color: #777; font-size: 12px; text-align: center; }
 .progress-close { margin-top: 20px; }
-.preview-wrap { min-width: 0; min-height: 500px; display: grid; place-items: center; overflow: auto; padding: 20px; background-image: linear-gradient(45deg,#eee 25%,transparent 25%),linear-gradient(-45deg,#eee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#eee 75%),linear-gradient(-45deg,transparent 75%,#eee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
-canvas { max-width: 100%; max-height: calc(100vh - 76px); box-shadow: 0 3px 16px rgb(0 0 0 / .24); touch-action: none; }
+.preview-wrap { min-width: 0; min-height: 500px; display: grid; place-items: center; overflow: auto; padding: 20px; background-color: #fbfcfb; background-image: linear-gradient(45deg,#edf1ee 25%,transparent 25%),linear-gradient(-45deg,#edf1ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf1ee 75%),linear-gradient(-45deg,transparent 75%,#edf1ee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
+canvas { max-width: 100%; max-height: calc(100vh - 80px); box-shadow: 0 5px 20px rgb(23 58 42 / .2); touch-action: none; }
 canvas.dragging-grid { cursor: grabbing; }
 @media (max-width: 850px) { main { grid-template-columns: 1fr; } .preview-wrap { min-height: 420px; } canvas { max-height: 70vh; } }

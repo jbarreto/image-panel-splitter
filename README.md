@@ -73,7 +73,7 @@ node src/index.js poster.png \
 | `--grid-lines` | Create `original-with-grid.png`; panel PNGs remain clean | disabled |
 | `--grid-line-width-mm` | Grid-line thickness | `0.5` |
 | `--grid-mode` | Preview style: `padding` inserts separators; `overlay` draws over preview | `padding` |
-| `--grid-color` | SVG/CSS color used for the grid | `black` |
+| `--grid-color` | SVG/CSS color used for the grid | `#01a86b` |
 | `--no-number` | Disable printed panel numbers | false |
 | `--no-label` | Alias for `--no-number` | false |
 

@@ -50,7 +50,7 @@ Options:
   --grid-mode <padding|overlay>
                              padding reserves space so artwork is not covered
                              (default: padding); overlay draws over artwork
-  --grid-color <css-color>   Grid line color (default: black)
+  --grid-color <css-color>   Grid line color (default: rgb(1, 168, 107))
   --no-number                Do not draw panel numbers
   --no-label                 Alias for --no-number
   --help                     Show this help
@@ -79,7 +79,7 @@ function parseArgs(argv) {
     gridLines: false,
     gridLineWidthMm: 0.5,
     gridMode: 'padding',
-    gridColor: 'black',
+    gridColor: '#01a86b',
     targetWidthMm: undefined,
     targetHeightMm: undefined,
     panelWidthIn: undefined,
