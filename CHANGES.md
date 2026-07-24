@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.21.0**
+**Current release: v1.22.0**
 
 ## 1. Project purpose
 
@@ -371,7 +371,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.21.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.22.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -621,7 +621,7 @@ Do not break these without explicit user approval:
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
 34. The GUI does not expose a panel-number setting and its exports omit panel numbers; CLI numbering options remain supported.
-35. `scripts/install-update.mjs` runs on Windows and macOS, performs clean GitHub installs or safe fast-forward-only updates, and installs locked dependencies with `npm ci`.
+35. `scripts/install-update.mjs` runs on Windows and macOS, installs or updates directly from a GitHub source archive without requiring Git, replaces archive-managed application files, and installs locked dependencies with `npm ci`.
 
 ## 17. Reconstructed version history
 
@@ -629,7 +629,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.21.0`.
+The history currently runs continuously from `v1.0.0` through `v1.22.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -740,10 +740,17 @@ The history currently runs continuously from `v1.0.0` through `v1.21.0`.
 - Applied the rounded system-font family to settings labels, values, controls,
   notes, statistics, modal copy, and actions at font weight `500`.
 
-### v1.21.0 — Simplified GUI exports (current)
+### v1.21.0 — Simplified GUI exports
 
 - Removed the panel-number setting and its unused frontend code and styles.
 - GUI exports omit panel numbers while CLI numbering options remain available.
+
+### v1.22.0 — Git-free cross-platform updater (current)
+
+- Added a Node.js installer/updater for Windows and macOS that downloads and
+  safely extracts GitHub source archives without requiring Git.
+- Added archive path validation, archive-managed file replacement, temporary
+  download cleanup, Windows `npm.cmd` handling, and locked `npm ci` installs.
 
 ## 18. Recommended next improvements
 

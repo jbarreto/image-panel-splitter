@@ -29,9 +29,13 @@ From an existing clone:
 npm run update
 ```
 
-The updater refuses to continue when local changes are present, fetches
-`origin/main`, applies only a fast-forward update, and installs the exact
-dependencies from `package-lock.json` with `npm ci`.
+The updater downloads the latest `main` source archive directly from GitHub,
+updates the application files, and installs the exact dependencies from
+`package-lock.json` with `npm ci`.
+
+Because archive-based updates cannot inspect Git working-tree state, commit or
+back up local code changes before updating. Application files that also exist
+in the downloaded archive are replaced.
 
 For a fresh installation on Windows or macOS, download
 `scripts/install-update.mjs` and run it outside an existing clone, optionally
@@ -41,7 +45,7 @@ passing the install directory:
 node install-update.mjs ./ronyka-panel-splitter
 ```
 
-Requirements are Git, npm, and Node.js 20.9.0 or newer.
+Requirements are npm and Node.js 20.9.0 or newer. Git is not required.
 
 ## Basic usage — no scaling
 
