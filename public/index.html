@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.28.0</span>
+          <span class="app-version">v1.29.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -40,18 +40,45 @@
           <option value="imperial" selected>Imperial (in)</option>
         </select>
       </div>
-      <div class="auto-layout-control">
-        <button id="autoGridButton" class="toggle-button" type="button" aria-pressed="false" disabled>
-          <span>Auto minimize panels</span>
-          <span class="toggle-track" aria-hidden="true">
-            <span class="toggle-state">Off</span>
-            <span class="toggle-knob"></span>
-          </span>
-        </button>
-        <div class="toggle-note">Detects visible artwork, skips empty canvas areas, and selects portrait or landscape for each panel. Shortcut: Shift+A.</div>
-      </div>
-      <fieldset class="number-controls">
-        <legend>Panel Numbers &amp; Assembly Order</legend>
+      <fieldset class="settings-group panel-layout-controls">
+        <legend>Panel Layout</legend>
+        <div class="auto-layout-control">
+          <button id="autoGridButton" class="toggle-button" type="button" aria-pressed="false" disabled>
+            <span>Auto paneling</span>
+            <span class="toggle-track" aria-hidden="true">
+              <span class="toggle-state">Off</span>
+              <span class="toggle-knob"></span>
+            </span>
+          </button>
+          <div class="toggle-note">Detects visible artwork, skips empty canvas areas, and selects portrait or landscape for each panel. Shortcut: Shift+A.</div>
+        </div>
+        <div class="field">
+          <span id="orientationLabel">Panel orientation</span>
+          <input id="orientation" type="hidden" value="landscape" autocomplete="off" />
+          <div class="orientation-picker" role="group" aria-labelledby="orientationLabel">
+            <button type="button" class="orientation-option selected" data-orientation="landscape" aria-pressed="true">
+              <span class="orientation-shape landscape-shape" aria-hidden="true"></span>
+              <span>Landscape</span>
+            </button>
+            <button type="button" class="orientation-option" data-orientation="portrait" aria-pressed="false">
+              <span class="orientation-shape portrait-shape" aria-hidden="true"></span>
+              <span>Portrait</span>
+            </button>
+          </div>
+          <div id="panelLimit" class="field-note"></div>
+        </div>
+        <div class="field">
+          <div><label id="panelWidthLabel" for="panelWidth">Panel width (in)</label><output id="panelWidthValue"></output></div>
+          <input id="panelWidth" type="range" min="2" max="9.26" step="0.01" value="9.26" />
+        </div>
+        <div class="field">
+          <div><label id="panelHeightLabel" for="panelHeight">Panel height (in)</label><output id="panelHeightValue"></output></div>
+          <input id="panelHeight" type="range" min="2" max="6.55" step="0.01" value="6.55" />
+        </div>
+      </fieldset>
+
+      <fieldset class="settings-group number-controls">
+        <legend>Panel Labels</legend>
         <button id="printNumbers" class="toggle-button" type="button" aria-pressed="false">
           <span>Print Panel Numbers</span>
           <span class="toggle-track" aria-hidden="true">
@@ -74,38 +101,22 @@
           <button id="resetOrderButton" class="order-reset-link" type="button" disabled hidden>Reset</button>
         </div>
       </fieldset>
-      <div class="field">
-        <span id="orientationLabel">Panel orientation</span>
-        <input id="orientation" type="hidden" value="landscape" autocomplete="off" />
-        <div class="orientation-picker" role="group" aria-labelledby="orientationLabel">
-          <button type="button" class="orientation-option selected" data-orientation="landscape" aria-pressed="true">
-            <span class="orientation-shape landscape-shape" aria-hidden="true"></span>
-            <span>Landscape</span>
-          </button>
-          <button type="button" class="orientation-option" data-orientation="portrait" aria-pressed="false">
-            <span class="orientation-shape portrait-shape" aria-hidden="true"></span>
-            <span>Portrait</span>
-          </button>
-        </div>
-        <div id="panelLimit" class="field-note"></div>
-      </div>
-      <div class="field">
-        <div><label id="panelWidthLabel" for="panelWidth">Panel width (in)</label><output id="panelWidthValue"></output></div>
-        <input id="panelWidth" type="range" min="2" max="9.26" step="0.01" value="9.26" />
-      </div>
-      <div class="field">
-        <div><label id="panelHeightLabel" for="panelHeight">Panel height (in)</label><output id="panelHeightValue"></output></div>
-        <input id="panelHeight" type="range" min="2" max="6.55" step="0.01" value="6.55" />
-      </div>
 
-      <div class="row">
-        <label>DPI<input id="dpi" type="number" min="72" max="600" value="144" /></label>
-        <label>Poster height (mm)<input id="targetHeight" type="number" min="0" step="1" value="1000" /></label>
-      </div>
-      <div class="row">
-        <label>Grid width (mm)<input id="gridWidth" type="number" min="0.1" step="0.1" value="1" /></label>
-        <label>Grid color<input id="gridColor" type="color" value="#01a86b" /></label>
-      </div>
+      <fieldset class="settings-group">
+        <legend>Poster Settings</legend>
+        <div class="row">
+          <label>DPI<input id="dpi" type="number" min="72" max="600" value="144" /></label>
+          <label>Poster height (mm)<input id="targetHeight" type="number" min="0" step="1" value="1000" /></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="settings-group">
+        <legend>Grid Appearance</legend>
+        <div class="row">
+          <label>Grid width (mm)<input id="gridWidth" type="number" min="0.1" step="0.1" value="1" /></label>
+          <label>Grid color<input id="gridColor" type="color" value="#01a86b" /></label>
+        </div>
+      </fieldset>
       <div id="stats" class="stats">Choose an image to preview the grid.</div>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
       <button id="exportButton" disabled>Export panels ZIP</button>

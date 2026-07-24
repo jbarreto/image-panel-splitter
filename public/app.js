@@ -39,6 +39,7 @@ let gridDrag;
 let activeExport;
 let canvasHovered = false;
 let autoLayout;
+let autoPanelingPreference = false;
 let previewPanelRects = [];
 let panelNumberAnchors = [];
 let panelNumberLayoutKey = '';
@@ -176,6 +177,7 @@ function saveDisplaySettings() {
     localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
       paper: paperInput.value,
       unitSystem: unitSystemInput.value,
+      autoPaneling: autoPanelingPreference,
       printNumbers: printNumbersEnabled(),
       numberSizePreset: numberSizePresetInput.value
     }));
@@ -195,6 +197,11 @@ function restoreDisplaySettings() {
   if (PANEL_LIMITS_IN[settings.paper]) paperInput.value = settings.paper;
   if (['metric', 'imperial'].includes(settings.unitSystem)) {
     unitSystemInput.value = settings.unitSystem;
+  }
+  if (typeof settings.autoPaneling === 'boolean') {
+    autoPanelingPreference = settings.autoPaneling;
+    autoGridButton.setAttribute('aria-pressed', String(autoPanelingPreference));
+    autoGridButton.querySelector('.toggle-state').textContent = autoPanelingPreference ? 'On' : 'Off';
   }
   if (typeof settings.printNumbers === 'boolean') {
     setPrintNumbers(settings.printNumbers);
@@ -407,6 +414,7 @@ async function loadFile(selected) {
     editOrderButton.disabled = false;
     resetOrderButton.disabled = false;
     imageDimensions.textContent = `${file.name} · ${image.naturalWidth} × ${image.naturalHeight} px`;
+    if (autoPanelingPreference) setAutoLayout(buildAutoLayout());
     render();
   };
   image.src = url;
@@ -599,7 +607,9 @@ function buildAutoLayout() {
 autoGridButton.addEventListener('click', () => {
   if (!image) return;
   if (autoLayout) {
+    autoPanelingPreference = false;
     setAutoLayout(undefined);
+    saveDisplaySettings();
     render();
     return;
   }
@@ -608,7 +618,9 @@ autoGridButton.addEventListener('click', () => {
     window.alert('No visible artwork was detected. Use an image with transparency or a plain background.');
     return;
   }
+  autoPanelingPreference = true;
   setAutoLayout(generated);
+  saveDisplaySettings();
   render();
 });
 

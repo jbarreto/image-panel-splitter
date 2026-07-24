@@ -281,7 +281,7 @@ The GUI updates the slider maximums when the paper size or orientation changes. 
 
 ## Automatic mixed-orientation layout
 
-After loading an image, toggle **Auto minimize panels** on to generate an
+After loading an image, toggle **Auto paneling** on to generate an
 artwork-aware layout; toggle it off to restore the uniform grid. The generator detects visible artwork against
 transparency or a plain corner-matched background, omits empty canvas regions,
 and chooses portrait or landscape independently for each sheet.
@@ -323,7 +323,8 @@ number anchors, filenames, panel PNGs, `original-with-grid.png`, and both
 assembly guides.
 
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
-and **Large** (28 px). The selected preset is saved in browser local storage.
+and **Large** (28 px). Auto paneling, paper size, unit system, Print Panel
+Numbers, and the selected number-size preset are saved in browser local storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

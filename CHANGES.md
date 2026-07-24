@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.28.0**
+**Current release: v1.29.0**
 
 ## 1. Project purpose
 
@@ -636,7 +636,7 @@ Do not break these without explicit user approval:
 27. Switching the GUI unit system displays panel dimensions and limits plus the assembled-poster preview summary in centimeters or inches; poster height and grid width inputs remain in millimeters.
 28. Imperial (`in`) is the default GUI display unit.
 29. The assembled-poster preview summary displays poster dimensions on a separate line and labels their order as `(W × H)`.
-30. Paper size, metric/imperial selection, the Print Panel Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
+30. Paper size, metric/imperial selection, Auto paneling, the Print Panel Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
 31. The `Panel Splitter` heading uses a rounded system-font stack rather than a proprietary Cricut font.
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
@@ -651,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.28.0`.
+The history currently runs continuously from `v1.0.0` through `v1.29.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -854,7 +854,7 @@ The history currently runs continuously from `v1.0.0` through `v1.28.0`.
   `fantasma.png` regression showed that a 50% tolerance merged visibly
   staggered rows and produced sequences such as `0, 3, 1, 2`.
 
-### v1.28.0 — Manual assembly ordering (current)
+### v1.28.0 — Manual assembly ordering
 
 - Added **Edit Assembly Order** canvas mode for clicking panels in the exact
   desired sequence, with immediate preview renumbering and early-finish support
@@ -872,6 +872,17 @@ The history currently runs continuously from `v1.0.0` through `v1.28.0`.
   while applying custom assembly order, preventing independently normalized
   CLI ordering from pairing an anchor with the wrong crop and ensuring dragged
   preview positions are used by the corresponding exported panel image.
+
+### v1.29.0 — Organized GUI settings (current)
+
+- Renamed **Auto minimize panels** to the shorter **Auto paneling** label and
+  persisted its enabled state in browser local storage.
+- Restored Auto paneling after refresh and generated its artwork-aware layout
+  once the next image finished loading.
+- Organized related controls into **Panel Layout**, **Panel Labels**,
+  **Poster Settings**, and **Grid Appearance** groups.
+- Applied the dark Cricut green theme color to primary setting labels while
+  keeping input values, notes, and status text neutral.
 
 ## 18. Recommended next improvements
 
