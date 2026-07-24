@@ -196,7 +196,7 @@ npm run gui
 
 Then open `http://localhost:4173`.
 
-The GUI supports image drag-and-drop, live sliders for panel width and height, draggable preview grid lines as an alternative way to adjust those dimensions, diagonal dragging anywhere inside a panel to adjust both dimensions together, a real-time grid preview, poster-height scaling, transparency preservation, and ZIP export. Grid lines appear only in `original-with-grid.png`; exported panel PNGs remain clean.
+The GUI supports image drag-and-drop, centimeter or inch display for panel dimensions and the preview summary, live sliders for panel width and height, draggable preview grid lines as an alternative way to adjust those dimensions, diagonal dragging anywhere inside a panel to adjust both dimensions together, a real-time grid preview, poster-height scaling, transparency preservation, and ZIP export. Imperial display is selected by default. Poster height and grid width inputs remain in millimeters. Grid lines appear only in `original-with-grid.png`; exported panel PNGs remain clean.
 
 ## Logging
 

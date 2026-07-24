@@ -1,12 +1,15 @@
 const $ = (id) => document.getElementById(id);
 const imageInput = $('imageInput');
 const paperInput = $('paper');
+const unitSystemInput = $('unitSystem');
 const orientationInput = $('orientation');
 const orientationButtons = [...document.querySelectorAll('.orientation-option')];
 const panelWidth = $('panelWidth');
 const panelHeight = $('panelHeight');
 const panelWidthValue = $('panelWidthValue');
 const panelHeightValue = $('panelHeightValue');
+const panelWidthLabel = $('panelWidthLabel');
+const panelHeightLabel = $('panelHeightLabel');
 const dpiInput = $('dpi');
 const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
@@ -42,11 +45,22 @@ function panelLimits() {
   return { maxWidth: limits.width, maxHeight: limits.height };
 }
 
+function usesMetricUnits() {
+  return unitSystemInput.value === 'metric';
+}
+
+function inchesToDisplay(inches) {
+  return usesMetricUnits() ? inches * 2.54 : inches;
+}
+
 function clampPanelDimensions() {
   const { maxWidth, maxHeight } = panelLimits();
   panelWidth.max = String(maxWidth);
   panelHeight.max = String(maxHeight);
-  panelLimitText.textContent = `Maximum panel: ${maxWidth.toFixed(2)} × ${maxHeight.toFixed(2)} in`;
+  const unit = usesMetricUnits() ? 'cm' : 'in';
+  const displayedWidth = inchesToDisplay(maxWidth);
+  const displayedHeight = inchesToDisplay(maxHeight);
+  panelLimitText.textContent = `Maximum panel: ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit}`;
   const width = Math.min(maxWidth, Math.max(Number(panelWidth.min), Number(panelWidth.value)));
   const height = Math.min(maxHeight, Math.max(Number(panelHeight.min), Number(panelHeight.value)));
   panelWidth.value = width.toFixed(2);
@@ -79,8 +93,12 @@ function values() {
 
 function updateLabels() {
   clampPanelDimensions();
-  panelWidthValue.value = `${Number(panelWidth.value).toFixed(2)} in`;
-  panelHeightValue.value = `${Number(panelHeight.value).toFixed(2)} in`;
+  const metric = usesMetricUnits();
+  const unit = metric ? 'cm' : 'in';
+  panelWidthLabel.textContent = `Panel width (${unit})`;
+  panelHeightLabel.textContent = `Panel height (${unit})`;
+  panelWidthValue.value = `${inchesToDisplay(Number(panelWidth.value)).toFixed(2)} ${unit}`;
+  panelHeightValue.value = `${inchesToDisplay(Number(panelHeight.value)).toFixed(2)} ${unit}`;
 }
 
 function render() {
@@ -133,7 +151,10 @@ function render() {
 
   const widthIn = outputWidthPx / v.dpi;
   const heightIn = outputHeightPx / v.dpi;
-  stats.textContent = `${columns} columns × ${rows} rows = ${columns * rows} panels · Poster ${widthIn.toFixed(2)} × ${heightIn.toFixed(2)} in`;
+  const unit = usesMetricUnits() ? 'cm' : 'in';
+  const displayedWidth = inchesToDisplay(widthIn);
+  const displayedHeight = inchesToDisplay(heightIn);
+  stats.textContent = `${columns} columns × ${rows} rows = ${columns * rows} panels\nPoster ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit} (W × H)`;
 }
 
 async function loadFile(selected) {
@@ -174,6 +195,9 @@ for (const input of [paperInput, orientationInput]) {
     render();
   });
 }
+unitSystemInput.addEventListener('change', () => {
+  render();
+});
 for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridWidthInput, gridColorInput]) {
   input.addEventListener('input', render);
 }

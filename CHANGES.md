@@ -377,6 +377,9 @@ The GUI provides:
 - regular file-picker input;
 - a selected-image label showing the filename and original pixel dimensions beneath the image picker;
 - orientation selection;
+- a centimeter/inch selector for panel width, panel height, panel limits, and
+  the assembled-poster dimensions in the preview summary; poster height and
+  grid width inputs remain in millimeters, and imperial is selected by default;
 - panel width slider;
 - panel height slider;
 - draggable interior preview grid lines that update the matching width or height slider, with diagonal dragging anywhere inside a panel to update both;
@@ -609,6 +612,9 @@ Do not break these without explicit user approval:
 24. The CLI, GUI, and GUI server fallback use `#01a86b` as the default grid-line color.
 25. The browser title uses `Ronyka Panel Splitter`; the heading beside the supplied Ronyka Piñatas logo uses `Panel Splitter`.
 26. The GUI header displays the current application version in small text beneath the heading.
+27. Switching the GUI unit system displays panel dimensions and limits plus the assembled-poster preview summary in centimeters or inches; poster height and grid width inputs remain in millimeters.
+28. Imperial (`in`) is the default GUI display unit.
+29. The assembled-poster preview summary displays poster dimensions on a separate line and labels their order as `(W × H)`.
 
 ## 17. Recommended next improvements
 

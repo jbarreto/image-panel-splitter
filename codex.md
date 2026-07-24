@@ -27,6 +27,9 @@ Project summary:
 - Legal portrait max: 6.76 in wide × 11.84 in high.
 - GUI sliders and server/CLI validation must enforce the same orientation-aware limits.
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
+- The GUI unit selector switches only panel width/height, panel limits, and assembled-poster preview dimensions between centimeters and inches. Poster height and grid width inputs always remain in millimeters; the server contract remains panel inches plus poster/grid millimeters.
+- Imperial (`in`) is selected by default in the GUI unit selector.
+- The assembled-poster preview summary places poster dimensions on a separate line ending with `(W × H)`.
 - GUI ZIP export uses a modal progress bar, a unique export ID, and polling through /api/export-progress/:id; preserve actual per-panel progress plus preparing, zipping, completion, cancellation, and error phases.
 - Pressing Escape during an active export must abort the browser request, call DELETE /api/export/:id, terminate the matching CLI process, and remove partial temporary output. A second Escape press dismisses the modal without allowing the asynchronous cancellation result to reopen it.
 - Keep all export status feedback inside the modal; do not restore a status-text area beneath the Export panels ZIP button.
