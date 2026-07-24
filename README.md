@@ -100,7 +100,7 @@ node src/index.js poster.png \
 | Option | Meaning | Default |
 |---|---|---:|
 | `--output` | Output directory | `output` |
-| `--paper` | `letter` or `legal`; also selects custom-panel limits | `letter` |
+| `--paper` | `letter`, `legal`, or `custom`; also selects custom-panel limits | `letter` |
 | `--orientation` | `portrait` or `landscape` | `portrait` |
 | `--dpi` | Converts paper millimeters into page pixels and writes print-density metadata; it does not resize the source in `actual` mode | `300` |
 | `--margin-mm` | White page margin | `5` |
@@ -265,5 +265,11 @@ Custom panel dimensions depend on the selected paper size. The GUI sliders enfor
 
 - Landscape: maximum `11.84 × 6.76 in` (width × height)
 - Portrait: maximum `6.76 × 11.84 in` (width × height)
+
+### Custom
+
+Select `Custom` in the GUI to set panel width and height freely, up to
+`100 × 100 in`. In the CLI, use `--paper custom` together with both
+`--panel-width-in` and `--panel-height-in`.
 
 The GUI updates the slider maximums when the paper size or orientation changes. The CLI and GUI export endpoint enforce the same mappings.

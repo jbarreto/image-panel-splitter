@@ -27,7 +27,8 @@ const exportProgress = new Map();
 const exportJobs = new Map();
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
-  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
+  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } },
+  custom: { landscape: { width: 100, height: 100 }, portrait: { width: 100, height: 100 } }
 };
 
 app.use(express.static(publicDir));
@@ -198,7 +199,7 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
     const targetHeightMm = Number(req.body.targetHeightMm || 0);
     const gridLineWidthMm = Number(req.body.gridLineWidthMm || 1);
     if (!(panelWidth > 0) || !(panelHeight > 0)) throw new Error('Panel dimensions must be greater than zero.');
-    if (!PANEL_LIMITS_IN[paper]) throw new Error('Paper size must be letter or legal.');
+    if (!PANEL_LIMITS_IN[paper]) throw new Error('Paper size must be letter, legal, or custom.');
     if (!['portrait', 'landscape'].includes(orientation)) throw new Error('Orientation must be portrait or landscape.');
     const { width: maxWidth, height: maxHeight } = PANEL_LIMITS_IN[paper][orientation];
     if (panelWidth > maxWidth) throw new Error(`For ${paper} ${orientation}, panel width cannot exceed ${maxWidth} in.`);

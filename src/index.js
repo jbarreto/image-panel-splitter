@@ -8,12 +8,14 @@ import logger from './logger.js';
 
 const PAPER_SIZES_MM = {
   letter: { width: 215.9, height: 279.4, displayName: 'US Letter' },
-  legal: { width: 215.9, height: 355.6, displayName: 'US Legal' }
+  legal: { width: 215.9, height: 355.6, displayName: 'US Legal' },
+  custom: undefined
 };
 
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
-  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
+  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } },
+  custom: { landscape: { width: 100, height: 100 }, portrait: { width: 100, height: 100 } }
 };
 
 function printHelp() {
@@ -25,7 +27,8 @@ Usage:
 
 Options:
   --output <directory>       Output directory (default: ./output)
-  --paper <letter|legal>     Paper size and custom-panel limit profile (default: letter)
+  --paper <letter|legal|custom>
+                              Paper size and custom-panel limit profile (default: letter)
   --panel-width-in <number>  Exact exported panel width in inches
   --panel-height-in <number> Exact exported panel height in inches
   --orientation <portrait|landscape>
@@ -154,7 +157,7 @@ function parseArgs(argv) {
   options.gridMode = String(options.gridMode).toLowerCase();
 
   if (!input) throw new Error('An input image is required.');
-  if (!PAPER_SIZES_MM[options.paper]) throw new Error('--paper must be letter or legal.');
+  if (!(options.paper in PAPER_SIZES_MM)) throw new Error('--paper must be letter, legal, or custom.');
   if (!['portrait', 'landscape'].includes(options.orientation)) {
     throw new Error('--orientation must be portrait or landscape.');
   }
@@ -170,6 +173,9 @@ function parseArgs(argv) {
   if (options.dpi <= 0) throw new Error('--dpi must be greater than zero.');
   if ((options.panelWidthIn === undefined) !== (options.panelHeightIn === undefined)) {
     throw new Error('--panel-width-in and --panel-height-in must be used together.');
+  }
+  if (options.paper === 'custom' && options.panelWidthIn === undefined) {
+    throw new Error('--paper custom requires --panel-width-in and --panel-height-in.');
   }
   if (options.panelWidthIn !== undefined && (options.panelWidthIn <= 0 || options.panelHeightIn <= 0)) {
     throw new Error('Custom panel dimensions must be greater than zero.');

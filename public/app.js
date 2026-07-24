@@ -31,13 +31,15 @@ let image;
 let previewGrid;
 let gridDrag;
 let activeExport;
+let canvasHovered = false;
 
 const panelLimitText = $('panelLimit');
 const DISPLAY_SETTINGS_KEY = 'ronyka-panel-splitter.display-settings.v1';
 
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
-  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
+  legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } },
+  custom: { landscape: { width: 100, height: 100 }, portrait: { width: 100, height: 100 } }
 };
 
 function saveDisplaySettings() {
@@ -85,7 +87,9 @@ function clampPanelDimensions() {
   const unit = usesMetricUnits() ? 'cm' : 'in';
   const displayedWidth = inchesToDisplay(maxWidth);
   const displayedHeight = inchesToDisplay(maxHeight);
-  panelLimitText.textContent = `Maximum panel: ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit}`;
+  panelLimitText.textContent = paperInput.value === 'custom'
+    ? `Custom panel size (maximum ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit})`
+    : `Maximum panel: ${displayedWidth.toFixed(2)} × ${displayedHeight.toFixed(2)} ${unit}`;
   const width = Math.min(maxWidth, Math.max(Number(panelWidth.min), Number(panelWidth.value)));
   const height = Math.min(maxHeight, Math.max(Number(panelHeight.min), Number(panelHeight.value)));
   panelWidth.value = width.toFixed(2);
@@ -209,6 +213,11 @@ function selectOrientation(orientation, { dispatchChange = true } = {}) {
   if (dispatchChange) orientationInput.dispatchEvent(new Event('change'));
 }
 
+function updateOrientationAvailability() {
+  const disabled = paperInput.value === 'custom';
+  for (const option of orientationButtons) option.disabled = disabled;
+}
+
 for (const button of orientationButtons) {
   button.addEventListener('click', () => {
     selectOrientation(button.dataset.orientation);
@@ -216,7 +225,8 @@ for (const button of orientationButtons) {
 }
 for (const input of [paperInput, orientationInput]) {
   input.addEventListener('change', () => {
-    applyOrientationLimits({ resetToMaximum: true });
+    updateOrientationAvailability();
+    applyOrientationLimits({ resetToMaximum: paperInput.value !== 'custom' });
     render();
     if (input === paperInput) saveDisplaySettings();
   });
@@ -229,6 +239,34 @@ for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridW
   input.addEventListener('input', render);
 }
 window.addEventListener('resize', render);
+
+canvas.addEventListener('pointerenter', () => {
+  canvasHovered = true;
+});
+
+canvas.addEventListener('pointerleave', () => {
+  canvasHovered = false;
+});
+
+window.addEventListener('keydown', (event) => {
+  if (!canvasHovered || !image || !exportProgressWrap.hidden) return;
+  const adjustments = {
+    ArrowLeft: { input: panelWidth, direction: -1 },
+    ArrowRight: { input: panelWidth, direction: 1 },
+    ArrowDown: { input: panelHeight, direction: 1 },
+    ArrowUp: { input: panelHeight, direction: -1 }
+  };
+  const adjustment = adjustments[event.key];
+  if (!adjustment) return;
+
+  const step = Number(adjustment.input.step) || 0.01;
+  const minimum = Number(adjustment.input.min);
+  const maximum = Number(adjustment.input.max);
+  const nextValue = Number(adjustment.input.value) + adjustment.direction * step;
+  adjustment.input.value = Math.min(maximum, Math.max(minimum, nextValue)).toFixed(2);
+  render();
+  event.preventDefault();
+});
 
 function canvasPoint(event) {
   const rect = canvas.getBoundingClientRect();
@@ -514,5 +552,6 @@ exportButton.addEventListener('click', async () => {
 
 restoreDisplaySettings();
 selectOrientation('landscape', { dispatchChange: false });
-applyOrientationLimits({ resetToMaximum: true });
+updateOrientationAvailability();
+applyOrientationLimits({ resetToMaximum: paperInput.value !== 'custom' });
 updateLabels();

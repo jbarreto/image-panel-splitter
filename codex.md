@@ -8,7 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
-- Current application version: 1.22.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
+- Current application version: 1.23.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -28,8 +28,10 @@ Project summary:
 - Letter portrait max: 6.55 in wide × 9.26 in high.
 - Legal landscape max: 11.84 in wide × 6.76 in high.
 - Legal portrait max: 6.76 in wide × 11.84 in high.
-- GUI sliders and server/CLI validation must enforce the same orientation-aware limits.
+- Custom paper mode keeps the current dimensions, permits panel width and height up to 100 in, disables GUI orientation selection, and requires both --panel-width-in and --panel-height-in in the CLI.
+- GUI sliders and server/CLI validation must enforce the same paper-profile limits.
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
+- While the preview canvas is hovered, Left/Right adjust panel width and Up/Down adjust panel height; the grid line must move in the pressed arrow's visual direction and remain within the active limits.
 - The GUI unit selector switches only panel width/height, panel limits, and assembled-poster preview dimensions between centimeters and inches. Poster height and grid width inputs always remain in millimeters; the server contract remains panel inches plus poster/grid millimeters.
 - Imperial (`in`) is selected by default in the GUI unit selector.
 - Only paper size and unit-system selection persist in browser local storage under ronyka-panel-splitter.display-settings.v1.

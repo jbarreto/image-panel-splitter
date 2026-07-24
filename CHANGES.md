@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.22.0**
+**Current release: v1.23.0**
 
 ## 1. Project purpose
 
@@ -184,11 +184,16 @@ Maximum width:  6.76 in
 Maximum height: 11.84 in
 ```
 
-In the GUI, changing paper size or orientation:
+For Letter and Legal, changing paper size or orientation:
 
 - swaps the width and height maximums;
 - resets both dimensions to the maximum valid values for that orientation;
 - updates the preview immediately.
+
+Selecting `Custom` keeps the current panel dimensions and expands both maximums
+to `100 in`. The orientation control is disabled because custom width and height
+directly define the exported sheet. CLI custom mode requires both
+`--panel-width-in` and `--panel-height-in`.
 
 ## 6. Cricut DPI behavior
 
@@ -371,7 +376,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.22.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.23.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -379,12 +384,17 @@ The GUI provides:
 - regular file-picker input;
 - a selected-image label showing the filename and original pixel dimensions beneath the image picker;
 - orientation selection;
+- Letter, Legal, and Custom paper-size profiles; Custom permits panel
+  dimensions up to `100 × 100 in` and disables orientation selection;
 - a centimeter/inch selector for panel width, panel height, panel limits, and
   the assembled-poster dimensions in the preview summary; poster height and
   grid width inputs remain in millimeters, and imperial is selected by default;
 - panel width slider;
 - panel height slider;
-- draggable interior preview grid lines that update the matching width or height slider, with diagonal dragging anywhere inside a panel to update both;
+- draggable interior preview grid lines that update the matching width or
+  height slider, with diagonal dragging anywhere inside a panel to update both;
+- hover-based arrow-key grid adjustment: Left/Right move vertical grid lines
+  and Up/Down move horizontal grid lines in the corresponding visual direction;
 - DPI input;
 - target poster height in millimeters;
 - grid line width;
@@ -420,6 +430,14 @@ Legal height slider max:     11.84
 ```
 
 The front-end implementation is in `public/app.js`. Server-side validation is duplicated in `src/gui-server.js`; keep both implementations synchronized.
+
+Custom:
+
+```text
+Width slider max:  100
+Height slider max: 100
+Orientation control: disabled
+```
 
 ## 12. GUI export path
 
@@ -622,6 +640,8 @@ Do not break these without explicit user approval:
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
 34. The GUI does not expose a panel-number setting and its exports omit panel numbers; CLI numbering options remain supported.
 35. `scripts/install-update.mjs` runs on Windows and macOS, installs or updates directly from a GitHub source archive without requiring Git, replaces archive-managed application files, and installs locked dependencies with `npm ci`.
+36. Custom paper mode preserves the current panel dimensions, allows dimensions up to `100 × 100 in`, disables GUI orientation selection, and requires both custom panel dimensions in the CLI.
+37. While the pointer is over the preview canvas, Left/Right adjust panel width and Up/Down adjust panel height so grid lines move in the pressed direction without bypassing dimension limits.
 
 ## 17. Reconstructed version history
 
@@ -629,7 +649,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.22.0`.
+The history currently runs continuously from `v1.0.0` through `v1.23.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -745,12 +765,21 @@ The history currently runs continuously from `v1.0.0` through `v1.22.0`.
 - Removed the panel-number setting and its unused frontend code and styles.
 - GUI exports omit panel numbers while CLI numbering options remain available.
 
-### v1.22.0 — Git-free cross-platform updater (current)
+### v1.22.0 — Git-free cross-platform updater
 
 - Added a Node.js installer/updater for Windows and macOS that downloads and
   safely extracts GitHub source archives without requiring Git.
 - Added archive path validation, archive-managed file replacement, temporary
   download cleanup, Windows `npm.cmd` handling, and locked `npm ci` installs.
+
+### v1.23.0 — Custom paper and keyboard grid adjustment (current)
+
+- Added a Custom paper profile with panel dimensions up to `100 × 100 in`
+  across the GUI, GUI server, and CLI.
+- Disabled GUI orientation selection in Custom mode because its explicit width
+  and height define the exported sheet directly.
+- Added hover-based arrow-key adjustment for preview grid width and height,
+  with arrow directions matching the visual movement of the grid lines.
 
 ## 18. Recommended next improvements
 

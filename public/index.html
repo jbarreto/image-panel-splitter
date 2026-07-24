@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.22.0</span>
+          <span class="app-version">v1.23.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -30,6 +30,7 @@
         <select id="paper">
           <option value="letter" selected>US Letter</option>
           <option value="legal">US Legal</option>
+          <option value="custom">Custom</option>
         </select>
       </div>
       <div class="field">
@@ -72,7 +73,7 @@
         <label>Grid color<input id="gridColor" type="color" value="#01a86b" /></label>
       </div>
       <div id="stats" class="stats">Choose an image to preview the grid.</div>
-      <div class="grid-drag-note">Drag a grid line to adjust one dimension, or drag diagonally anywhere inside a panel to adjust width and height together.</div>
+      <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
       <button id="exportButton" disabled>Export panels ZIP</button>
 
       <div id="exportProgressWrap" class="progress-modal" role="dialog" aria-modal="true" aria-labelledby="exportProgressText" hidden>
