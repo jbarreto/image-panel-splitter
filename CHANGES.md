@@ -2,6 +2,8 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
+**Current release: v1.21.0**
+
 ## 1. Project purpose
 
 The project is a Node.js application that takes a large PNG or other Sharp-supported image and divides it into multiple print-sized PNG panels for assembling a large poster.
@@ -626,6 +628,8 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
+The history currently runs continuously from `v1.0.0` through `v1.21.0`.
+
 ### v1.0.0 — Core panel splitter
 
 - Added the Node.js CLI, actual-pixel crop mode, Letter paper output, assembly
@@ -735,7 +739,7 @@ feature-based milestones so future updates have a clear baseline.
 - Applied the rounded system-font family to settings labels, values, controls,
   notes, statistics, modal copy, and actions at font weight `500`.
 
-### v1.21.0 — Simplified GUI exports
+### v1.21.0 — Simplified GUI exports (current)
 
 - Removed the panel-number setting and its unused frontend code and styles.
 - GUI exports omit panel numbers while CLI numbering options remain available.
