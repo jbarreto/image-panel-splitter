@@ -23,6 +23,14 @@ npm install
 
 ## Install or update from GitHub
 
+For a fresh installation on macOS or Linux, run:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jbarreto/image-panel-splitter/main/scripts/install-update.mjs | node
+```
+
+This installs the application into `./ronyka-panel-splitter`.
+
 From an existing clone:
 
 ```bash
