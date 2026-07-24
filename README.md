@@ -21,6 +21,28 @@ The numbering runs from left to right and then top to bottom:
 npm install
 ```
 
+## Install or update from GitHub
+
+From an existing clone:
+
+```bash
+npm run update
+```
+
+The updater refuses to continue when local changes are present, fetches
+`origin/main`, applies only a fast-forward update, and installs the exact
+dependencies from `package-lock.json` with `npm ci`.
+
+For a fresh installation on Windows or macOS, download
+`scripts/install-update.mjs` and run it outside an existing clone, optionally
+passing the install directory:
+
+```bash
+node install-update.mjs ./ronyka-panel-splitter
+```
+
+Requirements are Git, npm, and Node.js 20.9.0 or newer.
+
 ## Basic usage — no scaling
 
 ```bash

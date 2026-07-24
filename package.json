@@ -10,7 +10,8 @@
   "scripts": {
     "start": "node src/index.js",
     "example": "node src/index.js examples/large-image.png --paper letter --dpi 300 --output output",
-    "gui": "node src/gui-server.js"
+    "gui": "node src/gui-server.js",
+    "update": "node scripts/install-update.mjs"
   },
   "engines": {
     "node": ">=20.9.0"

@@ -621,6 +621,7 @@ Do not break these without explicit user approval:
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
 34. The GUI does not expose a panel-number setting and its exports omit panel numbers; CLI numbering options remain supported.
+35. `scripts/install-update.mjs` runs on Windows and macOS, performs clean GitHub installs or safe fast-forward-only updates, and installs locked dependencies with `npm ci`.
 
 ## 17. Reconstructed version history
 
