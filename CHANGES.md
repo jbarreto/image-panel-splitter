@@ -27,6 +27,7 @@ The project provides:
 - GUI server: `express`
 - Upload handling: `multer`
 - ZIP generation: `archiver`
+- Logging: `winston`
 
 Current dependencies from `package.json`:
 
@@ -35,9 +36,15 @@ Current dependencies from `package.json`:
   "sharp": "^0.35.3",
   "express": "^5.1.0",
   "multer": "^2.0.2",
-  "archiver": "^7.0.1"
+  "archiver": "^7.0.1",
+  "winston": "^3.19.0"
 }
 ```
+
+The CLI and GUI server share `src/logger.js`. Logging defaults to `debug` and
+can be overridden with `LOG_LEVEL=info`, `LOG_LEVEL=warn`, or another Winston
+level. CLI diagnostic logs are written to stderr so its stable stdout progress
+lines remain parseable by the GUI server.
 
 ## 3. Repository layout
 
@@ -579,6 +586,7 @@ Do not break these without explicit user approval:
 16. The GUI performs conservative 24-hour stale cleanup on startup and hourly for crash recovery.
 17. GUI export progress reflects actual CLI panel creation rather than only displaying an indeterminate animation.
 18. Escape cancels an active modal export on both the browser and server and cleans up partial output.
+19. Shared Winston logging defaults to debug, and CLI diagnostic logs do not interfere with stdout panel-progress parsing.
 
 ## 17. Recommended next improvements
 

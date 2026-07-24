@@ -198,6 +198,18 @@ Then open `http://localhost:4173`.
 
 The GUI supports image drag-and-drop, live sliders for panel width and height, draggable preview grid lines as an alternative way to adjust those dimensions, diagonal dragging anywhere inside a panel to adjust both dimensions together, a real-time grid preview, poster-height scaling, transparency preservation, and ZIP export. Grid lines appear only in `original-with-grid.png`; exported panel PNGs remain clean.
 
+## Logging
+
+The CLI and GUI server use Winston with debug logging enabled by default.
+Set `LOG_LEVEL` to reduce or change verbosity:
+
+```bash
+LOG_LEVEL=info npm run gui
+LOG_LEVEL=warn node src/index.js input.png
+```
+
+Supported Winston levels include `error`, `warn`, `info`, and `debug`.
+
 ## Custom panel limits
 
 Custom panel dimensions depend on the selected paper size. The GUI sliders enforce these maximums, and both the CLI and GUI export endpoint reject larger values. Smaller values remain allowed.

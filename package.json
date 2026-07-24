@@ -16,10 +16,11 @@
     "node": ">=20.9.0"
   },
   "dependencies": {
-    "sharp": "^0.35.3",
+    "archiver": "^7.0.1",
     "express": "^5.1.0",
     "multer": "^2.0.2",
-    "archiver": "^7.0.1"
+    "sharp": "^0.35.3",
+    "winston": "^3.19.0"
   },
   "license": "MIT"
 }

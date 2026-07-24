@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import sharp from 'sharp';
+import logger from './logger.js';
 
 const PAPER_SIZES_MM = {
   letter: { width: 215.9, height: 279.4, displayName: 'US Letter' },
@@ -457,7 +458,7 @@ async function main() {
   const { input, options } = parsed;
   const inputPath = path.resolve(input);
   const outputDir = path.resolve(options.output);
-console.log(outputDir);
+  logger.debug('Starting image split.', { inputPath, outputDir });
   await fs.access(inputPath);
   await fs.mkdir(outputDir, { recursive: true });
 
@@ -494,6 +495,11 @@ console.log(outputDir);
   const source = openImage(inputPath).rotate().ensureAlpha();
   const sourceImage = await source.png().toBuffer();
   const metadata = await openImage(sourceImage).metadata();
+  logger.debug('Source image decoded.', {
+    width: metadata.width,
+    height: metadata.height,
+    channels: metadata.channels
+  });
   const scaled = calculateScaledDimensions(metadata, options, printableWidth, printableHeight);
 
   const scalingRequested =
@@ -509,6 +515,11 @@ console.log(outputDir);
         .png()
         .toBuffer()
     : sourceImage;
+  logger.debug('Working image prepared.', {
+    scalingRequested,
+    width: scaled.width,
+    height: scaled.height
+  });
 
   const gridWidthPx = options.gridLines
     ? Math.max(1, mmToPixels(options.gridLineWidthMm, options.dpi))
@@ -524,9 +535,11 @@ console.log(outputDir);
   const stepY = contentHeight - overlap;
   const columns = Math.max(1, Math.ceil((scaled.width - overlap) / stepX));
   const rows = Math.max(1, Math.ceil((scaled.height - overlap) / stepY));
+  logger.debug('Panel grid calculated.', { rows, columns, total: rows * columns });
 
   // Build a separate grid preview. Exported panels always come from baseWorkingImage.
   if (options.gridLines && options.gridMode === 'overlay') {
+    logger.debug('Generating overlay grid preview.');
     const verticalLines = [0];
     const horizontalLines = [0];
     for (let column = 1; column < columns; column += 1) {
@@ -556,6 +569,7 @@ console.log(outputDir);
       .withMetadata({ density: options.dpi })
       .toFile(path.join(outputDir, 'original-with-grid.png'));
   } else if (options.gridLines && options.gridMode === 'padding') {
+    logger.debug('Generating padded grid preview.');
     const previewWidth = scaled.width + Math.max(0, columns - 1) * gridWidthPx;
     const previewHeight = scaled.height + Math.max(0, rows - 1) * gridWidthPx;
     const previewComposites = [];
@@ -756,10 +770,12 @@ console.log(outputDir);
   ].join('\n');
 
   await fs.writeFile(path.join(outputDir, 'assembly-guide.txt'), textGuide, 'utf8');
+  logger.info('Image split completed.', { outputDir, panels: total });
   console.log(`\nDone. Files saved in: ${outputDir}`);
 }
 
 main().catch((error) => {
+  logger.error('Image split failed.', { error: error.message, stack: error.stack });
   console.error(`Error: ${error.message}`);
   process.exitCode = 1;
 });
