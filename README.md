@@ -287,3 +287,8 @@ computationally hard, so the result is an optimized layout rather than a
 guaranteed global minimum. Generated regions never overlap, so a source-image
 segment cannot be repeated across exported panels. The preview rectangles,
 exported PNG panels, grid preview, and assembly guide all use the same layout.
+While the toggle remains on, changing panel dimensions, DPI, poster height,
+or paper size automatically recalculates the layout. The orientation control
+is disabled because automatic mode chooses portrait or landscape separately
+for each generated panel. Press `Shift+A` outside an input control to toggle
+automatic mode from the keyboard.

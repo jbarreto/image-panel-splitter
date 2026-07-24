@@ -71,6 +71,8 @@ button:disabled { opacity: .45; cursor: default; }
 .toggle-button[aria-pressed="true"] .toggle-track { background: var(--cricut-green-dark); }
 .toggle-button[aria-pressed="true"] .toggle-knob { transform: translateX(28px); }
 .toggle-button[aria-pressed="true"] .toggle-state { right: auto; left: 8px; color: white; }
+.auto-layout-control { margin-top: 4px; }
+.toggle-note { margin: 6px 4px 0; color: #777; font-size: 11px; line-height: 1.35; }
 button.orientation-option:hover:not(:disabled) { border-color: #7ac9a8; background: var(--cricut-mint-light); color: var(--cricut-green-dark); box-shadow: none; transform: none; }
 button.orientation-option:active:not(:disabled) { border-color: var(--cricut-green); background: var(--cricut-mint); color: var(--cricut-green-dark); transform: none; }
 button.orientation-option.selected,

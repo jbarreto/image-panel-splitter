@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.23.0**
+**Current release: v1.24.0**
 
 ## 1. Project purpose
 
@@ -376,7 +376,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.23.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.24.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -649,7 +649,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.23.0`.
+The history currently runs continuously from `v1.0.0` through `v1.24.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -772,7 +772,7 @@ The history currently runs continuously from `v1.0.0` through `v1.23.0`.
 - Added archive path validation, archive-managed file replacement, temporary
   download cleanup, Windows `npm.cmd` handling, and locked `npm ci` installs.
 
-### v1.23.0 — Custom paper and keyboard grid adjustment (current)
+### v1.23.0 — Custom paper and keyboard grid adjustment
 
 - Added a Custom paper profile with panel dimensions up to `100 × 100 in`
   across the GUI, GUI server, and CLI.
@@ -781,7 +781,7 @@ The history currently runs continuously from `v1.0.0` through `v1.23.0`.
 - Added hover-based arrow-key adjustment for preview grid width and height,
   with arrow directions matching the visual movement of the grid lines.
 
-### Unreleased — Artwork-aware mixed-orientation layouts
+### v1.24.0 — Artwork-aware mixed-orientation layouts (current)
 
 - Added an **Auto minimize panels** GUI toggle that detects visible artwork
   when enabled and restores the uniform grid when disabled. It
@@ -794,6 +794,12 @@ The history currently runs continuously from `v1.0.0` through `v1.23.0`.
 - Replaced overlapping set-cover placement with disjoint recursive artwork
   partitioning and added CLI overlap rejection, preventing duplicate image
   segments across exported panels.
+- Kept automatic mode enabled and recalculated its panels when layout-affecting
+  dimensions, DPI, poster height, or paper size change.
+- Disabled the global orientation setting while automatic mode is enabled,
+  because each generated panel selects its own orientation.
+- Added `Shift+A` as the keyboard shortcut for toggling automatic mode outside
+  editable controls and the export modal.
 
 ## 18. Recommended next improvements
 

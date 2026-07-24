@@ -39,6 +39,7 @@ function setAutoLayout(layout) {
   autoLayout = layout;
   autoGridButton.setAttribute('aria-pressed', String(Boolean(layout)));
   autoGridButton.querySelector('.toggle-state').textContent = layout ? 'On' : 'Off';
+  updateOrientationAvailability();
 }
 
 const panelLimitText = $('panelLimit');
@@ -423,6 +424,25 @@ autoGridButton.addEventListener('click', () => {
   render();
 });
 
+document.addEventListener('keydown', (event) => {
+  const editingControl = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+  if (
+    event.repeat ||
+    editingControl ||
+    !exportProgressWrap.hidden ||
+    autoGridButton.disabled ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    !event.shiftKey ||
+    event.key.toLowerCase() !== 'a'
+  ) {
+    return;
+  }
+  event.preventDefault();
+  autoGridButton.click();
+});
+
 function selectOrientation(orientation, { dispatchChange = true } = {}) {
   orientationInput.value = orientation;
   for (const option of orientationButtons) {
@@ -434,8 +454,13 @@ function selectOrientation(orientation, { dispatchChange = true } = {}) {
 }
 
 function updateOrientationAvailability() {
-  const disabled = paperInput.value === 'custom';
+  const disabled = paperInput.value === 'custom' || Boolean(autoLayout);
   for (const option of orientationButtons) option.disabled = disabled;
+}
+
+function recalculateAutoLayout() {
+  if (!autoLayout || !image) return;
+  setAutoLayout(buildAutoLayout());
 }
 
 for (const button of orientationButtons) {
@@ -445,9 +470,9 @@ for (const button of orientationButtons) {
 }
 for (const input of [paperInput, orientationInput]) {
   input.addEventListener('change', () => {
-    setAutoLayout(undefined);
     updateOrientationAvailability();
     applyOrientationLimits({ resetToMaximum: paperInput.value !== 'custom' });
+    recalculateAutoLayout();
     render();
     if (input === paperInput) saveDisplaySettings();
   });
@@ -459,7 +484,7 @@ unitSystemInput.addEventListener('change', () => {
 for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridWidthInput, gridColorInput]) {
   input.addEventListener('input', () => {
     if ([panelWidth, panelHeight, dpiInput, targetHeightInput].includes(input)) {
-      setAutoLayout(undefined);
+      recalculateAutoLayout();
     }
     render();
   });
