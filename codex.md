@@ -8,6 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Image Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
+- Current application version: 1.18.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized for every release.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -29,6 +30,7 @@ Project summary:
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
 - The GUI unit selector switches only panel width/height, panel limits, and assembled-poster preview dimensions between centimeters and inches. Poster height and grid width inputs always remain in millimeters; the server contract remains panel inches plus poster/grid millimeters.
 - Imperial (`in`) is selected by default in the GUI unit selector.
+- Only paper size and unit-system selection persist in browser local storage under ronyka-panel-splitter.display-settings.v1.
 - The assembled-poster preview summary places poster dimensions on a separate line ending with `(W × H)`.
 - GUI ZIP export uses a modal progress bar, a unique export ID, and polling through /api/export-progress/:id; preserve actual per-panel progress plus preparing, zipping, completion, cancellation, and error phases.
 - Pressing Escape during an active export must abort the browser request, call DELETE /api/export/:id, terminate the matching CLI process, and remove partial temporary output. A second Escape press dismisses the modal without allowing the asynchronous cancellation result to reopen it.

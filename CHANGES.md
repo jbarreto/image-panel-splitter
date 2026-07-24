@@ -369,7 +369,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.0.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.18.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -615,8 +615,114 @@ Do not break these without explicit user approval:
 27. Switching the GUI unit system displays panel dimensions and limits plus the assembled-poster preview summary in centimeters or inches; poster height and grid width inputs remain in millimeters.
 28. Imperial (`in`) is the default GUI display unit.
 29. The assembled-poster preview summary displays poster dimensions on a separate line and labels their order as `(W × H)`.
+30. Paper size and metric/imperial selection persist in browser local storage; other GUI settings and uploaded image data do not.
 
-## 17. Recommended next improvements
+## 17. Reconstructed version history
+
+The repository did not previously contain release tags for these individual
+changes. The versions below assign the implemented features to semantic,
+feature-based milestones so future updates have a clear baseline.
+
+### v1.0.0 — Core panel splitter
+
+- Added the Node.js CLI, actual-pixel crop mode, Letter paper output, assembly
+  guides, and left-to-right/top-to-bottom panel generation.
+
+### v1.1.0 — Physical scaling and print metadata
+
+- Added DPI metadata, target width/height scaling, margins, overlap, and
+  explicit separation between actual-pixel and intentional scaling modes.
+
+### v1.2.0 — Custom panel limits
+
+- Added custom panel dimensions, portrait/landscape handling, US Legal support,
+  and matching CLI/server validation for Letter and Legal limits.
+
+### v1.3.0 — Transparency
+
+- Preserved alpha through source decoding, resizing, cropping, partial panels,
+  margins, and preview generation.
+
+### v1.4.0 — Preview-only grids
+
+- Added overlay and padding grid previews while keeping individual panel PNGs
+  clean and leaving crop geometry unchanged.
+
+### v1.5.0 — Panel numbering
+
+- Added numbering from zero, inside-curve placement, center/top/bottom modes,
+  readable number markers, fallbacks, and number-disable aliases.
+
+### v1.6.0 — Local browser GUI
+
+- Added Express/Multer GUI service, drag-and-drop uploads, live preview,
+  physical controls, panel counts, and browser ZIP downloads.
+
+### v1.7.0 — Interactive grid sizing
+
+- Added draggable vertical/horizontal preview grid lines and diagonal
+  interior-panel dragging with orientation-aware dimension clamping.
+
+### v1.8.0 — Export lifecycle
+
+- Added per-request temporary workspaces, ZIP streaming, immediate upload
+  cleanup, and export-directory removal after response completion, close, or
+  handled failure.
+
+### v1.9.0 — Crash-recovery cleanup
+
+- Added startup and hourly cleanup for app-owned temporary exports and uploads
+  older than 24 hours.
+
+### v1.10.0 — Large poster support
+
+- Disabled Sharp's default input-pixel limit for poster-sized source and
+  intermediate buffers, including the full-size grid composite.
+
+### v1.11.0 — Live export progress
+
+- Added export IDs, progress polling, real per-panel counts, ZIP/download
+  phases, record expiry, and the blocking progress modal.
+
+### v1.12.0 — Export cancellation
+
+- Added Escape cancellation, server-side CLI termination, archive abort,
+  partial-output cleanup, second-Escape dismissal, and terminal modal hints.
+
+### v1.13.0 — Structured logging
+
+- Added shared Winston logging for the CLI and GUI server, debug as the default
+  level, `LOG_LEVEL` overrides, and stderr isolation for parseable CLI progress.
+
+### v1.14.0 — GUI feedback cleanup
+
+- Moved all export feedback into the modal, restored the dedicated selected
+  image filename/pixel label, and removed status text below the export button.
+
+### v1.15.0 — Cricut-inspired visual system
+
+- Added the green/charcoal/white/mint GUI theme, corrected orientation-button
+  interaction contrast, and set the default grid color to `#01a86b`.
+
+### v1.16.0 — Ronyka branding
+
+- Added the supplied Ronyka logo, `Ronyka Panel Splitter` browser title,
+  `Panel Splitter` heading, and synchronized GUI version label.
+
+### v1.17.0 — Units and preview summary
+
+- Added centimeter/inch display for panel dimensions, limits, and poster
+  summary; made imperial the default; retained millimeters for poster height
+  and grid width; and placed poster `W × H` on its own line.
+
+### v1.18.0 — Display preference persistence
+
+- Persisted only paper size and metric/imperial selection in browser local
+  storage under `ronyka-panel-splitter.display-settings.v1`.
+- Restored preferences during GUI initialization while leaving all other GUI
+  settings and uploaded images transient.
+
+## 18. Recommended next improvements
 
 These items were discussed or are natural next steps, but should not be assumed implemented:
 
