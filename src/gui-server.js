@@ -13,8 +13,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 const publicDir = path.join(rootDir, 'public');
-const upload = multer({ dest: path.join(os.tmpdir(), 'image-panel-splitter-uploads') });
+const tempDir = os.tmpdir();
+const uploadDir = path.join(tempDir, 'image-panel-splitter-uploads');
+const exportDirPrefix = 'image-panel-splitter-';
+const staleTempAgeMs = 24 * 60 * 60 * 1000;
+const cleanupIntervalMs = 60 * 60 * 1000;
+const progressRetentionMs = 10 * 60 * 1000;
+const progressCleanupIntervalMs = 60 * 1000;
+const upload = multer({ dest: uploadDir });
 const app = express();
+const exportProgress = new Map();
+const exportJobs = new Map();
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
@@ -22,29 +31,141 @@ const PANEL_LIMITS_IN = {
 
 app.use(express.static(publicDir));
 
-function runCli(args) {
+async function removeIfStale(targetPath, now) {
+  try {
+    const stats = await fsp.stat(targetPath);
+    if (now - stats.mtimeMs < staleTempAgeMs) return false;
+    await fsp.rm(targetPath, { recursive: true, force: true });
+    return true;
+  } catch (error) {
+    if (error.code === 'ENOENT') return false;
+    throw error;
+  }
+}
+
+async function cleanupStaleTempFiles() {
+  const now = Date.now();
+  let removed = 0;
+
+  try {
+    const entries = await fsp.readdir(tempDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (
+        entry.isDirectory() &&
+        entry.name.startsWith(exportDirPrefix) &&
+        entry.name !== path.basename(uploadDir)
+      ) {
+        if (await removeIfStale(path.join(tempDir, entry.name), now)) removed += 1;
+      }
+    }
+  } catch (error) {
+    console.warn(`Could not clean stale export directories: ${error.message}`);
+  }
+
+  try {
+    const uploads = await fsp.readdir(uploadDir, { withFileTypes: true });
+    for (const entry of uploads) {
+      if (await removeIfStale(path.join(uploadDir, entry.name), now)) removed += 1;
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') {
+      console.warn(`Could not clean stale uploads: ${error.message}`);
+    }
+  }
+
+  if (removed > 0) console.log(`Removed ${removed} stale temporary item(s).`);
+}
+
+function runCli(args, onOutputLine, job) {
   return new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [path.join(rootDir, 'src', 'index.js'), ...args], {
       cwd: rootDir,
       stdio: ['ignore', 'pipe', 'pipe']
     });
+    job.child = child;
+    if (job.canceled) child.kill();
     let stdout = '';
     let stderr = '';
-    child.stdout.on('data', (chunk) => { stdout += chunk; });
+    let pendingLine = '';
+    child.stdout.on('data', (chunk) => {
+      const text = chunk.toString();
+      stdout += text;
+      const lines = `${pendingLine}${text}`.split(/\r?\n/);
+      pendingLine = lines.pop() || '';
+      for (const line of lines) onOutputLine?.(line);
+    });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', reject);
     child.on('close', (code) => {
-      if (code === 0) resolve(stdout);
+      job.child = undefined;
+      if (pendingLine) onOutputLine?.(pendingLine);
+      if (job.canceled) reject(new Error('Export canceled.'));
+      else if (code === 0) resolve(stdout);
       else reject(new Error(stderr || stdout || `Splitter exited with code ${code}`));
     });
   });
 }
 
+app.get('/api/export-progress/:id', (req, res) => {
+  const progress = exportProgress.get(req.params.id);
+  if (!progress) {
+    res.status(404).json({ error: 'Export progress is not available yet.' });
+    return;
+  }
+  res.json(progress);
+});
+
+app.delete('/api/export/:id', (req, res) => {
+  const job = exportJobs.get(req.params.id);
+  if (!job) {
+    res.status(404).json({ error: 'Active export not found.' });
+    return;
+  }
+  job.canceled = true;
+  job.child?.kill();
+  job.archive?.abort();
+  job.response?.destroy();
+  res.status(202).json({ canceled: true });
+});
+
 app.post('/api/export', upload.single('image'), async (req, res) => {
   let workDir;
+  let workDirCleanup;
+  let job;
+  const exportId = String(req.body.exportId || '');
+  const updateProgress = (changes) => {
+    if (!exportId) return;
+    exportProgress.set(exportId, {
+      ...exportProgress.get(exportId),
+      ...changes,
+      updatedAt: Date.now()
+    });
+  };
   try {
     if (!req.file) throw new Error('Please select a PNG image.');
-    workDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'image-panel-splitter-'));
+    if (!/^[a-zA-Z0-9-]{8,80}$/.test(exportId)) throw new Error('A valid export ID is required.');
+    job = { canceled: false, finished: false, response: res };
+    exportJobs.set(exportId, job);
+    updateProgress({ phase: 'preparing', completed: 0, total: 0 });
+    workDir = await fsp.mkdtemp(path.join(tempDir, exportDirPrefix));
+    let cleanupStarted = false;
+    workDirCleanup = () => {
+      if (cleanupStarted) return;
+      cleanupStarted = true;
+      fsp.rm(workDir, { recursive: true, force: true }).catch((error) => {
+        console.warn(`Could not remove temporary export directory: ${error.message}`);
+      });
+    };
+    res.once('finish', workDirCleanup);
+    res.once('close', () => {
+      workDirCleanup();
+      if (!job.finished && !job.canceled) {
+        job.canceled = true;
+        job.child?.kill();
+        job.archive?.abort();
+      }
+    });
+    console.log(workDir)
     const outputDir = path.join(workDir, 'panels');
     const panelWidth = Number(req.body.panelWidthIn);
     const panelHeight = Number(req.body.panelHeightIn);
@@ -84,25 +205,54 @@ app.post('/api/export', upload.single('image'), async (req, res) => {
       args.push('--number-size-mm', String(Number(req.body.numberSizeMm || 30)));
     }
 
-    await runCli(args);
+    await runCli(args, (line) => {
+      const gridMatch = line.match(/=\s*(\d+)\s+panel\(s\)/);
+      if (gridMatch) updateProgress({ phase: 'generating', total: Number(gridMatch[1]) });
+      if (line.startsWith('Created ')) {
+        const current = exportProgress.get(exportId);
+        updateProgress({ phase: 'generating', completed: (current?.completed || 0) + 1 });
+      }
+    }, job);
 
+    updateProgress({ phase: 'zipping' });
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="poster-panels.zip"');
     const archive = archiver('zip', { zlib: { level: 9 } });
+    job.archive = archive;
     archive.on('error', (error) => { throw error; });
     archive.pipe(res);
     archive.directory(outputDir, false);
     await archive.finalize();
+    job.finished = true;
+    updateProgress({ phase: 'complete' });
   } catch (error) {
-    if (!res.headersSent) res.status(400).json({ error: error.message });
+    const canceled = job?.canceled;
+    updateProgress({
+      phase: canceled ? 'canceled' : 'error',
+      error: canceled ? 'Export canceled.' : error.message
+    });
+    if (!res.headersSent && !res.destroyed) {
+      res.status(canceled ? 499 : 400).json({ error: canceled ? 'Export canceled.' : error.message });
+    }
     else res.destroy(error);
   } finally {
+    if (job) exportJobs.delete(exportId);
     if (req.file?.path) fsp.rm(req.file.path, { force: true }).catch(() => {});
-    if (workDir) setTimeout(() => fsp.rm(workDir, { recursive: true, force: true }).catch(() => {}), 30_000);
+    if (workDir && !res.headersSent) workDirCleanup?.();
   }
 });
 
 const port = Number(process.env.PORT || 4173);
+await cleanupStaleTempFiles();
+const cleanupTimer = setInterval(cleanupStaleTempFiles, cleanupIntervalMs);
+cleanupTimer.unref();
+const progressCleanupTimer = setInterval(() => {
+  const cutoff = Date.now() - progressRetentionMs;
+  for (const [id, progress] of exportProgress) {
+    if (progress.updatedAt < cutoff) exportProgress.delete(id);
+  }
+}, progressCleanupIntervalMs);
+progressCleanupTimer.unref();
 app.listen(port, () => {
   console.log(`Image Panel Splitter GUI: http://localhost:${port}`);
 });

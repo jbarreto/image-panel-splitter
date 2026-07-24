@@ -189,6 +189,14 @@ function mmToPixels(mm, dpi) {
   return Math.round((mm / 25.4) * dpi);
 }
 
+// Poster-sized intermediates can legitimately exceed Sharp's default
+// 268-megapixel input safety limit. The source and every intermediate image
+// are opened through this helper so re-reading an encoded buffer does not
+// accidentally restore that default limit.
+function openImage(input) {
+  return sharp(input, { limitInputPixels: false });
+}
+
 function escapeXml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -282,7 +290,7 @@ async function findInsideNumberPosition(tileBuffer, width, height, fontSize) {
   const scale = Math.min(1, maxAnalysisSide / Math.max(width, height));
   const analysisWidth = Math.max(1, Math.round(width * scale));
   const analysisHeight = Math.max(1, Math.round(height * scale));
-  const { data } = await sharp(tileBuffer)
+  const { data } = await openImage(tileBuffer)
     .resize(analysisWidth, analysisHeight, { fit: 'fill', kernel: 'nearest' })
     .flatten({ background: 'white' })
     .greyscale()
@@ -449,7 +457,7 @@ async function main() {
   const { input, options } = parsed;
   const inputPath = path.resolve(input);
   const outputDir = path.resolve(options.output);
-
+console.log(outputDir);
   await fs.access(inputPath);
   await fs.mkdir(outputDir, { recursive: true });
 
@@ -483,9 +491,9 @@ async function main() {
     throw new Error('Overlap must be smaller than the printable width and height.');
   }
 
-  const source = sharp(inputPath, { limitInputPixels: false }).rotate().ensureAlpha();
+  const source = openImage(inputPath).rotate().ensureAlpha();
   const sourceImage = await source.png().toBuffer();
-  const metadata = await sharp(sourceImage).metadata();
+  const metadata = await openImage(sourceImage).metadata();
   const scaled = calculateScaledDimensions(metadata, options, printableWidth, printableHeight);
 
   const scalingRequested =
@@ -496,7 +504,7 @@ async function main() {
   // In actual mode, do not call resize at all. Each source pixel is copied
   // unchanged into exactly one page crop (or repeated only by overlap).
   const baseWorkingImage = scalingRequested
-    ? await sharp(sourceImage)
+    ? await openImage(sourceImage)
         .resize(scaled.width, scaled.height, { fit: 'fill' })
         .png()
         .toBuffer()
@@ -538,12 +546,12 @@ async function main() {
       gridWidthPx,
       options.gridColor
     );
-    const gridPreviewImage = await sharp(baseWorkingImage)
-      .composite([{ input: gridSvg, left: 0, top: 0 }])
+    const gridPreviewImage = await openImage(baseWorkingImage)
+      .composite([{ input: gridSvg, left: 0, top: 0, limitInputPixels: false }])
       .png()
       .toBuffer();
 
-    await sharp(gridPreviewImage)
+    await openImage(gridPreviewImage)
       .png({ compressionLevel: 9 })
       .withMetadata({ density: options.dpi })
       .toFile(path.join(outputDir, 'original-with-grid.png'));
@@ -557,7 +565,7 @@ async function main() {
         const top = row * stepY;
         const cropWidth = Math.min(contentWidth, scaled.width - left);
         const cropHeight = Math.min(contentHeight, scaled.height - top);
-        const crop = await sharp(baseWorkingImage)
+        const crop = await openImage(baseWorkingImage)
           .extract({ left, top, width: cropWidth, height: cropHeight })
           .png()
           .toBuffer();
@@ -619,7 +627,7 @@ async function main() {
       const label = `Panel ${numberText} of ${lastPanelNumber}  •  ${positionText}`;
       const filename = `${options.prefix}-${numberText}-r${row + 1}-c${column + 1}.png`;
 
-      const rawTile = await sharp(baseWorkingImage)
+      const rawTile = await openImage(baseWorkingImage)
         .extract({ left, top, width: cropWidth, height: cropHeight })
         .extend({
           top: 0,

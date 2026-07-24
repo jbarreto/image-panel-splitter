@@ -23,7 +23,13 @@ Project summary:
 - Legal portrait max: 6.76 in wide × 11.84 in high.
 - GUI sliders and server/CLI validation must enforce the same orientation-aware limits.
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
+- GUI ZIP export uses a modal progress bar, a unique export ID, and polling through /api/export-progress/:id; preserve actual per-panel progress plus preparing, zipping, completion, cancellation, and error phases.
+- Pressing Escape during an active export must abort the browser request, call DELETE /api/export/:id, terminate the matching CLI process, and remove partial temporary output. A second Escape press dismisses the modal without allowing the asynchronous cancellation result to reopen it.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.
+- Large target posters, including a 4000 mm target height, can exceed Sharp's default input pixel limit. Preserve the openImage() handling for source and intermediate poster buffers and the disabled pixel limit on the full-size grid composite.
+- GUI temporary paths are rooted at os.tmpdir(), not a hard-coded /tmp path.
+- Delete each generated export directory when the ZIP response finishes, the client connection closes, or the request fails. Delete the uploaded source in the request cleanup.
+- Preserve crash recovery: on GUI startup and once per hour, delete only app-owned temporary export directories and uploads older than 24 hours.
 - Do not claim a feature is implemented until you inspect and verify the code.
 
 Before editing:
@@ -32,7 +38,8 @@ Before editing:
 3. Summarize any mismatch between documentation and implementation.
 4. Make the requested change while preserving all invariants in CHANGES.md.
 5. Run syntax checks and any feasible functional tests.
-6. Return an updated ZIP and briefly list changed files and validation results.
+6. For GUI export changes, verify success, failure/disconnect cleanup, and avoid deleting active or recent exports.
+7. Return an updated ZIP and briefly list changed files and validation results.
 ```
 
 ## 2. Suggested first message after loading the project

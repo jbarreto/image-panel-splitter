@@ -63,6 +63,18 @@
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, or drag diagonally anywhere inside a panel to adjust width and height together.</div>
       <button id="exportButton" disabled>Export panels ZIP</button>
       <div id="status" class="status" aria-live="polite"></div>
+
+      <div id="exportProgressWrap" class="progress-modal" role="dialog" aria-modal="true" aria-labelledby="exportProgressText" hidden>
+        <div class="progress-modal-card">
+          <div class="export-progress-label">
+            <span id="exportProgressText">Preparing export…</span>
+            <span id="exportProgressPercent">0%</span>
+          </div>
+          <progress id="exportProgress" max="100" value="0">0%</progress>
+          <div class="progress-cancel-hint">Press Esc to cancel generation.</div>
+          <button id="exportProgressClose" class="progress-close" type="button" hidden>Close</button>
+        </div>
+      </div>
     </section>
 
     <section class="preview-wrap">

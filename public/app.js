@@ -13,6 +13,11 @@ const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
 const printNumbersInput = $('printNumbers');
 const exportButton = $('exportButton');
+const exportProgressWrap = $('exportProgressWrap');
+const exportProgress = $('exportProgress');
+const exportProgressText = $('exportProgressText');
+const exportProgressPercent = $('exportProgressPercent');
+const exportProgressClose = $('exportProgressClose');
 const canvas = $('preview');
 const ctx = canvas.getContext('2d');
 const stats = $('stats');
@@ -22,6 +27,7 @@ let file;
 let image;
 let previewGrid;
 let gridDrag;
+let activeExport;
 
 const panelLimitText = $('panelLimit');
 
@@ -131,6 +137,7 @@ function render() {
 
 async function loadFile(selected) {
   if (!selected) return;
+  resetExportProgress();
   file = selected;
   const url = URL.createObjectURL(file);
   image = new Image();
@@ -309,10 +316,103 @@ for (const eventName of ['dragleave', 'drop']) {
 }
 dropZone.addEventListener('drop', (event) => loadFile(event.dataTransfer.files[0]));
 
+function showExportProgress(value, text) {
+  const percent = Math.max(0, Math.min(100, Math.round(value)));
+  exportProgressWrap.hidden = false;
+  exportProgress.value = percent;
+  exportProgress.textContent = `${percent}%`;
+  exportProgressPercent.textContent = `${percent}%`;
+  exportProgressText.textContent = text;
+  exportProgressClose.hidden = true;
+}
+
+function resetExportProgress() {
+  exportProgressWrap.hidden = true;
+  exportProgress.value = 0;
+  exportProgress.textContent = '0%';
+  exportProgressPercent.textContent = '0%';
+  exportProgressText.textContent = 'Preparing export…';
+  exportProgressClose.hidden = true;
+}
+
+function finishExportProgress(success, text = success ? 'Export complete.' : 'Export failed.') {
+  showExportProgress(success ? 100 : 0, text);
+  exportProgressClose.hidden = false;
+  exportProgressClose.focus();
+}
+
+exportProgressClose.addEventListener('click', resetExportProgress);
+
+async function cancelActiveExport() {
+  if (!activeExport || activeExport.canceling) return;
+  activeExport.canceling = true;
+  showExportProgress(exportProgress.value, 'Canceling export…');
+  activeExport.progressController.abort();
+  activeExport.requestController.abort();
+  try {
+    await fetch(`/api/export/${encodeURIComponent(activeExport.id)}`, { method: 'DELETE' });
+  } catch {
+    // Aborting the original request also closes the server response, which
+    // independently terminates an active generator.
+  }
+}
+
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || exportProgressWrap.hidden) return;
+  event.preventDefault();
+  if (activeExport && !activeExport.canceling) {
+    cancelActiveExport();
+  } else {
+    if (activeExport) activeExport.dismissOnFinish = true;
+    resetExportProgress();
+  }
+});
+
+async function pollExportProgress(exportId, signal) {
+  while (!signal.aborted) {
+    try {
+      const response = await fetch(`/api/export-progress/${encodeURIComponent(exportId)}`, { signal });
+      if (response.ok) {
+        const progress = await response.json();
+        if (progress.phase === 'generating') {
+          const ratio = progress.total > 0 ? progress.completed / progress.total : 0;
+          showExportProgress(
+            10 + ratio * 80,
+            progress.total > 0
+              ? `Generating panel ${Math.min(progress.completed, progress.total)} of ${progress.total}…`
+              : 'Calculating panels…'
+          );
+        } else if (progress.phase === 'preparing') {
+          showExportProgress(8, 'Preparing poster…');
+        } else if (progress.phase === 'zipping') {
+          showExportProgress(92, 'Creating ZIP…');
+        } else if (progress.phase === 'complete') {
+          showExportProgress(96, 'Downloading ZIP…');
+        }
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+}
+
 exportButton.addEventListener('click', async () => {
   if (!file) return;
   exportButton.disabled = true;
   status.textContent = 'Generating panels…';
+  showExportProgress(2, 'Uploading image…');
+  const exportId = crypto.randomUUID();
+  const progressController = new AbortController();
+  const requestController = new AbortController();
+  activeExport = {
+    id: exportId,
+    progressController,
+    requestController,
+    canceling: false,
+    dismissOnFinish: false
+  };
+  const progressPolling = pollExportProgress(exportId, progressController.signal);
   try {
     const v = values();
     const form = new FormData();
@@ -328,11 +428,17 @@ exportButton.addEventListener('click', async () => {
     form.append('gridMode', 'overlay');
     form.append('marginMm', '0');
     form.append('printNumbers', String(printNumbersInput.checked));
-    const response = await fetch('/api/export', { method: 'POST', body: form });
+    form.append('exportId', exportId);
+    const response = await fetch('/api/export', {
+      method: 'POST',
+      body: form,
+      signal: requestController.signal
+    });
     if (!response.ok) {
       const payload = await response.json().catch(() => ({}));
       throw new Error(payload.error || 'Export failed.');
     }
+    showExportProgress(96, 'Downloading ZIP…');
     const blob = await response.blob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -340,10 +446,17 @@ exportButton.addEventListener('click', async () => {
     link.download = 'poster-panels.zip';
     link.click();
     URL.revokeObjectURL(url);
+    finishExportProgress(true);
     status.textContent = 'Export complete.';
   } catch (error) {
-    status.textContent = error.message;
+    const canceled = activeExport?.id === exportId && activeExport.canceling;
+    const dismissed = activeExport?.id === exportId && activeExport.dismissOnFinish;
+    if (!dismissed) finishExportProgress(false, canceled ? 'Export canceled.' : 'Export failed.');
+    status.textContent = canceled ? 'Export canceled.' : error.message;
   } finally {
+    progressController.abort();
+    await progressPolling;
+    if (activeExport?.id === exportId) activeExport = undefined;
     exportButton.disabled = false;
   }
 });

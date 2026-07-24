@@ -93,6 +93,28 @@ node src/index.js input.png \
 
 A target physical dimension overrides strict no-scaling intent. Do not describe `--fit actual` and `--target-height-mm` as simultaneously preserving original scale; the target dimension intentionally scales the complete image.
 
+### 4.3 Large poster pixel limits
+
+Poster-sized intermediate images can legitimately exceed Sharp's default input
+safety limit of approximately 268 megapixels. This is especially likely with a
+large physical target such as:
+
+```text
+--target-height-mm 4000
+```
+
+`src/index.js` opens the source and all encoded intermediate poster buffers
+through `openImage()`, which sets:
+
+```js
+{ limitInputPixels: false }
+```
+
+The full-size SVG grid composite also disables the input pixel limit. Preserve
+this behavior when adding image-processing stages; reopening a poster-sized
+buffer with a plain `sharp(buffer)` can reintroduce the
+`Input image exceeds pixel limit` export failure.
+
 ## 5. Physical panel limits
 
 The application maps paper size and orientation to maximum custom panel dimensions.
@@ -350,6 +372,7 @@ The GUI provides:
 - optional panel numbers;
 - live grid preview;
 - calculated rows, columns, total panel count, and assembled poster size;
+- a modal live-export progress bar showing generated panels, ZIP creation, and download;
 - ZIP export.
 
 ### GUI orientation limits
@@ -382,17 +405,77 @@ The browser sends a multipart request to:
 POST /api/export
 ```
 
+The browser includes a unique export ID and polls:
+
+```text
+GET /api/export-progress/:id
+```
+
+The server parses CLI output as panels are created and reports the current
+phase (`preparing`, `generating`, `zipping`, `complete`, `canceled`, or
+`error`), completed panel count, and total panel count. Progress records expire
+after 10 minutes.
+The front end presents progress in a blocking modal, maps panel generation to
+the main portion of the progress bar, and reserves the final portion for ZIP
+creation and download. The modal exposes a Close button after success or
+failure. Pressing Escape while an export is active aborts the browser request
+and sends:
+
+```text
+DELETE /api/export/:id
+```
+
+The server terminates the matching CLI child process, aborts ZIP creation when
+applicable, marks progress as canceled, and removes partial temporary output.
+A second Escape press dismisses the modal; completed and failed modals can also
+be dismissed with Escape or the Close button.
+
 The server:
 
 1. accepts the uploaded image through Multer;
 2. validates panel dimensions and orientation;
 3. invokes `src/index.js` as a child process;
-4. creates a temporary output directory;
+4. creates a temporary output directory beneath `os.tmpdir()`;
 5. ZIPs the output using Archiver;
 6. sends `poster-panels.zip` to the browser;
-7. deletes temporary files afterward.
+7. deletes the uploaded source file;
+8. deletes the generated export directory as soon as the ZIP response finishes
+   or the client connection closes.
 
 The GUI currently requests a grid preview while keeping exported panel PNGs clean.
+
+### Temporary-file lifecycle
+
+The exact temporary root is platform-dependent because the server uses
+`os.tmpdir()`. On macOS it commonly resembles:
+
+```text
+/var/folders/.../T/
+```
+
+Each export uses:
+
+```text
+<os.tmpdir()>/image-panel-splitter-<random-id>/panels/
+```
+
+Multer uploads use:
+
+```text
+<os.tmpdir()>/image-panel-splitter-uploads/
+```
+
+Normal cleanup is tied to the HTTP response lifecycle and is idempotent:
+
+- successful ZIP response: remove the export directory on `finish`;
+- interrupted client connection: remove it on `close`;
+- handled failure before a response is sent: remove it immediately;
+- uploaded source: remove it in the request's `finally` block.
+
+As crash recovery, the GUI server removes app-owned export directories and
+uploads older than 24 hours when it starts and once per hour afterward. Recent
+items are left untouched. Keep both immediate cleanup and stale cleanup: stale
+cleanup alone does not prevent normal exports from consuming temporary storage.
 
 ## 13. Public access with Cloudflare Tunnel
 
@@ -451,9 +534,12 @@ src/gui-server.js
 public/app.js
 ```
 
-A full dependency install and end-to-end GUI export could not be completed in the prior validation environment because npm registry access failed with network/DNS errors, including `EAI_AGAIN` and a Sharp download `503`.
+Recent functional validation also completed a synthetic 4000 mm poster-height
+CLI export with grid preview and 325 panels. A startup-cleanup test created an
+aged export directory and aged upload, then confirmed that the GUI server
+removed both.
 
-This should be treated as an environment limitation, not proof of runtime correctness. On a machine with npm network access, validate with:
+After future changes, validate with:
 
 ```bash
 npm install
@@ -488,6 +574,11 @@ Do not break these without explicit user approval:
 11. GUI preview updates live as panel dimensions change.
 12. Exported panels retain transparent padding rather than white padding.
 13. Dragging an interior GUI preview grid line updates the corresponding panel dimension without bypassing its limits; dragging inside a panel updates both dimensions.
+14. Large poster intermediates do not re-enable Sharp's default input pixel limit.
+15. GUI export directories are deleted when the ZIP response finishes, closes, or fails.
+16. The GUI performs conservative 24-hour stale cleanup on startup and hourly for crash recovery.
+17. GUI export progress reflects actual CLI panel creation rather than only displaying an indeterminate animation.
+18. Escape cancels an active modal export on both the browser and server and cleans up partial output.
 
 ## 17. Recommended next improvements
 
