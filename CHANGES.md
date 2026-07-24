@@ -369,7 +369,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.19.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.20.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -618,6 +618,7 @@ Do not break these without explicit user approval:
 30. Paper size and metric/imperial selection persist in browser local storage; other GUI settings and uploaded image data do not.
 31. The `Panel Splitter` heading uses a rounded system-font stack rather than a proprietary Cricut font.
 32. The heading uses bold weight and Cricut dark green.
+33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
 
 ## 17. Reconstructed version history
 
@@ -728,6 +729,11 @@ feature-based milestones so future updates have a clear baseline.
 
 - Updated the `Panel Splitter` heading to use a bold rounded system-font stack
   in Cricut dark green without distributing a proprietary Cricut font.
+
+### v1.20.0 — Unified settings typography
+
+- Applied the rounded system-font family to settings labels, values, controls,
+  notes, statistics, modal copy, and actions at font weight `500`.
 
 ## 18. Recommended next improvements
 
