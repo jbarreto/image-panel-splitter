@@ -5,7 +5,7 @@
 Copy the text below into a new conversation and upload the latest project ZIP.
 
 ```text
-I am continuing development of a Node.js project named Image Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
+I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
 - Current application version: 1.18.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized for every release.

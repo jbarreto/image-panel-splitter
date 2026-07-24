@@ -1,4 +1,4 @@
-# Image Panel Splitter
+# Ronyka Panel Splitter
 
 A Node.js command-line tool that takes one large image, divides it into printable **US Letter** or **US Legal** pages, exports every page as a PNG, and draws an assembly number inside the largest enclosed area bounded by the artwork lines on every panel. By default, the source image is **not resized**: every original pixel is preserved.
 

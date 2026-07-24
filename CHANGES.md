@@ -1,6 +1,6 @@
-# Image Panel Splitter — Project Handoff and Change History
+# Ronyka Panel Splitter — Project Handoff and Change History
 
-This document is the authoritative context handoff for continuing the **Image Panel Splitter** project in a new ChatGPT conversation or with another developer.
+This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
 ## 1. Project purpose
 
