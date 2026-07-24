@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.26.0**
+**Current release: v1.27.0**
 
 ## 1. Project purpose
 
@@ -376,7 +376,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  the visible heading `Panel Splitter`, and a small `v1.26.0` version label;
+  the visible heading `Panel Splitter`, and a small `v1.27.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -651,7 +651,7 @@ The repository did not previously contain release tags for these individual
 changes. The versions below assign the implemented features to semantic,
 feature-based milestones so future updates have a clear baseline.
 
-The history currently runs continuously from `v1.0.0` through `v1.26.0`.
+The history currently runs continuously from `v1.0.0` through `v1.27.0`.
 
 ### v1.0.0 — Core panel splitter
 
@@ -830,7 +830,7 @@ The history currently runs continuously from `v1.0.0` through `v1.26.0`.
   number-size settings, persisted the selection, and kept export sizing
   proportional to the chosen visible preview size.
 
-### v1.26.0 — Large numbered-export completion (current)
+### v1.26.0 — Large numbered-export completion
 
 - Moved centered/manual full-grid number overlays into the initial grid render,
   eliminating the redundant full-resolution composite after the final panel.
@@ -839,6 +839,20 @@ The history currently runs continuously from `v1.0.0` through `v1.26.0`.
 - Replaced the generic preparation message with live decoding, scaling, layout,
   full-grid preview, panel-generation, ZIP, and download phases, including the
   calculated panel count before the slow full-grid render.
+
+### v1.27.0 — Spatial panel-number order (current)
+
+- Clustered automatic-layout panels with nearby top edges into visual rows,
+  then sorted each row left-to-right and the rows top-to-bottom. This prevents
+  small mixed-orientation offsets from jumping ahead in the assembly order.
+- Kept preview anchors, exported filenames, panel PNG numbers, the full-grid
+  image, and assembly-guide entries in the same spatial order.
+- Based visual-row tolerance on full printable panel height instead of trimmed
+  artwork crop height, preventing short crops from splitting otherwise natural
+  rows in irregular artwork such as the ghost test image.
+- Tuned that row tolerance to 25% of printable page height after the real
+  `fantasma.png` regression showed that a 50% tolerance merged visibly
+  staggered rows and produced sequences such as `0, 3, 1, 2`.
 
 ## 18. Recommended next improvements
 

@@ -307,6 +307,13 @@ storage on refresh. The preview keeps numbers at the selected visible size and
 calculates the equivalent output-pixel font size from the poster preview scale,
 preserving the same relative size in exported images.
 
+Panel numbers use reading order: left to right across each row, then top to
+bottom. Automatic mixed-orientation layouts cluster panels with nearby top
+edges into visual rows using the stable full printable page height rather than
+the variable trimmed artwork height. Each row is then sorted left-to-right, so
+small vertical offsets do not produce unnatural numbering. Preview numbering,
+filenames, and assembly guides use the same order.
+
 The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
 and **Large** (28 px). The selected preset is saved in browser local storage.
 

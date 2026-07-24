@@ -18,6 +18,25 @@ const PANEL_LIMITS_IN = {
   custom: { landscape: { width: 100, height: 100 }, portrait: { width: 100, height: 100 } }
 };
 
+function panelsInReadingOrder(panels) {
+  if (panels.length < 2) return panels;
+  const heights = panels.map((panel) => panel.pageHeight || panel.height).sort((a, b) => a - b);
+  const medianHeight = heights[Math.floor(heights.length / 2)];
+  const rowTolerance = Math.max(1, medianHeight * 0.25);
+  const rows = [];
+  for (const panel of [...panels].sort((a, b) => a.top - b.top || a.left - b.left)) {
+    const currentRow = rows.at(-1);
+    if (!currentRow || panel.top - currentRow.top > rowTolerance) {
+      rows.push({ top: panel.top, panels: [panel] });
+    } else {
+      currentRow.panels.push(panel);
+    }
+  }
+  return rows.flatMap((row) =>
+    row.panels.sort((a, b) => a.left - b.left || a.top - b.top)
+  );
+}
+
 function printHelp() {
   console.log(`
 Image Panel Splitter
@@ -670,6 +689,7 @@ async function main() {
         }
       }
     }
+    autoLayout = panelsInReadingOrder(autoLayout);
     logger.debug('Automatic mixed-orientation layout loaded.', { panels: autoLayout.length });
   }
 

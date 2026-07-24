@@ -86,6 +86,25 @@ function selectedPanelNumberSizePx() {
   return PANEL_NUMBER_SIZE_PRESETS_PX[numberSizePresetInput.value] || PANEL_NUMBER_SIZE_PRESETS_PX.medium;
 }
 
+function panelsInReadingOrder(panels) {
+  if (panels.length < 2) return panels;
+  const heights = panels.map((panel) => panel.pageHeight || panel.height).sort((a, b) => a - b);
+  const medianHeight = heights[Math.floor(heights.length / 2)];
+  const rowTolerance = Math.max(1, medianHeight * 0.25);
+  const rows = [];
+  for (const panel of [...panels].sort((a, b) => a.top - b.top || a.left - b.left)) {
+    const currentRow = rows.at(-1);
+    if (!currentRow || panel.top - currentRow.top > rowTolerance) {
+      rows.push({ top: panel.top, panels: [panel] });
+    } else {
+      currentRow.panels.push(panel);
+    }
+  }
+  return rows.flatMap((row) =>
+    row.panels.sort((a, b) => a.left - b.left || a.top - b.top)
+  );
+}
+
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } },
@@ -505,7 +524,8 @@ function buildAutoLayout() {
       orientation: orientation.width >= orientation.height ? 'landscape' : 'portrait'
     };
   });
-  return { outputWidth, outputHeight: targetHeight, panels };
+  const orderedPanels = panelsInReadingOrder(panels);
+  return { outputWidth, outputHeight: targetHeight, panels: orderedPanels };
 }
 
 autoGridButton.addEventListener('click', () => {
