@@ -34,11 +34,37 @@ let gridDrag;
 let activeExport;
 
 const panelLimitText = $('panelLimit');
+const DISPLAY_SETTINGS_KEY = 'ronyka-panel-splitter.display-settings.v1';
 
 const PANEL_LIMITS_IN = {
   letter: { landscape: { width: 9.26, height: 6.55 }, portrait: { width: 6.55, height: 9.26 } },
   legal: { landscape: { width: 11.84, height: 6.76 }, portrait: { width: 6.76, height: 11.84 } }
 };
+
+function saveDisplaySettings() {
+  try {
+    localStorage.setItem(DISPLAY_SETTINGS_KEY, JSON.stringify({
+      paper: paperInput.value,
+      unitSystem: unitSystemInput.value
+    }));
+  } catch {
+    // Keep the GUI functional when browser storage is unavailable.
+  }
+}
+
+function restoreDisplaySettings() {
+  let settings;
+  try {
+    settings = JSON.parse(localStorage.getItem(DISPLAY_SETTINGS_KEY) || 'null');
+  } catch {
+    return;
+  }
+  if (!settings || typeof settings !== 'object') return;
+  if (PANEL_LIMITS_IN[settings.paper]) paperInput.value = settings.paper;
+  if (['metric', 'imperial'].includes(settings.unitSystem)) {
+    unitSystemInput.value = settings.unitSystem;
+  }
+}
 
 function panelLimits() {
   const limits = PANEL_LIMITS_IN[paperInput.value][orientationInput.value];
@@ -193,10 +219,12 @@ for (const input of [paperInput, orientationInput]) {
   input.addEventListener('change', () => {
     applyOrientationLimits({ resetToMaximum: true });
     render();
+    if (input === paperInput) saveDisplaySettings();
   });
 }
 unitSystemInput.addEventListener('change', () => {
   render();
+  saveDisplaySettings();
 });
 for (const input of [panelWidth, panelHeight, dpiInput, targetHeightInput, gridWidthInput, gridColorInput]) {
   input.addEventListener('input', render);
@@ -486,6 +514,7 @@ exportButton.addEventListener('click', async () => {
   }
 });
 
+restoreDisplaySettings();
 selectOrientation('landscape', { dispatchChange: false });
 applyOrientationLimits({ resetToMaximum: true });
 updateLabels();
