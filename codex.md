@@ -8,7 +8,7 @@ Copy the text below into a new conversation and upload the latest project ZIP.
 I am continuing development of a Node.js project named Ronyka Panel Splitter. I uploaded the latest project ZIP. Read CHANGES.md first, then inspect the actual source files before making changes. Treat CHANGES.md as the intended behavior, but treat the source code as the current implementation and call out any mismatch.
 
 Project summary:
-- Current application version: 1.18.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized for every release.
+- Current application version: 1.19.0. Keep package.json, package-lock.json, the GUI version label, and CHANGES.md synchronized only when the release is committed.
 - Node.js ESM project using Sharp, Express, Multer, Archiver, and Winston.
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
@@ -16,6 +16,7 @@ Project summary:
 - The browser title is "Ronyka Panel Splitter"; the visible heading beside public/ronyka-logo.jpg is "Panel Splitter". Preserve the supplied logo asset unless the user requests a replacement.
 - The GUI header shows the package version in small text beneath the visible heading; keep it synchronized with package.json when the version changes.
 - The GUI uses a Cricut-inspired green, charcoal, white, mint, and neutral color system without including Cricut logos or proprietary assets.
+- The visible heading uses a bold rounded system-font stack in Cricut dark green; do not add or redistribute proprietary Cricut font files.
 - It splits a large image into physical poster panels and exports PNGs plus assembly guides.
 - Default --fit actual must not resize source pixels.
 - --target-width-mm or --target-height-mm intentionally scales the full poster.
