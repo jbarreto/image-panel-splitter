@@ -369,7 +369,7 @@ The GUI provides:
 
 - Ronyka branding in the page title and control-panel header, using the local
   `public/ronyka-logo.jpg` asset, the browser title `Ronyka Panel Splitter`,
-  and the visible heading `Panel Splitter`;
+  the visible heading `Panel Splitter`, and a small `v1.0.0` version label;
 - a Cricut-inspired color treatment built around green primary actions, dark
   charcoal text, clean white cards, pale mint surfaces, and subtle neutral
   borders, without using Cricut logos or proprietary assets;
@@ -608,6 +608,7 @@ Do not break these without explicit user approval:
 23. GUI styling keeps its Cricut-inspired green, charcoal, white, mint, and neutral visual system.
 24. The CLI, GUI, and GUI server fallback use `#01a86b` as the default grid-line color.
 25. The browser title uses `Ronyka Panel Splitter`; the heading beside the supplied Ronyka Piñatas logo uses `Panel Splitter`.
+26. The GUI header displays the current application version in small text beneath the heading.
 
 ## 17. Recommended next improvements
 

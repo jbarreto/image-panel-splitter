@@ -13,6 +13,7 @@ Project summary:
 - Browser GUI server: src/gui-server.js.
 - GUI front end: public/index.html, public/app.js, public/style.css.
 - The browser title is "Ronyka Panel Splitter"; the visible heading beside public/ronyka-logo.jpg is "Panel Splitter". Preserve the supplied logo asset unless the user requests a replacement.
+- The GUI header shows the package version in small text beneath the visible heading; keep it synchronized with package.json when the version changes.
 - The GUI uses a Cricut-inspired green, charcoal, white, mint, and neutral color system without including Cricut logos or proprietary assets.
 - It splits a large image into physical poster panels and exports PNGs plus assembly guides.
 - Default --fit actual must not resize source pixels.
