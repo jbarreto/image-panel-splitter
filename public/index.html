@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.35.0</span>
+          <span class="app-version">v1.36.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -94,19 +94,28 @@
         <div id="stats" class="stats">Choose an image to preview the grid.</div>
       </fieldset>
 
+      <fieldset class="settings-group">
+        <legend>Poster Settings</legend>
+        <div class="row">
+          <label>DPI<input id="dpi" type="number" min="72" max="600" value="144" /></label>
+          <label>Poster height (mm)<input id="targetHeight" type="number" min="0" step="1" value="1000" /></label>
+        </div>
+      </fieldset>
+
       <fieldset class="settings-group number-controls">
         <legend>Panel Labels</legend>
-        <button id="printNumbers" class="toggle-button" type="button" aria-pressed="false">
+        <button id="printNumbers" class="toggle-button" type="button" aria-pressed="false" aria-keyshortcuts="Shift+N" title="Shortcut: Shift+N">
           <span>Print Panel Numbers</span>
           <span class="toggle-track" aria-hidden="true">
             <span class="toggle-state">Off</span>
             <span class="toggle-knob"></span>
           </span>
         </button>
-        <div class="toggle-note">Drag each number in the preview to choose its exported position.</div>
+        <div class="toggle-note">Drag each number in the preview to choose its exported position. Shortcut: Shift+N.</div>
         <label class="number-size-field">
           <span>Number size</span>
           <select id="numberSizePreset">
+            <option value="x-small">X-Small</option>
             <option value="small">Small</option>
             <option value="medium" selected>Medium</option>
             <option value="large">Large</option>
@@ -117,14 +126,6 @@
         <div class="order-status-row">
           <span id="orderStatus" class="toggle-note">Automatic reading order is active.</span>
           <button id="resetOrderButton" class="order-reset-link" type="button" disabled hidden>Reset</button>
-        </div>
-      </fieldset>
-
-      <fieldset class="settings-group">
-        <legend>Poster Settings</legend>
-        <div class="row">
-          <label>DPI<input id="dpi" type="number" min="72" max="600" value="144" /></label>
-          <label>Poster height (mm)<input id="targetHeight" type="number" min="0" step="1" value="1000" /></label>
         </div>
       </fieldset>
 

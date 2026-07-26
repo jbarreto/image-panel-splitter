@@ -164,6 +164,7 @@ function syncPanelNumberAnchors(panels) {
 const panelLimitText = $('panelLimit');
 const DISPLAY_SETTINGS_KEY = 'ronyka-panel-splitter.display-settings.v1';
 const PANEL_NUMBER_SIZE_PRESETS_PX = {
+  'x-small': 10,
   small: 14,
   medium: 20,
   large: 28
@@ -897,6 +898,9 @@ document.addEventListener('keydown', (event) => {
   if (shortcut === 'a' && !autoGridButton.disabled) {
     event.preventDefault();
     autoGridButton.click();
+  } else if (shortcut === 'n' && !printNumbersInput.disabled) {
+    event.preventDefault();
+    printNumbersInput.click();
   } else if (shortcut === 'o' && !editOrderButton.disabled) {
     event.preventDefault();
     editOrderButton.click();

@@ -343,7 +343,8 @@ inside that panel, passed to export, recorded in the assembly guide, and drawn
 at the same location in `original-with-grid.png`. A number is normally rendered
 at 50% opacity, then becomes fully opaque and bold while hovered or dragged to
 identify the active target. The toggle state is restored from browser local
-storage on refresh. The preview keeps numbers at the selected visible size and
+storage on refresh. Press `Shift+N` outside an editable control to toggle panel
+numbers from the keyboard. The preview keeps numbers at the selected visible size and
 calculates the equivalent output-pixel font size from the poster preview scale,
 preserving the same relative size in exported images.
 
@@ -369,8 +370,8 @@ enabled by default so the preview follows page scrolling while settings are
 adjusted. Disable it to leave the preview in its normal document position. The
 choice is saved in browser local storage.
 
-The predefined number-size settings are **Small** (14 px), **Medium** (20 px),
-and **Large** (28 px). Auto paneling, its maximum and minimum sides,
+The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
+**Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,
 paper size, unit system, Poster height, Floating preview, Print Panel Numbers,
 and the selected number-size preset are saved in browser local storage.
 
