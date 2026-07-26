@@ -293,6 +293,13 @@ After loading an image, toggle **Auto paneling** on to generate an
 artwork-aware layout; toggle it off to restore the uniform grid. The generator detects visible artwork against
 transparency or a plain corner-matched background, omits empty canvas regions,
 and chooses portrait or landscape independently for each sheet.
+For opaque backgrounds, only background-colored regions connected to an image
+edge are treated as empty. Matching white regions enclosed by artwork, such as
+the inside of a white dress, remain part of the automatic panel layout. Disable
+**Preserve enclosed artwork** in Auto paneling's **Advanced** subsection to
+restore the original per-pixel background detection. The choice is saved in
+browser local storage. Advanced is collapsed by default and can be expanded
+from its disclosure heading.
 The **Manual paneling** subsection—orientation, width, and height—collapses out
 of view while Auto paneling is enabled and returns when it is disabled.
 Automatic panels choose portrait or landscape independently.
@@ -383,9 +390,9 @@ visual emphasis does not change the selected size or exported numbers.
 
 The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
 **Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,
-paper size, unit system, Poster height, Grid width, Floating preview, Highlight
-panels, Print Panel Numbers, and the selected number-size preset are saved in
-browser local storage.
+its enclosed-light-area behavior, paper size, unit system, Poster height, Grid
+width, Floating preview, Highlight panels, Print Panel Numbers, and the selected
+number-size preset are saved in browser local storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

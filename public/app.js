@@ -25,6 +25,9 @@ const autoMaxSideValue = $('autoMaxSideValue');
 const autoMinSideInput = $('autoMinSide');
 const autoMinSideLabel = $('autoMinSideLabel');
 const autoMinSideValue = $('autoMinSideValue');
+const autoAdvancedButton = $('autoAdvancedButton');
+const autoAdvancedContent = $('autoAdvancedContent');
+const includeEnclosedArtworkInput = $('includeEnclosedArtwork');
 const autoMinimumError = $('autoMinimumError');
 const printNumbersInput = $('printNumbers');
 const numberSizePresetInput = $('numberSizePreset');
@@ -78,6 +81,15 @@ function setAutoLayout(layout) {
 function setAutoMinimumError(message = '') {
   autoMinimumError.textContent = message;
   autoMinimumError.hidden = !message;
+}
+
+function includeEnclosedArtworkEnabled() {
+  return includeEnclosedArtworkInput.getAttribute('aria-pressed') === 'true';
+}
+
+function setIncludeEnclosedArtwork(enabled) {
+  includeEnclosedArtworkInput.setAttribute('aria-pressed', String(enabled));
+  includeEnclosedArtworkInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
 }
 
 function printNumbersEnabled() {
@@ -219,6 +231,7 @@ function saveDisplaySettings() {
       autoPaneling: autoPanelingPreference,
       autoMaxSideIn,
       autoMinSideIn,
+      includeEnclosedArtwork: includeEnclosedArtworkEnabled(),
       floatingPreview: floatingPreviewInput.getAttribute('aria-pressed') === 'true',
       targetHeightMm: Number(targetHeightInput.value),
       gridWidthMm: Number(gridWidthInput.value),
@@ -263,6 +276,9 @@ function restoreDisplaySettings() {
       );
   if (savedMinimumSide > 0 && savedMinimumSide <= 100) {
     autoMinSideIn = savedMinimumSide;
+  }
+  if (typeof settings.includeEnclosedArtwork === 'boolean') {
+    setIncludeEnclosedArtwork(settings.includeEnclosedArtwork);
   }
   if (typeof settings.floatingPreview === 'boolean') {
     setFloatingPreview(settings.floatingPreview);
@@ -632,15 +648,57 @@ function artworkMask() {
   );
   for (const key of Object.keys(background)) background[key] /= cornerIndexes.length;
   const transparentBackground = background.a < 128;
+  const backgroundLike = new Uint8Array(width * height);
   const occupied = new Uint8Array(width * height);
-  for (let index = 0; index < occupied.length; index += 1) {
+  for (let index = 0; index < backgroundLike.length; index += 1) {
     const alpha = pixels[index * 4 + 3];
     const colorDistance = Math.max(
       Math.abs(pixels[index * 4] - background.r),
       Math.abs(pixels[index * 4 + 1] - background.g),
       Math.abs(pixels[index * 4 + 2] - background.b)
     );
+    backgroundLike[index] = transparentBackground
+      ? Number(alpha <= 16)
+      : Number(colorDistance <= 20 && Math.abs(alpha - background.a) <= 20);
     occupied[index] = alpha > 16 && (transparentBackground || colorDistance > 20) ? 1 : 0;
+  }
+
+  if (!includeEnclosedArtworkEnabled()) return { width, height, occupied };
+
+  // Only background-colored pixels connected to an image edge are exterior.
+  // Matching pixels enclosed by artwork remain occupied, preserving white
+  // interiors such as dresses against an opaque white canvas.
+  const exteriorBackground = new Uint8Array(width * height);
+  const queue = new Int32Array(width * height);
+  let queueStart = 0;
+  let queueEnd = 0;
+  const enqueueExterior = (index) => {
+    if (!backgroundLike[index] || exteriorBackground[index]) return;
+    exteriorBackground[index] = 1;
+    queue[queueEnd] = index;
+    queueEnd += 1;
+  };
+  for (let x = 0; x < width; x += 1) {
+    enqueueExterior(x);
+    enqueueExterior((height - 1) * width + x);
+  }
+  for (let y = 0; y < height; y += 1) {
+    enqueueExterior(y * width);
+    enqueueExterior(y * width + width - 1);
+  }
+  while (queueStart < queueEnd) {
+    const index = queue[queueStart];
+    queueStart += 1;
+    const x = index % width;
+    const y = Math.floor(index / width);
+    if (x > 0) enqueueExterior(index - 1);
+    if (x + 1 < width) enqueueExterior(index + 1);
+    if (y > 0) enqueueExterior(index - width);
+    if (y + 1 < height) enqueueExterior(index + width);
+  }
+  for (let index = 0; index < occupied.length; index += 1) {
+    const alpha = pixels[index * 4 + 3];
+    occupied[index] = alpha > 16 && !exteriorBackground[index] ? 1 : 0;
   }
   return { width, height, occupied };
 }
@@ -986,6 +1044,10 @@ function updateOrientationAvailability() {
   autoPanelingOptions.setAttribute('aria-hidden', String(!autoPanelingEnabled));
   autoMaxSideInput.disabled = !autoPanelingEnabled;
   autoMinSideInput.disabled = !autoPanelingEnabled;
+  autoAdvancedButton.disabled = !autoPanelingEnabled;
+  includeEnclosedArtworkInput.disabled =
+    !autoPanelingEnabled ||
+    autoAdvancedButton.getAttribute('aria-expanded') !== 'true';
 }
 
 function recalculateAutoLayout() {
@@ -1068,6 +1130,19 @@ floatingPreviewInput.addEventListener('click', () => {
   const enabled = floatingPreviewInput.getAttribute('aria-pressed') !== 'true';
   setFloatingPreview(enabled);
   saveDisplaySettings();
+});
+includeEnclosedArtworkInput.addEventListener('click', () => {
+  setIncludeEnclosedArtwork(!includeEnclosedArtworkEnabled());
+  recalculateAutoLayout();
+  saveDisplaySettings();
+  render();
+});
+autoAdvancedButton.addEventListener('click', () => {
+  const expanded = autoAdvancedButton.getAttribute('aria-expanded') !== 'true';
+  autoAdvancedButton.setAttribute('aria-expanded', String(expanded));
+  autoAdvancedContent.classList.toggle('collapsed', !expanded);
+  autoAdvancedContent.setAttribute('aria-hidden', String(!expanded));
+  includeEnclosedArtworkInput.disabled = !expanded;
 });
 highlightPanelsInput.addEventListener('click', () => {
   setHighlightPanels(!highlightPanelsEnabled());
