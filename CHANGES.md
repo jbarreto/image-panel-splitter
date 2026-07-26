@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.39.0**
+**Current release: v1.40.0**
 
 ## 1. Project purpose
 
@@ -1024,12 +1024,18 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Added `Shift+H` to toggle **Highlight panels** outside editable controls and
   the export modal.
 
-### v1.39.0 — Floating layout summary and slider shortcuts (current)
+### v1.39.0 — Floating layout summary and slider shortcuts
 
 - Moved the live panel count and poster dimensions from Panel Layout to a
   compact floating overlay in the preview area's upper-left corner.
 - Allowed all Shift-based GUI shortcuts to remain active while a range slider
   has focus, matching the global export-shortcut behavior.
+
+### v1.40.0 — Compact paper controls (current)
+
+- Placed Paper size and Unit system side by side in a shared two-column row.
+- Inset the Auto paneling range sliders so their thumbs are not clipped by the
+  animated subgroup frame at minimum or maximum values.
 
 ## 18. Recommended next improvements
 

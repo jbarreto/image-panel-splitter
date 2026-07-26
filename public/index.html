@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.39.0</span>
+          <span class="app-version">v1.40.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -25,20 +25,22 @@
       </label>
       <div id="imageDimensions" class="image-dimensions" aria-live="polite"></div>
 
-      <div class="field">
-        <label for="paper">Paper size</label>
-        <select id="paper">
-          <option value="letter" selected>US Letter</option>
-          <option value="legal">US Legal</option>
-          <option value="custom">Custom</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="unitSystem">Unit system</label>
-        <select id="unitSystem">
-          <option value="metric">Metric (cm)</option>
-          <option value="imperial" selected>Imperial (in)</option>
-        </select>
+      <div class="row paper-unit-row">
+        <div class="field">
+          <label for="paper">Paper size</label>
+          <select id="paper">
+            <option value="letter" selected>US Letter</option>
+            <option value="legal">US Legal</option>
+            <option value="custom">Custom</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="unitSystem">Unit system</label>
+          <select id="unitSystem">
+            <option value="metric">Metric (cm)</option>
+            <option value="imperial" selected>Imperial (in)</option>
+          </select>
+        </div>
       </div>
       <fieldset class="settings-group panel-layout-controls">
         <legend>Panel Layout</legend>

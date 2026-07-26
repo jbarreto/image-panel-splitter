@@ -30,10 +30,12 @@ Project summary:
 - Legal portrait max: 6.76 in wide × 11.84 in high.
 - Custom paper mode keeps the current dimensions, permits panel width and height up to 100 in, disables GUI orientation selection, and requires both --panel-width-in and --panel-height-in in the CLI.
 - GUI sliders and server/CLI validation must enforce the same paper-profile limits.
+- Keep Paper size and Unit system side by side in a shared two-column row near the top of the GUI settings column.
 - GUI supports drag-and-drop, live grid preview, panel dimension sliders, poster-height scaling, and ZIP export.
 - While the preview canvas is hovered, Left/Right adjust panel width and Up/Down adjust panel height; the grid line must move in the pressed arrow's visual direction and remain within the active limits.
 - The GUI **Auto paneling** control is a toggle: enabling it generates the artwork-aware layout, while disabling it restores the uniform grid. It detects visible artwork against transparency or a plain background, omits empty canvas regions, and uses a deterministic non-overlapping partition that independently chooses portrait or landscape for each sheet. No source-image segment may occur in more than one generated panel. Preserve the exact generated rectangle list through preview, GUI-server handoff, CLI export, grid preview, and assembly-guide output.
 - Keep the Auto paneling enable toggle, Maximum panel side, and Minimum panel side controls visually nested inside a dedicated **Auto paneling** subsection within **Panel Layout**.
+- Keep enough horizontal inset around Auto paneling range inputs that browser slider thumbs remain fully visible at both endpoints despite the disclosure container's overflow clipping.
 - When Auto paneling is off, keep its subsection heading, enable toggle, artwork-detection description, and `Shift+A` shortcut visible. Disable and collapse only the sizing options with a short slide/fade transition; expand and enable them when an automatic layout becomes active. Keep `aria-expanded`, `aria-hidden`, and input disabled states synchronized.
 - On website startup, drive Auto/Manual disclosure state from the restored Auto paneling preference even before an image loads. If the restored preference is on but layout generation fails after loading, keep Auto controls visible and allow their changes to retry generation while Manual controls remain hidden.
 - Keep Panel orientation, Panel width, and Panel height visually nested inside a dedicated **Manual paneling** subsection within **Panel Layout**.
