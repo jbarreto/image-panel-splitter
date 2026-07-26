@@ -28,14 +28,33 @@ if "%UPDATE_STATUS%"=="10" (
     echo Continuing with the installed version.
 )
 
-:: Start the GUI whether the installation was current or just updated.
-echo Starting the Ronyka Panel Splitter GUI...
-call npm run gui
-
-if errorlevel 1 (
-    echo The GUI stopped with an error.
-    pause
-    exit /b 1
+:: Reuse an existing GUI server when one is already responding.
+curl -fsS http://localhost:4173/ >nul 2>&1
+if not errorlevel 1 (
+    echo The GUI server is already running.
+    goto :open_browser
 )
 
+:: Start npm in a separate terminal so this launcher can continue.
+echo Starting the Ronyka Panel Splitter GUI server...
+start "Ronyka Panel Splitter Server" cmd /k "npm run gui"
+
+:: Wait up to 30 seconds for the GUI server to become available.
+echo Waiting for the GUI server...
+for /l %%I in (1,1,30) do (
+    curl -fsS http://localhost:4173/ >nul 2>&1
+    if not errorlevel 1 goto :open_browser
+    timeout /t 1 /nobreak >nul
+)
+
+echo The GUI server did not start within 30 seconds.
+pause
+exit /b 1
+
+:open_browser
+:: Open the GUI in the default Windows browser.
+echo Opening the Ronyka Panel Splitter GUI...
+start "" "http://localhost:4173/"
+
 endlocal
+exit /b 0

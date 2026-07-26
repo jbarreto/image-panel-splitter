@@ -74,6 +74,7 @@ Project summary:
 - The modal hint reads "Press Esc to cancel generation." while active and "Press Esc to close" after completion, cancellation, or failure.
 - The CLI and GUI server share src/logger.js. Winston defaults to debug unless LOG_LEVEL overrides it; keep CLI diagnostics on stderr so stdout progress parsing remains stable.
 - scripts/install-update.mjs supports Windows/macOS installs and updates from GitHub archives without Git; preserve its safe archive extraction and npm ci behavior.
+- `scripts/windows/start-ronyka-gui.bat` is the single Windows GUI launcher. It resolves the project root relative to itself, compares the installed version with GitHub, runs `npm run update` only for a newer published version, starts `npm run gui` in a separate terminal, polls the local server until it responds, and then opens the default browser. Do not reintroduce a second companion launcher.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.
 - Large target posters, including a 4000 mm target height, can exceed Sharp's default input pixel limit. Preserve the openImage() handling for source and intermediate poster buffers and the disabled pixel limit on the full-size grid composite.
 - GUI temporary paths are rooted at os.tmpdir(), not a hard-coded /tmp path.

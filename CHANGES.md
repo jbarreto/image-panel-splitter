@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.33.0**
+**Current release: v1.34.0**
 
 ## 1. Project purpose
 
@@ -956,7 +956,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Reject automatic layouts when the entire poster canvas is smaller than the
   minimum panel size or cannot be partitioned without undersized panels.
 
-### v1.33.0 — Floating preview and saved poster height (current)
+### v1.33.0 — Floating preview and saved poster height
 
 - Added a **Floating preview** GUI setting that keeps the preview panel visible
   while the settings column scrolls.
@@ -964,6 +964,15 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   storage.
 - Persisted the GUI **Poster height (mm)** value in browser local storage and
   restored it on startup.
+
+### v1.34.0 — Consolidated Windows launcher (current)
+
+- Consolidated Windows update checks, optional installation, GUI startup,
+  readiness polling, and default-browser launch into
+  `scripts/windows/start-ronyka-gui.bat`.
+- Started `npm run gui` in a separate terminal so the launcher can wait for the
+  server and open the browser without being blocked.
+- Removed the redundant `scripts/windows/start-ronyka.bat` launcher.
 
 ## 18. Recommended next improvements
 
