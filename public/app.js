@@ -898,6 +898,9 @@ document.addEventListener('keydown', (event) => {
   if (shortcut === 'a' && !autoGridButton.disabled) {
     event.preventDefault();
     autoGridButton.click();
+  } else if (shortcut === 'f' && !floatingPreviewInput.disabled) {
+    event.preventDefault();
+    floatingPreviewInput.click();
   } else if (shortcut === 'n' && !printNumbersInput.disabled) {
     event.preventDefault();
     printNumbersInput.click();

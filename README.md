@@ -368,7 +368,8 @@ panels ZIP.
 The **Preview** settings group includes a **Floating preview** toggle. It is
 enabled by default so the preview follows page scrolling while settings are
 adjusted. Disable it to leave the preview in its normal document position. The
-choice is saved in browser local storage.
+choice is saved in browser local storage. Press `Shift+F` outside an editable
+control to toggle it from the keyboard.
 
 The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
 **Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,

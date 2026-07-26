@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.36.0**
+**Current release: v1.37.0**
 
 ## 1. Project purpose
 
@@ -979,13 +979,18 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Renamed `scripts/windows/start-ronyka-gui.bat` to the shorter
   `scripts/windows/ronyka-launcher.bat` and updated its documentation.
 
-### v1.36.0 — Panel-label controls (current)
+### v1.36.0 — Panel-label controls
 
 - Added `Shift+N` to toggle **Print Panel Numbers** outside editable controls
   and the export modal.
 - Moved the **Panel Labels** settings group below **Poster Settings**.
 - Added an **X-Small** panel-number preset with a 10 px preview size and
   proportional export sizing.
+
+### v1.37.0 — Floating-preview shortcut (current)
+
+- Added `Shift+F` to toggle **Floating preview** outside editable controls and
+  the export modal.
 
 ## 18. Recommended next improvements
 
