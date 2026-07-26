@@ -880,7 +880,7 @@ autoGridButton.addEventListener('click', () => {
 
 document.addEventListener('keydown', (event) => {
   const editingControl = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName);
-  if (event.repeat || editingControl || !exportProgressWrap.hidden || event.altKey) return;
+  if (event.repeat || !exportProgressWrap.hidden || event.altKey) return;
 
   if (
     event.key === 'Enter' &&
@@ -893,6 +893,7 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
+  if (editingControl) return;
   if (!event.shiftKey || event.ctrlKey || event.metaKey) return;
   const shortcut = event.key.toLowerCase();
   if (shortcut === 'a' && !autoGridButton.disabled) {
