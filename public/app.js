@@ -512,6 +512,10 @@ function render() {
 
   if (v.printNumbers || orderEditMode) {
     const selectedNumberSizePx = selectedPanelNumberSizePx();
+    const emphasizeHighlightedNumbers = highlightPanelsEnabled() && v.printNumbers;
+    const previewNumberSizePx = emphasizeHighlightedNumbers
+      ? PANEL_NUMBER_SIZE_PRESETS_PX.large
+      : selectedNumberSizePx;
     const displayedCanvasWidth = Math.max(1, canvas.getBoundingClientRect().width);
     const backingToDisplayScale = canvas.width / displayedCanvasWidth;
     const outputToDisplayScale = displayedCanvasWidth / outputWidthPx;
@@ -522,16 +526,17 @@ function render() {
     panelNumberAnchors = panelNumberAnchors.map((anchor, index) =>
       clampNumberAnchor(previewPanels[index], anchor, panelNumberExportSizePx / 2)
     );
-    const fontSize = selectedNumberSizePx * backingToDisplayScale;
+    const fontSize = previewNumberSizePx * backingToDisplayScale;
     ctx.save();
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
-    ctx.lineWidth = Math.max(2, Math.round(selectedNumberSizePx * 0.18)) * backingToDisplayScale;
+    ctx.lineWidth = Math.max(2, Math.round(previewNumberSizePx * 0.18)) * backingToDisplayScale;
     ctx.strokeStyle = 'white';
     ctx.fillStyle = gridColorInput.value;
     previewPanels.forEach((panel, index) => {
       const emphasized =
+        emphasizeHighlightedNumbers ||
         hoveredNumberIndex === index ||
         numberDrag?.index === index ||
         (orderEditMode && clickedOrder.includes(index));

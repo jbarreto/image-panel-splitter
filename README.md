@@ -377,6 +377,9 @@ Enable **Highlight panels** in the same group to add a preview-only translucent
 green tint and dark-green frame to every panel. Assembly Order editing keeps
 its stronger selected-panel emphasis, and the highlighting is never exported.
 Press `Shift+H` outside an editable control to toggle the highlight.
+When Print Panel Numbers is also enabled, highlighted previews show every
+number at full opacity and the Large 28 px size for easier inspection. This
+visual emphasis does not change the selected size or exported numbers.
 
 The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
 **Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,

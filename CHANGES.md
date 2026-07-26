@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.40.0**
+**Current release: v1.41.0**
 
 ## 1. Project purpose
 
@@ -1031,11 +1031,18 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Allowed all Shift-based GUI shortcuts to remain active while a range slider
   has focus, matching the global export-shortcut behavior.
 
-### v1.40.0 — Compact paper controls (current)
+### v1.40.0 — Compact paper controls
 
 - Placed Paper size and Unit system side by side in a shared two-column row.
 - Inset the Auto paneling range sliders so their thumbs are not clipped by the
   animated subgroup frame at minimum or maximum values.
+
+### v1.41.0 — Highlighted panel numbers (current)
+
+- Show printed numbers at full opacity and the Large 28 px size while Highlight
+  panels is enabled, only in the GUI preview.
+- Preserve the selected number-size preset and normal number opacity in every
+  exported artifact.
 
 ## 18. Recommended next improvements
 
