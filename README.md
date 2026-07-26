@@ -65,7 +65,7 @@ Requirements are npm and Node.js 20.9.0 or newer. Git is not required.
 
 ### Windows GUI launcher
 
-Run `scripts\windows\start-ronyka-gui.bat` to check GitHub for a newer
+Run `scripts\windows\ronyka-launcher.bat` to check GitHub for a newer
 published version, install it only when necessary, and start the GUI server in
 a separate terminal. The launcher waits until the server responds before
 opening `http://localhost:4173/` in the default browser. The server terminal
