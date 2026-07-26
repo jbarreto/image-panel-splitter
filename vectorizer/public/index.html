@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ronyka Vectorizer</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <main>
+    <section class="controls">
+      <header>
+        <span class="brand-mark" aria-hidden="true">R</span>
+        <div>
+          <h1>Vectorizer</h1>
+          <span class="version">v1.0.0</span>
+        </div>
+      </header>
+      <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
+
+      <label id="dropZone" class="drop-zone">
+        <input id="imageInput" type="file" accept="image/*" />
+        <strong>Drop image here</strong>
+        <span>or click to choose an image</span>
+      </label>
+      <div id="imageDetails" class="image-details" aria-live="polite"></div>
+
+      <fieldset>
+        <legend>Vector settings</legend>
+        <label class="field">
+          <span>Artwork height (mm)</span>
+          <input id="targetHeight" type="number" min="1" max="100000" step="1" value="1000" />
+        </label>
+        <label class="field">
+          <span>Vector mode</span>
+          <select id="vectorMode">
+            <option value="monochrome" selected>Monochrome</option>
+            <option value="multicolor">Multicolor</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>SVG structure</span>
+          <select id="svgStructure">
+            <option value="groups" selected>Layer groups (Inkscape)</option>
+            <option value="flat">Flat paths</option>
+          </select>
+        </label>
+        <div id="monochromeSettings">
+          <label class="field">
+            <span>Black threshold <output id="thresholdValue">200</output></span>
+            <input id="threshold" type="range" min="1" max="254" step="1" value="200" />
+          </label>
+          <div class="note">Raise the threshold to include lighter strokes; lower it to keep only darker artwork.</div>
+        </div>
+        <div id="multicolorSettings" hidden>
+          <label class="field">
+            <span>Palette colors <output id="colorCountValue">6</output></span>
+            <input id="colorCount" type="range" min="2" max="16" step="1" value="6" />
+          </label>
+          <label class="check-field">
+            <input id="removeBackground" type="checkbox" checked />
+            <span>Remove background color</span>
+          </label>
+          <label class="check-field">
+            <input id="keepWhiteLayer" type="checkbox" checked />
+            <span>Keep white as a layer</span>
+          </label>
+          <div class="note">Flat-color logos and illustrations produce the cleanest layered paths.</div>
+        </div>
+        <label class="field">
+          <span>Trace resolution <output id="resolutionValue">3000 px</output></span>
+          <input id="maximumTraceSide" type="range" min="500" max="6000" step="100" value="3000" />
+        </label>
+        <div class="note">Higher resolution preserves more detail but takes longer and creates larger SVG files.</div>
+      </fieldset>
+
+      <div class="action-row">
+        <button id="previewButton" type="button" disabled>Preview vector</button>
+        <button id="downloadButton" class="secondary-button" type="button" disabled>Download SVG</button>
+      </div>
+      <div id="status" class="status" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="preview">
+      <div class="preview-grid">
+        <figure class="preview-card">
+          <figcaption>Source</figcaption>
+          <div class="preview-stage">
+            <div id="placeholder" class="placeholder">
+              <div class="placeholder-icon">◇</div>
+              <strong>Image preview</strong>
+              <span>Your source image will appear here.</span>
+            </div>
+            <img id="previewImage" alt="Selected source preview" hidden />
+          </div>
+        </figure>
+        <figure class="preview-card">
+          <figcaption>Vectorized SVG</figcaption>
+          <div class="vector-workspace">
+            <div class="preview-stage vector-stage">
+              <div id="vectorPlaceholder" class="placeholder">
+                <div class="placeholder-icon">⌁</div>
+                <strong>Vector preview</strong>
+                <span>Generate the SVG to preview its paths.</span>
+              </div>
+              <img id="vectorPreview" alt="Generated vectorized SVG preview" hidden />
+            </div>
+            <aside id="palettePanel" class="palette-panel" aria-label="Vector layers" hidden>
+              <div class="palette-heading">
+                <span>Layers</span>
+                <span class="layer-actions">
+                  <button id="showAllLayers" type="button">Show all</button>
+                  <button id="hideAllLayers" type="button">Hide all</button>
+                </span>
+              </div>
+              <div id="paletteSwatches" class="palette-swatches"></div>
+              <div class="layer-note">Preview visibility only. Downloads retain every layer.</div>
+            </aside>
+          </div>
+        </figure>
+      </div>
+    </section>
+  </main>
+
+  <div id="processingModal" class="processing-modal" role="dialog" aria-modal="true" aria-labelledby="processingText" hidden>
+    <div class="processing-card">
+      <div class="processing-label">
+        <span id="processingText">Preparing vectorization…</span>
+        <span id="processingPercent">0%</span>
+      </div>
+      <progress id="processingProgress" max="100" value="0">0%</progress>
+    </div>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

@@ -1095,6 +1095,61 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   of the separate auto-paneling enclosed-artwork setting, preventing line-art
   images from losing every stroke-free candidate.
 
+### Unreleased — Standalone Ronyka Vectorizer
+
+- Added an independent `vectorizer/` server and GUI on port 4174 for genuine
+  monochrome line-art SVG tracing.
+- Kept Potrace and its GPL-2.0-only license entirely inside the standalone
+  vectorizer package; Ronyka Panel Splitter remains MIT-licensed and has no
+  vectorization dependency or export controls.
+- Added controls for physical artwork height, black threshold, and maximum
+  trace resolution, persisted under a vectorizer-specific local-storage key.
+- Download `original-vectorized.svg` directly from the vectorizer GUI with
+  editable Potrace paths and no embedded source raster.
+- Show the source raster and generated vector SVG in side-by-side preview
+  cards, resetting the vector preview whenever a new source is selected.
+- Split vector generation and download into **Preview vector** and
+  **Download SVG** actions. Keep download disabled until a current preview
+  exists, and invalidate it after any image or tracing-setting change.
+- Automatically regenerate the vector preview after a debounced valid setting
+  update, aborting obsolete browser requests while retaining the manual
+  preview action for immediate refresh.
+- Added a modal vectorization progress bar with upload, SVG path-tracing, and
+  preview-rendering statuses that closes automatically after completion.
+- Deferred automatic regeneration from range controls until mouse/touch
+  release or keyboard key release while continuing to update their visible
+  values during interaction.
+- Added genuine **Multicolor** vector mode with a persisted 2–16 color palette
+  control and optional background-color removal. Quantize the source and trace
+  every retained color into a separate stacked Potrace path layer.
+- Display the generated palette in the GUI with layer numbers, color swatches,
+  and hex values. Export each color in a named Inkscape-compatible SVG layer
+  group and return palette metadata alongside the SVG response headers.
+- Added GUI layer visibility controls that rebuild the vector preview from
+  the generated SVG while keeping every layer in the downloaded file.
+- Redesigned layers as a docked Photoshop-style panel with per-layer eye
+  controls and Show all/Hide all actions beside the vector preview.
+- Added editable layer names in the Layers panel and write those names into
+  the Inkscape-compatible labels of downloaded SVG files.
+- Write edited names to standard SVG group/path IDs, `data-name` attributes,
+  and title metadata as well as Inkscape labels for improved compatibility
+  with other vector editors.
+- Use a sanitized custom layer name directly as its path ID for editors that
+  display technical SVG IDs, adding a layer suffix only to resolve duplicates.
+- Added a persisted SVG structure setting for native Inkscape layer groups or
+  top-level flat paths that avoid unnecessary nesting in other editors.
+- Added a persisted **Keep white as a layer** multicolor setting so white
+  artwork remains an editable SVG layer even when background removal is on.
+- Detect preserved white from original corner pixels and force its quantized
+  background cluster back to true white, preventing palette averaging from
+  accidentally removing white details.
+- Slightly overlap adjacent retained color masks before tracing to eliminate
+  transparent seams between independently smoothed fills without expanding
+  the outside artwork silhouette.
+- The vectorizer has no image-processing CLI command. Its `npm start` command
+  only launches the separate server; any future CLI must use a distinct name
+  such as `ronyka-vectorize`, never `split-image`.
+
 ## 18. Recommended next improvements
 
 These items were discussed or are natural next steps, but should not be assumed implemented:

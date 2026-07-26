@@ -13,6 +13,9 @@ Project summary:
 - CLI: src/index.js.
 - Browser GUI server: src/gui-server.js.
 - GUI front end: public/index.html, public/app.js, public/style.css.
+- A separate `vectorizer/` package provides a GPL-2.0-only monochrome tracing
+  server and GUI on port 4174. It must remain isolated from the MIT-licensed
+  splitter package and must not add Potrace to the splitter's dependencies.
 - The browser title is "Ronyka Panel Splitter"; the visible heading beside public/ronyka-logo.jpg is "Panel Splitter". Preserve the supplied logo asset unless the user requests a replacement.
 - The GUI header shows the package version in small text beneath the visible heading; keep it synchronized with package.json when the version changes.
 - The GUI uses a Cricut-inspired green, charcoal, white, mint, and neutral color system without including Cricut logos or proprietary assets.
@@ -85,6 +88,41 @@ Project summary:
 - The CLI and GUI server share src/logger.js. Winston defaults to debug unless LOG_LEVEL overrides it; keep CLI diagnostics on stderr so stdout progress parsing remains stable.
 - scripts/install-update.mjs supports Windows/macOS installs and updates from GitHub archives without Git; preserve its safe archive extraction and npm ci behavior.
 - `scripts/windows/ronyka-launcher.bat` is the single Windows GUI launcher. It resolves the project root relative to itself, compares the installed version with GitHub, runs `npm run update` only for a newer published version, starts `npm run gui` in a separate terminal, polls the local server until it responds, and then opens the default browser. Keep the version check compatible with the Windows PowerShell version bundled with supported Windows installations. Do not reintroduce a second companion launcher.
+- Keep the standalone vectorizer's server, GUI, package lock, browser storage,
+  dependencies, and GPL license under `vectorizer/`. It accepts an in-memory
+  upload, traces a normalized monochrome copy capped by the selected
+  resolution, and downloads a physical-size path-only
+  `original-vectorized.svg`. Show source and generated SVG previews side by
+  side. Generate with a dedicated **Preview vector** action, enable
+  **Download SVG** only after that preview succeeds, and invalidate both the
+  preview and download whenever the source or a tracing setting changes.
+  Debounce valid setting changes and regenerate the preview automatically,
+  aborting obsolete browser requests. For range sliders, update displayed
+  values during input but wait for mouse/touch release or keyboard key release
+  before regenerating; keep the manual preview action for an immediate refresh.
+  Show upload, path-tracing, and preview-rendering status in a modal progress
+  bar, and close it automatically when processing finishes.
+  Provide Monochrome and Multicolor modes. Multicolor quantizes the source to
+  a persisted 2–16 color palette, optionally removes the corner-derived
+  background color, can preserve near-white as its own layer even when
+  background removal is enabled, traces each retained color mask with Potrace,
+  and stacks the resulting filled paths in one genuine SVG. Retained
+  neighboring color masks overlap by one trace pixel within the
+  artwork region to avoid transparent seams between independently traced paths.
+  Put every color in a named Inkscape-compatible layer group or top-level flat
+  path according to the selected SVG structure, return palette metadata in
+  response headers, and show layer number, swatch, hex value, and preview
+  visibility controls in a docked Photoshop-style GUI panel with eye controls
+  and Show all/Hide all.
+  Let users edit layer names in that panel and persist those names in the
+  downloaded SVG's Inkscape labels, standard group/path IDs, `data-name`
+  attributes, and title metadata for compatibility with Inkscape and other
+  editors.
+  Offer persisted **Layer groups (Inkscape)** and **Flat paths**
+  SVG structures; naming and preview visibility must work in either mode.
+  Layer visibility is preview-only; downloads retain every layer.
+  It has no processing CLI command; any future CLI must use a name distinct
+  from the splitter's `split-image`.
 - Panel numbering starts at 0. --no-number and --no-label disable numbering.
 - Large target posters, including a 4000 mm target height, can exceed Sharp's default input pixel limit. Preserve the openImage() handling for source and intermediate poster buffers and the disabled pixel limit on the full-size grid composite.
 - GUI temporary paths are rooted at os.tmpdir(), not a hard-coded /tmp path.
