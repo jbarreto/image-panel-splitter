@@ -375,8 +375,9 @@ control to toggle it from the keyboard.
 
 The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
 **Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,
-paper size, unit system, Poster height, Floating preview, Print Panel Numbers,
-and the selected number-size preset are saved in browser local storage.
+paper size, unit system, Poster height, Grid width, Floating preview, Print
+Panel Numbers, and the selected number-size preset are saved in browser local
+storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

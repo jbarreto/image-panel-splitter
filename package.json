@@ -1,6 +1,6 @@
 {
   "name": "image-panel-splitter",
-  "version": "1.37.2",
+  "version": "1.37.3",
   "description": "Split a large image into numbered US Letter or Legal PNG panels for printing and assembly.",
   "type": "module",
   "main": "src/index.js",

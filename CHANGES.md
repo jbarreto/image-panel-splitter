@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.37.2**
+**Current release: v1.37.3**
 
 ## 1. Project purpose
 
@@ -997,12 +997,17 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Allowed `Ctrl+Enter` and `Cmd+Enter` to start ZIP export while a slider,
   number field, or other settings control has focus.
 
-### v1.37.2 — Update cache handling (current)
+### v1.37.2 — Update cache handling
 
 - Added cache-busting query values and no-cache request headers to the Windows
   version check and GitHub archive download.
 - Retried transient Windows version-check failures up to three times before
   continuing with the installed version.
+
+### v1.37.3 — Saved grid width (current)
+
+- Persisted the GUI **Grid width (mm)** value in browser local storage and
+  restored it on startup.
 
 ## 18. Recommended next improvements
 

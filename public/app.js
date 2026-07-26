@@ -211,6 +211,7 @@ function saveDisplaySettings() {
       autoMinSideIn,
       floatingPreview: floatingPreviewInput.getAttribute('aria-pressed') === 'true',
       targetHeightMm: Number(targetHeightInput.value),
+      gridWidthMm: Number(gridWidthInput.value),
       printNumbers: printNumbersEnabled(),
       numberSizePreset: numberSizePresetInput.value
     }));
@@ -260,6 +261,12 @@ function restoreDisplaySettings() {
     Number(settings.targetHeightMm) >= 0
   ) {
     targetHeightInput.value = String(Number(settings.targetHeightMm));
+  }
+  if (
+    Number.isFinite(Number(settings.gridWidthMm)) &&
+    Number(settings.gridWidthMm) >= Number(gridWidthInput.min)
+  ) {
+    gridWidthInput.value = String(Number(settings.gridWidthMm));
   }
   if (typeof settings.printNumbers === 'boolean') {
     setPrintNumbers(settings.printNumbers);
@@ -1002,7 +1009,9 @@ for (const input of [
     if ([autoMaxSideInput, autoMinSideInput, dpiInput, targetHeightInput].includes(input)) {
       recalculateAutoLayout();
     }
-    if ([autoMaxSideInput, autoMinSideInput, targetHeightInput].includes(input)) {
+    if (
+      [autoMaxSideInput, autoMinSideInput, targetHeightInput, gridWidthInput].includes(input)
+    ) {
       saveDisplaySettings();
     }
     render();
