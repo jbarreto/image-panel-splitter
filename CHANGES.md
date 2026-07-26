@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.41.0**
+**Current release: v1.42.0**
 
 ## 1. Project purpose
 
@@ -1037,12 +1037,19 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Inset the Auto paneling range sliders so their thumbs are not clipped by the
   animated subgroup frame at minimum or maximum values.
 
-### v1.41.0 — Highlighted panel numbers (current)
+### v1.41.0 — Highlighted panel numbers
 
 - Show printed numbers at full opacity and the Large 28 px size while Highlight
   panels is enabled, only in the GUI preview.
 - Preserve the selected number-size preset and normal number opacity in every
   exported artifact.
+
+### v1.42.0 — Preview export reminder (current)
+
+- Added a small `Export: Ctrl/Cmd+Enter` reminder beneath the poster dimensions
+  in the floating preview summary.
+- Show the reminder only after an image loads and place it immediately on the
+  next line after Poster dimensions without an extra blank line.
 
 ## 18. Recommended next improvements
 
