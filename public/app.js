@@ -30,6 +30,9 @@ const autoAdvancedContent = $('autoAdvancedContent');
 const includeEnclosedArtworkInput = $('includeEnclosedArtwork');
 const autoMinimumError = $('autoMinimumError');
 const printNumbersInput = $('printNumbers');
+const placeNumbersInClearAreasInput = $('placeNumbersInClearAreas');
+const experimentalLabelsButton = $('experimentalLabelsButton');
+const experimentalLabelsContent = $('experimentalLabelsContent');
 const numberSizePresetInput = $('numberSizePreset');
 const editOrderButton = $('editOrderButton');
 const resetOrderButton = $('resetOrderButton');
@@ -60,6 +63,7 @@ let autoMaxSideIn = 100;
 let autoMinSideIn = 0.25;
 let previewPanelRects = [];
 let panelNumberAnchors = [];
+let panelNumberAnchorOverrides = new Set();
 let panelNumberLayoutKey = '';
 let numberDrag;
 let hoveredNumberIndex;
@@ -117,6 +121,15 @@ function setPrintNumbers(enabled) {
   printNumbersInput.setAttribute('aria-pressed', String(enabled));
   printNumbersInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
   if (!enabled) hoveredNumberIndex = undefined;
+}
+
+function placeNumbersInClearAreasEnabled() {
+  return placeNumbersInClearAreasInput.getAttribute('aria-pressed') === 'true';
+}
+
+function setPlaceNumbersInClearAreas(enabled) {
+  placeNumbersInClearAreasInput.setAttribute('aria-pressed', String(enabled));
+  placeNumbersInClearAreasInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
 }
 
 function setFloatingPreview(enabled) {
@@ -183,16 +196,145 @@ function choosePanelForOrder(panelIndex) {
   render();
 }
 
-function syncPanelNumberAnchors(panels) {
+function panelCenters(panels) {
+  return panels.map((panel) => ({
+    x: panel.left + panel.width / 2,
+    y: panel.top + panel.height / 2
+  }));
+}
+
+function artworkClearanceMap(mask) {
+  const distances = new Int16Array(mask.width * mask.height);
+  distances.fill(-1);
+  const queue = new Int32Array(distances.length);
+  let queueStart = 0;
+  let queueEnd = 0;
+  const markDetailed = (index) => {
+    if (distances[index] !== -1) return;
+    distances[index] = 0;
+    queue[queueEnd] = index;
+    queueEnd += 1;
+  };
+  const colorDifference = (first, second) => Math.max(
+    Math.abs(mask.pixels[first * 4] - mask.pixels[second * 4]),
+    Math.abs(mask.pixels[first * 4 + 1] - mask.pixels[second * 4 + 1]),
+    Math.abs(mask.pixels[first * 4 + 2] - mask.pixels[second * 4 + 2]),
+    Math.abs(mask.pixels[first * 4 + 3] - mask.pixels[second * 4 + 3])
+  );
+
+  for (let y = 0; y < mask.height; y += 1) {
+    for (let x = 0; x < mask.width; x += 1) {
+      const index = y * mask.width + x;
+      if (!mask.occupied[index] || x === 0 || y === 0 || x + 1 === mask.width || y + 1 === mask.height) {
+        markDetailed(index);
+        continue;
+      }
+      const alpha = mask.pixels[index * 4 + 3];
+      const luminance =
+        mask.pixels[index * 4] * 0.2126 +
+        mask.pixels[index * 4 + 1] * 0.7152 +
+        mask.pixels[index * 4 + 2] * 0.0722;
+      if (alpha > 32 && luminance < 72) {
+        markDetailed(index);
+        continue;
+      }
+      const neighbors = [index - 1, index + 1, index - mask.width, index + mask.width];
+      if (neighbors.some((neighbor) =>
+        !mask.occupied[neighbor] || colorDifference(index, neighbor) > 24
+      )) {
+        markDetailed(index);
+      }
+    }
+  }
+
+  while (queueStart < queueEnd) {
+    const index = queue[queueStart];
+    queueStart += 1;
+    const x = index % mask.width;
+    const y = Math.floor(index / mask.width);
+    const nextDistance = distances[index] + 1;
+    const visit = (neighbor) => {
+      if (distances[neighbor] !== -1) return;
+      distances[neighbor] = nextDistance;
+      queue[queueEnd] = neighbor;
+      queueEnd += 1;
+    };
+    if (x > 0) visit(index - 1);
+    if (x + 1 < mask.width) visit(index + 1);
+    if (y > 0) visit(index - mask.width);
+    if (y + 1 < mask.height) visit(index + mask.width);
+  }
+  return distances;
+}
+
+function clearAreaNumberAnchors(panels, outputWidth, outputHeight) {
+  if (!placeNumbersInClearAreasEnabled()) return panelCenters(panels);
+  // Label placement must include light regions enclosed by line art even when
+  // the auto-paneling option to preserve enclosed artwork is disabled.
+  // Otherwise a black-and-white drawing can leave only its dark strokes in
+  // the mask, and excluding those strokes leaves no valid label candidates.
+  const mask = artworkMask({ preserveEnclosed: true });
+  const clearance = artworkClearanceMap(mask);
+  return panels.map((panel) => {
+    const left = Math.max(0, Math.floor(panel.left * mask.width / outputWidth));
+    const top = Math.max(0, Math.floor(panel.top * mask.height / outputHeight));
+    const right = Math.min(
+      mask.width,
+      Math.max(left + 1, Math.ceil((panel.left + panel.width) * mask.width / outputWidth))
+    );
+    const bottom = Math.min(
+      mask.height,
+      Math.max(top + 1, Math.ceil((panel.top + panel.height) * mask.height / outputHeight))
+    );
+    const centerX = (left + right - 1) / 2;
+    const centerY = (top + bottom - 1) / 2;
+    let best;
+    for (let y = top; y < bottom; y += 1) {
+      for (let x = left; x < right; x += 1) {
+        const index = y * mask.width + x;
+        if (!mask.occupied[index] || clearance[index] <= 0) continue;
+        const panelEdgeDistance = Math.min(
+          x - left + 1,
+          right - x,
+          y - top + 1,
+          bottom - y
+        );
+        const clearRadius = Math.min(clearance[index], panelEdgeDistance);
+        const centerDistance = Math.hypot(x - centerX, y - centerY);
+        const score = clearRadius * 1000 - centerDistance;
+        if (!best || score > best.score) best = { x, y, score };
+      }
+    }
+    if (!best) {
+      return {
+        x: panel.left + panel.width / 2,
+        y: panel.top + panel.height / 2
+      };
+    }
+    return {
+      x: (best.x + 0.5) * outputWidth / mask.width,
+      y: (best.y + 0.5) * outputHeight / mask.height
+    };
+  });
+}
+
+function resetAutomaticNumberAnchors(panels, outputWidth, outputHeight, preserveOverrides = false) {
+  const automaticAnchors = clearAreaNumberAnchors(panels, outputWidth, outputHeight);
+  panelNumberAnchors = automaticAnchors.map((anchor, index) =>
+    preserveOverrides && panelNumberAnchorOverrides.has(index)
+      ? panelNumberAnchors[index]
+      : anchor
+  );
+}
+
+function syncPanelNumberAnchors(panels, outputWidth, outputHeight) {
   const layoutKey = panels
     .map((panel) => [panel.left, panel.top, panel.width, panel.height].map(Math.round).join(','))
     .join(';');
   if (layoutKey !== panelNumberLayoutKey) {
     panelNumberLayoutKey = layoutKey;
-    panelNumberAnchors = panels.map((panel) => ({
-      x: panel.left + panel.width / 2,
-      y: panel.top + panel.height / 2
-    }));
+    panelNumberAnchorOverrides = new Set();
+    resetAutomaticNumberAnchors(panels, outputWidth, outputHeight);
     automaticPanelOrder = panels.map((_, index) => index);
     panelOrder = [...automaticPanelOrder];
     exitOrderEditMode();
@@ -254,6 +396,7 @@ function saveDisplaySettings() {
       gridWidthMm: Number(gridWidthInput.value),
       highlightPanels: highlightPanelsEnabled(),
       printNumbers: printNumbersEnabled(),
+      smartNumberPlacement: placeNumbersInClearAreasEnabled(),
       numberSizePreset: numberSizePresetInput.value
     }));
   } catch {
@@ -317,6 +460,9 @@ function restoreDisplaySettings() {
   }
   if (typeof settings.printNumbers === 'boolean') {
     setPrintNumbers(settings.printNumbers);
+  }
+  if (typeof settings.smartNumberPlacement === 'boolean') {
+    setPlaceNumbersInClearAreas(settings.smartNumberPlacement);
   }
   if (settings.numberSizePreset in PANEL_NUMBER_SIZE_PRESETS_PX) {
     numberSizePresetInput.value = settings.numberSizePreset;
@@ -509,7 +655,7 @@ function render() {
     }
   }
   ctx.restore();
-  syncPanelNumberAnchors(previewPanels);
+  syncPanelNumberAnchors(previewPanels, outputWidthPx, outputHeightPx);
 
   if (highlightPanelsEnabled()) {
     ctx.save();
@@ -616,6 +762,8 @@ function render() {
 async function loadFile(selected) {
   if (!selected) return;
   resetExportProgress();
+  panelNumberLayoutKey = '';
+  panelNumberAnchorOverrides = new Set();
   applyOrientationLimits({ resetToMaximum: true });
   autoMaxSideIn = paperInput.value === 'custom'
     ? AUTO_CUSTOM_DEFAULT_SIDE_IN
@@ -644,7 +792,7 @@ async function loadFile(selected) {
 
 imageInput.addEventListener('change', () => loadFile(imageInput.files[0]));
 
-function artworkMask() {
+function artworkMask({ preserveEnclosed = includeEnclosedArtworkEnabled() } = {}) {
   const maximumSide = 192;
   const scale = Math.min(1, maximumSide / Math.max(image.naturalWidth, image.naturalHeight));
   const width = Math.max(1, Math.round(image.naturalWidth * scale));
@@ -682,7 +830,7 @@ function artworkMask() {
     occupied[index] = alpha > 16 && (transparentBackground || colorDistance > 20) ? 1 : 0;
   }
 
-  if (!includeEnclosedArtworkEnabled()) return { width, height, occupied };
+  if (!preserveEnclosed) return { width, height, occupied, pixels };
 
   // Only background-colored pixels connected to an image edge are exterior.
   // Matching pixels enclosed by artwork remain occupied, preserving white
@@ -719,7 +867,7 @@ function artworkMask() {
     const alpha = pixels[index * 4 + 3];
     occupied[index] = alpha > 16 && !exteriorBackground[index] ? 1 : 0;
   }
-  return { width, height, occupied };
+  return { width, height, occupied, pixels };
 }
 
 function buildAutoLayout() {
@@ -1145,6 +1293,25 @@ printNumbersInput.addEventListener('click', () => {
   saveDisplaySettings();
   render();
 });
+placeNumbersInClearAreasInput.addEventListener('click', () => {
+  setPlaceNumbersInClearAreas(!placeNumbersInClearAreasEnabled());
+  if (previewGrid && previewPanelRects.length > 0) {
+    resetAutomaticNumberAnchors(
+      previewPanelRects,
+      previewGrid.outputWidthPx,
+      previewGrid.outputHeightPx,
+      true
+    );
+  }
+  saveDisplaySettings();
+  render();
+});
+experimentalLabelsButton.addEventListener('click', () => {
+  const expanded = experimentalLabelsButton.getAttribute('aria-expanded') !== 'true';
+  experimentalLabelsButton.setAttribute('aria-expanded', String(expanded));
+  experimentalLabelsContent.classList.toggle('collapsed', !expanded);
+  experimentalLabelsContent.setAttribute('aria-hidden', String(!expanded));
+});
 floatingPreviewInput.addEventListener('click', () => {
   const enabled = floatingPreviewInput.getAttribute('aria-pressed') !== 'true';
   setFloatingPreview(enabled);
@@ -1318,6 +1485,7 @@ function moveDraggedNumber(event) {
     x: point.x * previewGrid.outputWidthPx / canvas.width,
     y: point.y * previewGrid.outputHeightPx / canvas.height
   }, halfText);
+  panelNumberAnchorOverrides.add(numberDrag.index);
   render();
   canvas.style.cursor = 'grabbing';
   event.preventDefault();

@@ -345,7 +345,7 @@ control sets the preferred/base orientation, while automatic mode may choose
 portrait or landscape separately for each generated panel. Press `Shift+A`
 outside an input control to toggle automatic mode from the keyboard.
 
-When **Print Panel Numbers** is toggled on, each number can
+When **Print Numbers** is toggled on, each number can
 be dragged independently in the preview. Its source-canvas position is clamped
 inside that panel, passed to export, recorded in the assembly guide, and drawn
 at the same location in `original-with-grid.png`. A number is normally rendered
@@ -355,6 +355,17 @@ storage on refresh. Press `Shift+N` outside an editable control to toggle panel
 numbers from the keyboard. The preview keeps numbers at the selected visible size and
 calculates the equivalent output-pixel font size from the poster preview scale,
 preserving the same relative size in exported images.
+
+The collapsed **Advance** subgroup contains **Smart Number Placement**,
+which is enabled by default. It analyzes each panel
+on a low-resolution artwork mask, avoids exterior background, panel edges,
+dark stroke pixels, and strong color boundaries, then places the number in the
+largest available solid-color area. Enclosed light areas remain eligible for
+labels independently of the auto-paneling **Preserve enclosed artwork**
+setting. Stroke and boundary pixels are excluded from automatic candidates
+rather than merely deprioritized. Panels without a detected stroke-free
+artwork candidate fall back to their center. Dragging an individual number
+overrides its automatic position.
 
 Panel numbers use reading order: left to right across each row, then top to
 bottom. Automatic mixed-orientation layouts cluster panels with nearby top
@@ -389,15 +400,16 @@ Enable **Highlight panels** in the same group to add a preview-only translucent
 green tint and dark-green frame to every panel. Assembly Order editing keeps
 its stronger selected-panel emphasis, and the highlighting is never exported.
 Press `Shift+H` outside an editable control to toggle the highlight.
-When Print Panel Numbers is also enabled, highlighted previews show every
+When Print Numbers is also enabled, highlighted previews show every
 number at full opacity and the Large 28 px size for easier inspection. This
 visual emphasis does not change the selected size or exported numbers.
 
 The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
 **Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,
 its enclosed-light-area behavior, paper size, unit system, Poster height, Grid
-width, Floating preview, Highlight panels, Print Panel Numbers, and the selected
-number-size preset are saved in browser local storage.
+width, Floating preview, Highlight panels, Print Numbers, Smart Number
+Placement, and the selected number-size preset are saved in browser
+local storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

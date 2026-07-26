@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.44.1</span>
+          <span class="app-version">v1.45.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -122,13 +122,29 @@
       <fieldset class="settings-group number-controls">
         <legend>Panel Labels</legend>
         <button id="printNumbers" class="toggle-button" type="button" aria-pressed="false" aria-keyshortcuts="Shift+N" title="Shortcut: Shift+N">
-          <span>Print Panel Numbers</span>
+          <span>Print Numbers</span>
           <span class="toggle-track" aria-hidden="true">
             <span class="toggle-state">Off</span>
             <span class="toggle-knob"></span>
           </span>
         </button>
         <div class="toggle-note">Drag each number in the preview to choose its exported position. Shortcut: Shift+N.</div>
+        <div class="experimental-settings-group">
+          <button id="experimentalLabelsButton" class="auto-advanced-heading" type="button" aria-expanded="false" aria-controls="experimentalLabelsContent">
+            <span>Advance</span>
+            <span class="auto-advanced-chevron" aria-hidden="true">›</span>
+          </button>
+          <div id="experimentalLabelsContent" class="auto-advanced-content collapsed" aria-hidden="true">
+            <button id="placeNumbersInClearAreas" class="toggle-button" type="button" aria-pressed="true">
+              <span>Smart Number Placement</span>
+              <span class="toggle-track" aria-hidden="true">
+                <span class="toggle-state">On</span>
+                <span class="toggle-knob"></span>
+              </span>
+            </button>
+            <div class="toggle-note">Places labels in solid artwork areas while avoiding strokes. Dragging a number overrides its automatic position.</div>
+          </div>
+        </div>
         <label class="number-size-field">
           <span>Number size</span>
           <select id="numberSizePreset">

@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.44.1**
+**Current release: v1.45.0**
 
 ## 1. Project purpose
 
@@ -636,7 +636,7 @@ Do not break these without explicit user approval:
 27. Switching the GUI unit system displays panel dimensions and limits plus the assembled-poster preview summary in centimeters or inches; poster height and grid width inputs remain in millimeters.
 28. Imperial (`in`) is the default GUI display unit.
 29. The assembled-poster preview summary displays poster dimensions on a separate line and labels their order as `(W × H)`.
-30. Paper size, metric/imperial selection, Auto paneling with its maximum and minimum sides, the Print Panel Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
+30. Paper size, metric/imperial selection, Auto paneling with its maximum and minimum sides, the Print Numbers toggle, and its size preset persist in browser local storage; number anchors, other GUI settings, and uploaded image data do not.
 31. The `Panel Splitter` heading uses a rounded system-font stack rather than a proprietary Cricut font.
 32. The heading uses bold weight and Cricut dark green.
 33. Settings labels, values, controls, notes, and action text use the same rounded system-font family as the heading at font weight `500`.
@@ -805,7 +805,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 
 ### v1.25.0 — Small in-artwork panel numbers
 
-- Added a **Print Panel Numbers** GUI toggle directly below automatic layout
+- Added a **Print Numbers** GUI toggle directly below automatic layout
   controls to render small zero-based panel numbers inside the
   artwork in both the live preview and exported panel PNGs.
 - Added a plain outlined number style for legibility over light or dark
@@ -821,7 +821,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   active preview number fully opaque for clearer drag feedback.
 - Added all enabled panel numbers to `original-with-grid.png` at the same final
   source-canvas anchors used by the panel PNGs and browser preview.
-- Persisted the **Print Panel Numbers** toggle with paper size and unit system
+- Persisted the **Print Numbers** toggle with paper size and unit system
   in browser local storage.
 - Corrected large-poster numbering so a visible 20 px preview number is
   converted to the equivalent larger output-pixel size during export instead
@@ -981,7 +981,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 
 ### v1.36.0 — Panel-label controls
 
-- Added `Shift+N` to toggle **Print Panel Numbers** outside editable controls
+- Added `Shift+N` to toggle **Print Numbers** outside editable controls
   and the export modal.
 - Moved the **Panel Labels** settings group below **Poster Settings**.
 - Added an **X-Small** panel-number preset with a 10 px preview size and
@@ -1069,10 +1069,31 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Added focused Arrow-key movement in 5 px steps and Shift+Arrow movement in
   25 px steps while keeping the summary within the preview bounds.
 
-### v1.44.1 — Patch release (current)
+### v1.44.1 — Patch release
 
 - Bumped the patch release after updating the Windows curl installation
   documentation.
+
+### v1.45.0 — Smart number placement (current)
+
+- Added a persisted **Smart Number Placement** Panel Labels toggle,
+  enabled by default.
+- Grouped **Smart Number Placement** under an **Advance** subsection in
+  Panel Labels.
+- Made the **Advance** Panel Labels subsection an animated disclosure
+  that is collapsed by default.
+- Renamed the browser-storage property for **Smart Number Placement** to
+  `smartNumberPlacement`; the former clear-area property is not migrated.
+- Automatically place each number inside the panel's largest low-detail,
+  solid-color artwork region while avoiding exterior background, strokes,
+  strong color boundaries, and panel edges.
+- Fall back to the panel center when no artwork candidate exists and
+  preserve manually dragged anchors as per-panel overrides.
+- Excluded dark stroke pixels and strong boundary pixels from automatic number
+  candidates so a lower-detail region always wins when one exists.
+- Kept enclosed light artwork regions available to label placement regardless
+  of the separate auto-paneling enclosed-artwork setting, preventing line-art
+  images from losing every stroke-free candidate.
 
 ## 18. Recommended next improvements
 
