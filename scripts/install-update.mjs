@@ -33,11 +33,14 @@ function fail(message) {
 }
 
 function run(command, args, cwd) {
+  const isWindows = process.platform === 'win32';
+
   const result = spawnSync(command, args, {
     cwd,
     encoding: 'utf8',
     stdio: 'inherit',
-    windowsHide: false
+    windowsHide: false,
+    shell: isWindows
   });
   if (result.error) fail(`Could not run ${command}: ${result.error.message}`);
   if (result.status !== 0) fail(`${command} exited with code ${result.status}.`);
