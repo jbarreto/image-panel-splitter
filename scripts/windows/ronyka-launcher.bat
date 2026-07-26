@@ -12,7 +12,7 @@ if errorlevel 1 (
 
 :: Compare the installed version with the version published on GitHub.
 echo Checking for a newer Ronyka Panel Splitter version...
-powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; try { $local = [version]((Get-Content -Raw 'package.json' | ConvertFrom-Json).version); $remote = $null; for ($attempt = 1; $attempt -le 3 -and $null -eq $remote; $attempt++) { try { $cacheBust = [DateTime]::UtcNow.Ticks; $url = 'https://raw.githubusercontent.com/jbarreto/image-panel-splitter/main/package.json?cacheBust=' + $cacheBust; $remote = [version]((Invoke-RestMethod -Uri $url -Headers @{ 'Cache-Control' = 'no-cache'; 'Pragma' = 'no-cache' }).version) } catch { if ($attempt -eq 3) { throw }; Start-Sleep -Seconds 2 } }; if ($remote -gt $local) { Write-Host ('Update available: v{0} -> v{1}' -f $local, $remote); exit 10 }; Write-Host ('Already up to date: v{0}' -f $local); exit 0 } catch { Write-Warning ('Could not check for updates: ' + $_.Exception.Message); exit 20 }"
+powershell -NoProfile -Command "$ErrorActionPreference = 'Stop'; try { $local = [version]((Get-Content -Raw 'package.json' | ConvertFrom-Json).version); $remote = [version]((Invoke-RestMethod 'https://raw.githubusercontent.com/jbarreto/image-panel-splitter/main/package.json').version); if ($remote -gt $local) { Write-Host ('Update available: v{0} -> v{1}' -f $local, $remote); exit 10 }; Write-Host ('Already up to date: v{0}' -f $local); exit 0 } catch { Write-Warning ('Could not check for updates: ' + $_.Exception.Message); exit 20 }"
 set "UPDATE_STATUS=%errorlevel%"
 
 :: Download and install only when GitHub reports a newer version.

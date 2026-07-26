@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.37.3**
+**Current release: v1.37.4**
 
 ## 1. Project purpose
 
@@ -1004,10 +1004,16 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Retried transient Windows version-check failures up to three times before
   continuing with the installed version.
 
-### v1.37.3 — Saved grid width (current)
+### v1.37.3 — Saved grid width
 
 - Persisted the GUI **Grid width (mm)** value in browser local storage and
   restored it on startup.
+
+### v1.37.4 — Restore Windows updates (current)
+
+- Reverted the v1.37.2 cache-busting and retry additions after they prevented
+  the Windows launcher from detecting and installing updates reliably.
+- Restored the previous direct GitHub version check and archive download logic.
 
 ## 18. Recommended next improvements
 

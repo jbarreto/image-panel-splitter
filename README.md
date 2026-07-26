@@ -70,8 +70,6 @@ published version, install it only when necessary, and start the GUI server in
 a separate terminal. The launcher waits until the server responds before
 opening `http://localhost:4173/` in the default browser. The server terminal
 remains open so it can be used to inspect logs or stop the GUI.
-Version checks and archive downloads use cache-busting requests; transient
-GitHub request failures are retried up to three times.
 
 ## Basic usage — no scaling
 

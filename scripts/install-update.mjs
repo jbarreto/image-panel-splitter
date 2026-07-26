@@ -71,7 +71,7 @@ function githubArchiveUrl() {
     fail('RONYKA_REPOSITORY_URL is not a GitHub URL; set RONYKA_ARCHIVE_URL explicitly.');
   }
   const encodedBranch = branchName.split('/').map(encodeURIComponent).join('/');
-  return `https://codeload.github.com/${match[1]}/${match[2]}/tar.gz/refs/heads/${encodedBranch}?cacheBust=${Date.now()}`;
+  return `https://codeload.github.com/${match[1]}/${match[2]}/tar.gz/refs/heads/${encodedBranch}`;
 }
 
 function tarString(buffer, start, length) {
@@ -118,13 +118,7 @@ function extractGithubArchive(compressed, destination) {
 async function downloadSource(destination) {
   const archiveUrl = githubArchiveUrl();
   log(`Downloading ${branchName} from GitHub...`);
-  const response = await fetch(archiveUrl, {
-    redirect: 'follow',
-    headers: {
-      'cache-control': 'no-cache',
-      pragma: 'no-cache'
-    }
-  });
+  const response = await fetch(archiveUrl, { redirect: 'follow' });
   if (!response.ok) fail(`GitHub download failed: HTTP ${response.status}.`);
   const compressed = Buffer.from(await response.arrayBuffer());
   extractGithubArchive(compressed, destination);
