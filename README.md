@@ -380,6 +380,10 @@ adjusted. Disable it to leave the preview in its normal document position. The
 choice is saved in browser local storage. Press `Shift+F` outside an editable
 control to toggle it from the keyboard.
 
+Drag the floating layout summary to reposition it within the preview. When it
+has keyboard focus, use the arrow keys for 5 px movements or Shift+Arrow for
+25 px movements.
+
 Enable **Highlight panels** in the same group to add a preview-only translucent
 green tint and dark-green frame to every panel. Assembly Order editing keeps
 its stronger selected-panel emphasis, and the highlighting is never exported.

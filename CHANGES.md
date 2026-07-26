@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.43.0**
+**Current release: v1.44.0**
 
 ## 1. Project purpose
 
@@ -1051,7 +1051,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Show the reminder only after an image loads and place it immediately on the
   next line after Poster dimensions without an extra blank line.
 
-### v1.43.0 — Enclosed artwork detection (current)
+### v1.43.0 — Enclosed artwork detection
 
 - Replaced Auto paneling's independent background-color test with an
   edge-connected flood fill.
@@ -1062,6 +1062,12 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   restores the original per-pixel behavior.
 - Made the **Advanced** subsection a collapsed-by-default disclosure with an
   animated expand/collapse transition and synchronized accessibility state.
+
+### v1.44.0 — Movable layout summary (current)
+
+- Made the floating preview layout summary draggable with mouse or touch.
+- Added focused Arrow-key movement in 5 px steps and Shift+Arrow movement in
+  25 px steps while keeping the summary within the preview bounds.
 
 ## 18. Recommended next improvements
 

@@ -43,6 +43,7 @@ const exportProgressClose = $('exportProgressClose');
 const exportProgressHint = $('exportProgressHint');
 const imageDimensions = $('imageDimensions');
 const previewWrap = $('previewWrap');
+const previewStats = $('previewStats');
 const canvas = $('preview');
 const ctx = canvas.getContext('2d');
 const stats = $('stats');
@@ -68,6 +69,7 @@ let automaticPanelOrder = [];
 let orderEditMode = false;
 let orderBeforeEdit = [];
 let clickedOrder = [];
+let previewStatsDrag;
 
 function setAutoLayout(layout) {
   autoLayout = layout;
@@ -76,6 +78,21 @@ function setAutoLayout(layout) {
   autoGridButton.setAttribute('aria-expanded', String(autoPanelingEnabled));
   autoGridButton.querySelector('.toggle-state').textContent = autoPanelingEnabled ? 'On' : 'Off';
   updateOrientationAvailability();
+}
+
+function movePreviewStats(left, top) {
+  const maximumLeft = Math.max(0, previewWrap.clientWidth - previewStats.offsetWidth);
+  const maximumTop = Math.max(0, previewWrap.clientHeight - previewStats.offsetHeight);
+  previewStats.style.left = `${Math.min(maximumLeft, Math.max(0, left))}px`;
+  previewStats.style.top = `${Math.min(maximumTop, Math.max(0, top))}px`;
+}
+
+function clampPreviewStats() {
+  const computedStyle = getComputedStyle(previewStats);
+  movePreviewStats(
+    Number.parseFloat(computedStyle.left) || 0,
+    Number.parseFloat(computedStyle.top) || 0
+  );
 }
 
 function setAutoMinimumError(message = '') {
@@ -429,6 +446,7 @@ function render() {
     previewGrid = undefined;
     previewWrap.classList.add('empty');
     previewWrap.classList.remove('requires-scroll');
+    clampPreviewStats();
     return;
   }
   previewWrap.classList.remove('empty');
@@ -592,6 +610,7 @@ function render() {
     previewWrap.scrollHeight > previewWrap.clientHeight + 1 ||
     previewBounds.height > viewportAvailableHeight;
   previewWrap.classList.toggle('requires-scroll', requiresScroll);
+  clampPreviewStats();
 }
 
 async function loadFile(selected) {
@@ -1160,6 +1179,59 @@ editOrderButton.addEventListener('click', () => {
 });
 resetOrderButton.addEventListener('click', resetPanelOrder);
 window.addEventListener('resize', render);
+
+previewStats.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  const computedStyle = getComputedStyle(previewStats);
+  previewStatsDrag = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    startLeft: Number.parseFloat(computedStyle.left) || 0,
+    startTop: Number.parseFloat(computedStyle.top) || 0
+  };
+  previewStats.classList.add('dragging');
+  previewStats.setPointerCapture(event.pointerId);
+  event.preventDefault();
+});
+
+previewStats.addEventListener('pointermove', (event) => {
+  if (!previewStatsDrag || previewStatsDrag.pointerId !== event.pointerId) return;
+  movePreviewStats(
+    previewStatsDrag.startLeft + event.clientX - previewStatsDrag.startX,
+    previewStatsDrag.startTop + event.clientY - previewStatsDrag.startY
+  );
+  event.preventDefault();
+});
+
+function finishPreviewStatsDrag(event) {
+  if (!previewStatsDrag || previewStatsDrag.pointerId !== event.pointerId) return;
+  previewStatsDrag = undefined;
+  previewStats.classList.remove('dragging');
+  if (previewStats.hasPointerCapture(event.pointerId)) {
+    previewStats.releasePointerCapture(event.pointerId);
+  }
+}
+
+previewStats.addEventListener('pointerup', finishPreviewStatsDrag);
+previewStats.addEventListener('pointercancel', finishPreviewStatsDrag);
+previewStats.addEventListener('keydown', (event) => {
+  const movement = {
+    ArrowLeft: [-1, 0],
+    ArrowRight: [1, 0],
+    ArrowUp: [0, -1],
+    ArrowDown: [0, 1]
+  }[event.key];
+  if (!movement) return;
+  const step = event.shiftKey ? 25 : 5;
+  const computedStyle = getComputedStyle(previewStats);
+  movePreviewStats(
+    (Number.parseFloat(computedStyle.left) || 0) + movement[0] * step,
+    (Number.parseFloat(computedStyle.top) || 0) + movement[1] * step
+  );
+  event.preventDefault();
+  event.stopPropagation();
+});
 
 canvas.addEventListener('pointerenter', () => {
   canvasHovered = true;

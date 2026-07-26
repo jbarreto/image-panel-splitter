@@ -67,7 +67,8 @@ Project summary:
 - Imperial (`in`) is selected by default in the GUI unit selector.
 - Paper size, unit-system selection, Poster height and Grid width in millimeters, the Auto paneling toggle with its maximum and minimum sides and enclosed-light-area behavior, Floating preview, Highlight panels, the Print Panel Numbers toggle, and its size preset persist in browser local storage under ronyka-panel-splitter.display-settings.v1. Restore the Auto paneling preference immediately, then generate its artwork-aware layout after an image loads. Other GUI settings, number positions, and uploaded image data remain transient.
 - The assembled-poster preview summary places poster dimensions on a separate line ending with `(W × H)`.
-- Keep the live uniform-grid/Auto-layout panel count and poster-dimension summary in a compact, non-interactive floating overlay at the preview area's upper-left corner.
+- Keep the live uniform-grid/Auto-layout panel count and poster-dimension summary in a compact floating overlay initially placed at the preview area's upper-left corner.
+- Make the floating layout summary movable within preview bounds by mouse/touch dragging. Give it keyboard focus and support Arrow movement in 5 px steps or Shift+Arrow in 25 px steps.
 - After an image loads, show a small `Export: Ctrl/Cmd+Enter` reminder immediately on the next line beneath the poster dimensions inside the floating preview summary. Hide the reminder while the preview is empty and do not insert an extra blank line.
 - Keep the **Panel Labels** settings group immediately below **Poster Settings** in the GUI settings column.
 - Keep loaded artwork horizontally and vertically centered when the preview fits without scrolling. When the preview area exceeds its available viewport height or has internal overflow, retain horizontal centering but top-align the artwork.
