@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.38.0</span>
+          <span class="app-version">v1.39.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -91,7 +91,6 @@
             <input id="panelHeight" type="range" min="2" max="6.55" step="0.01" value="6.55" />
           </div>
         </div>
-        <div id="stats" class="stats">Choose an image to preview the grid.</div>
       </fieldset>
 
       <fieldset class="settings-group">
@@ -174,6 +173,7 @@
     </section>
 
     <section id="previewWrap" class="preview-wrap empty floating">
+      <div id="stats" class="stats preview-stats">Choose an image to preview the grid.</div>
       <canvas id="preview"></canvas>
     </section>
   </main>

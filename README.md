@@ -364,6 +364,8 @@ assembly guides. Press `Shift+O` to start or finish assembly-order editing.
 
 Press `Ctrl+Enter` on Windows/Linux or `Cmd+Enter` on macOS to export the
 panels ZIP, including while a settings control or slider has focus.
+Shift-based GUI shortcuts also remain available while a range slider has
+focus, but stay disabled in text-entry, number, and select controls.
 
 The **Preview** settings group includes a **Floating preview** toggle. It is
 enabled by default so the preview follows page scrolling while settings are

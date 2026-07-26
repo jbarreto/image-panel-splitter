@@ -90,7 +90,6 @@ button:disabled { opacity: .45; cursor: default; }
 .settings-group legend { padding: 0 7px; color: var(--cricut-green-dark); font-size: 14px; font-weight: 500; }
 .settings-group > .row { margin: 2px 0; }
 .panel-layout-controls .field:last-child { margin-bottom: 2px; }
-.panel-layout-controls .stats { margin-bottom: 2px; }
 .number-controls .toggle-button { background: white; }
 .preview-controls .toggle-button { background: white; }
 .preview-controls .toggle-note + .toggle-button { margin-top: 12px; }
@@ -116,7 +115,8 @@ button.orientation-option.selected:active:not(:disabled) { border-color: var(--c
 .progress-modal progress { display: block; width: 100%; height: 14px; accent-color: var(--cricut-green); }
 .progress-cancel-hint { margin-top: 10px; color: #777; font-size: 12px; text-align: center; }
 .progress-close { margin-top: 20px; }
-.preview-wrap { min-width: 0; min-height: 500px; display: grid; align-items: center; justify-items: center; overflow: auto; padding: 20px; background-color: #fbfcfb; background-image: linear-gradient(45deg,#edf1ee 25%,transparent 25%),linear-gradient(-45deg,#edf1ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf1ee 75%),linear-gradient(-45deg,transparent 75%,#edf1ee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
+.preview-wrap { position: relative; min-width: 0; min-height: 500px; display: grid; align-items: center; justify-items: center; overflow: auto; padding: 20px; background-color: #fbfcfb; background-image: linear-gradient(45deg,#edf1ee 25%,transparent 25%),linear-gradient(-45deg,#edf1ee 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#edf1ee 75%),linear-gradient(-45deg,transparent 75%,#edf1ee 75%); background-size: 24px 24px; background-position: 0 0,0 12px,12px -12px,-12px 0; }
+.preview-stats { position: absolute; top: 14px; left: 14px; z-index: 2; max-width: calc(100% - 28px); margin: 0; padding: 9px 11px; background: rgb(244 251 247 / .92); box-shadow: 0 3px 12px rgb(23 58 42 / .12); backdrop-filter: blur(4px); pointer-events: none; font-family: ui-rounded, "Avenir Next Rounded", "Avenir Next", "Trebuchet MS", sans-serif; font-size: 12px; font-weight: 500; }
 .preview-wrap.requires-scroll { align-items: start; }
 .preview-wrap.floating,
 .preview-wrap.empty { position: sticky; top: 20px; align-self: start; height: calc(100vh - 40px); }

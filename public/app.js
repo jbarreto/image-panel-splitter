@@ -916,7 +916,11 @@ autoGridButton.addEventListener('click', () => {
 });
 
 document.addEventListener('keydown', (event) => {
-  const editingControl = ['INPUT', 'SELECT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+  const activeControl = document.activeElement;
+  const editingControl = ['INPUT', 'SELECT', 'TEXTAREA'].includes(activeControl?.tagName);
+  const rangeSliderFocused =
+    activeControl?.tagName === 'INPUT' &&
+    activeControl.type === 'range';
   if (event.repeat || !exportProgressWrap.hidden || event.altKey) return;
 
   if (
@@ -930,7 +934,7 @@ document.addEventListener('keydown', (event) => {
     return;
   }
 
-  if (editingControl) return;
+  if (editingControl && !rangeSliderFocused) return;
   if (!event.shiftKey || event.ctrlKey || event.metaKey) return;
   const shortcut = event.key.toLowerCase();
   if (shortcut === 'a' && !autoGridButton.disabled) {

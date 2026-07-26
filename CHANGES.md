@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.38.0**
+**Current release: v1.39.0**
 
 ## 1. Project purpose
 
@@ -1015,7 +1015,7 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   the Windows launcher from detecting and installing updates reliably.
 - Restored the previous direct GitHub version check and archive download logic.
 
-### v1.38.0 — Panel highlighting (current)
+### v1.38.0 — Panel highlighting
 
 - Added a persisted **Highlight panels** toggle to the Preview settings group.
 - Applied a preview-only translucent green tint and dark-green frame to every
@@ -1023,6 +1023,13 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
   Order editing.
 - Added `Shift+H` to toggle **Highlight panels** outside editable controls and
   the export modal.
+
+### v1.39.0 — Floating layout summary and slider shortcuts (current)
+
+- Moved the live panel count and poster dimensions from Panel Layout to a
+  compact floating overlay in the preview area's upper-left corner.
+- Allowed all Shift-based GUI shortcuts to remain active while a range slider
+  has focus, matching the global export-shortcut behavior.
 
 ## 18. Recommended next improvements
 
