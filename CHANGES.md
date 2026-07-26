@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.44.0**
+**Current release: v1.44.1**
 
 ## 1. Project purpose
 
@@ -1063,11 +1063,16 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Made the **Advanced** subsection a collapsed-by-default disclosure with an
   animated expand/collapse transition and synchronized accessibility state.
 
-### v1.44.0 — Movable layout summary (current)
+### v1.44.0 — Movable layout summary
 
 - Made the floating preview layout summary draggable with mouse or touch.
 - Added focused Arrow-key movement in 5 px steps and Shift+Arrow movement in
   25 px steps while keeping the summary within the preview bounds.
+
+### v1.44.1 — Patch release (current)
+
+- Bumped the patch release after updating the Windows curl installation
+  documentation.
 
 ## 18. Recommended next improvements
 
