@@ -13,7 +13,7 @@
         <img class="brand-logo" src="/ronyka-logo.jpg" alt="Ronyka Piñatas" />
         <div class="brand-copy">
           <h1>Panel Splitter</h1>
-          <span class="app-version">v1.37.4</span>
+          <span class="app-version">v1.38.0</span>
         </div>
       </div>
       <p>Drop a PNG, adjust the panel size, and preview the exact grid before exporting.</p>
@@ -147,6 +147,14 @@
           </span>
         </button>
         <div class="toggle-note">Keeps the preview visible while scrolling through settings. Shortcut: Shift+F.</div>
+        <button id="highlightPanels" class="toggle-button" type="button" aria-pressed="false" aria-keyshortcuts="Shift+H" title="Shortcut: Shift+H">
+          <span>Highlight panels</span>
+          <span class="toggle-track" aria-hidden="true">
+            <span class="toggle-state">Off</span>
+            <span class="toggle-knob"></span>
+          </span>
+        </button>
+        <div class="toggle-note">Adds a preview-only tint and frame to every panel. Shortcut: Shift+H.</div>
       </fieldset>
       <div class="grid-drag-note">Drag a grid line to adjust one dimension, drag diagonally inside a panel to adjust both, or hover over the preview and use the arrow keys.</div>
       <button id="exportButton" aria-keyshortcuts="Control+Enter Meta+Enter" title="Shortcut: Ctrl/Cmd+Enter" disabled>Export panels ZIP</button>

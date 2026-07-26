@@ -371,11 +371,16 @@ adjusted. Disable it to leave the preview in its normal document position. The
 choice is saved in browser local storage. Press `Shift+F` outside an editable
 control to toggle it from the keyboard.
 
+Enable **Highlight panels** in the same group to add a preview-only translucent
+green tint and dark-green frame to every panel. Assembly Order editing keeps
+its stronger selected-panel emphasis, and the highlighting is never exported.
+Press `Shift+H` outside an editable control to toggle the highlight.
+
 The predefined number-size settings are **X-Small** (10 px), **Small** (14 px),
 **Medium** (20 px), and **Large** (28 px). Auto paneling, its maximum and minimum sides,
-paper size, unit system, Poster height, Grid width, Floating preview, Print
-Panel Numbers, and the selected number-size preset are saved in browser local
-storage.
+paper size, unit system, Poster height, Grid width, Floating preview, Highlight
+panels, Print Panel Numbers, and the selected number-size preset are saved in
+browser local storage.
 
 For large numbered posters, grid lines and centered/manual numbers are rendered
 together in a single full-poster pass before panel generation. This avoids a

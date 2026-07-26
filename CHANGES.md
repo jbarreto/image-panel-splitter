@@ -2,7 +2,7 @@
 
 This document is the authoritative context handoff for continuing the **Ronyka Panel Splitter** project in a new ChatGPT conversation or with another developer.
 
-**Current release: v1.37.4**
+**Current release: v1.38.0**
 
 ## 1. Project purpose
 
@@ -1009,11 +1009,20 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Persisted the GUI **Grid width (mm)** value in browser local storage and
   restored it on startup.
 
-### v1.37.4 — Restore Windows updates (current)
+### v1.37.4 — Restore Windows updates
 
 - Reverted the v1.37.2 cache-busting and retry additions after they prevented
   the Windows launcher from detecting and installing updates reliably.
 - Restored the previous direct GitHub version check and archive download logic.
+
+### v1.38.0 — Panel highlighting (current)
+
+- Added a persisted **Highlight panels** toggle to the Preview settings group.
+- Applied a preview-only translucent green tint and dark-green frame to every
+  panel while preserving stronger feedback for panels selected during Assembly
+  Order editing.
+- Added `Shift+H` to toggle **Highlight panels** outside editable controls and
+  the export modal.
 
 ## 18. Recommended next improvements
 

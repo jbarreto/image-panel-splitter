@@ -16,6 +16,7 @@ const targetHeightInput = $('targetHeight');
 const gridWidthInput = $('gridWidth');
 const gridColorInput = $('gridColor');
 const floatingPreviewInput = $('floatingPreview');
+const highlightPanelsInput = $('highlightPanels');
 const autoGridButton = $('autoGridButton');
 const autoPanelingOptions = $('autoPanelingOptions');
 const autoMaxSideInput = $('autoMaxSide');
@@ -93,6 +94,15 @@ function setFloatingPreview(enabled) {
   floatingPreviewInput.setAttribute('aria-pressed', String(enabled));
   floatingPreviewInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
   previewWrap.classList.toggle('floating', enabled);
+}
+
+function highlightPanelsEnabled() {
+  return highlightPanelsInput.getAttribute('aria-pressed') === 'true';
+}
+
+function setHighlightPanels(enabled) {
+  highlightPanelsInput.setAttribute('aria-pressed', String(enabled));
+  highlightPanelsInput.querySelector('.toggle-state').textContent = enabled ? 'On' : 'Off';
 }
 
 function updateOrderControls() {
@@ -212,6 +222,7 @@ function saveDisplaySettings() {
       floatingPreview: floatingPreviewInput.getAttribute('aria-pressed') === 'true',
       targetHeightMm: Number(targetHeightInput.value),
       gridWidthMm: Number(gridWidthInput.value),
+      highlightPanels: highlightPanelsEnabled(),
       printNumbers: printNumbersEnabled(),
       numberSizePreset: numberSizePresetInput.value
     }));
@@ -267,6 +278,9 @@ function restoreDisplaySettings() {
     Number(settings.gridWidthMm) >= Number(gridWidthInput.min)
   ) {
     gridWidthInput.value = String(Number(settings.gridWidthMm));
+  }
+  if (typeof settings.highlightPanels === 'boolean') {
+    setHighlightPanels(settings.highlightPanels);
   }
   if (typeof settings.printNumbers === 'boolean') {
     setPrintNumbers(settings.printNumbers);
@@ -462,6 +476,22 @@ function render() {
   }
   ctx.restore();
   syncPanelNumberAnchors(previewPanels);
+
+  if (highlightPanelsEnabled()) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(0, 127, 82, 0.08)';
+    ctx.strokeStyle = '#007f52';
+    ctx.lineWidth = 2;
+    for (const panel of previewPanels) {
+      const left = panel.left * previewScale;
+      const top = panel.top * previewScale;
+      const width = panel.width * previewScale;
+      const height = panel.height * previewScale;
+      ctx.fillRect(left, top, width, height);
+      ctx.strokeRect(left, top, width, height);
+    }
+    ctx.restore();
+  }
 
   if (orderEditMode && clickedOrder.length > 0) {
     ctx.save();
@@ -909,6 +939,9 @@ document.addEventListener('keydown', (event) => {
   } else if (shortcut === 'f' && !floatingPreviewInput.disabled) {
     event.preventDefault();
     floatingPreviewInput.click();
+  } else if (shortcut === 'h' && !highlightPanelsInput.disabled) {
+    event.preventDefault();
+    highlightPanelsInput.click();
   } else if (shortcut === 'n' && !printNumbersInput.disabled) {
     event.preventDefault();
     printNumbersInput.click();
@@ -1026,6 +1059,11 @@ floatingPreviewInput.addEventListener('click', () => {
   const enabled = floatingPreviewInput.getAttribute('aria-pressed') !== 'true';
   setFloatingPreview(enabled);
   saveDisplaySettings();
+});
+highlightPanelsInput.addEventListener('click', () => {
+  setHighlightPanels(!highlightPanelsEnabled());
+  saveDisplaySettings();
+  render();
 });
 numberSizePresetInput.addEventListener('change', () => {
   saveDisplaySettings();

@@ -93,6 +93,7 @@ button:disabled { opacity: .45; cursor: default; }
 .panel-layout-controls .stats { margin-bottom: 2px; }
 .number-controls .toggle-button { background: white; }
 .preview-controls .toggle-button { background: white; }
+.preview-controls .toggle-note + .toggle-button { margin-top: 12px; }
 .number-size-field { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 9px 4px 0; color: var(--cricut-green-dark); font-size: 12px; }
 .number-size-field select { width: 120px; padding: 7px 10px; }
 .order-button { margin-top: 10px; padding: 9px 10px; border: 1px solid var(--cricut-green); border-radius: 10px; background: white; color: var(--cricut-green-dark); font-size: 12px; box-shadow: none; }
