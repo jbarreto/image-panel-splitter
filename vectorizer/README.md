@@ -51,6 +51,11 @@ or as a named top-level path when flat structure is selected. The GUI
 **Layers** panel also provides per-layer visibility controls
 for inspecting the vector preview. The panel is docked beside the preview and
 uses Photoshop-style eye controls plus **Show all** and **Hide all** actions.
+Hovering a color region in the inline SVG preview highlights its corresponding
+Layers-panel row. Dragging that region moves the complete layer and writes its
+translation into the downloaded SVG. **Reset positions** removes all manual
+layer translations. A divider tab collapses the source preview to the left so
+the vector preview can use the full preview area.
 Layer names can be edited directly in the panel and are written to the
 downloaded SVG as Inkscape labels, standard SVG IDs, `data-name` attributes,
 and title metadata for broader compatibility with vector editors.

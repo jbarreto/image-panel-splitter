@@ -13,7 +13,7 @@
         <span class="brand-mark" aria-hidden="true">R</span>
         <div>
           <h1>Vectorizer</h1>
-          <span class="version">v1.0.0</span>
+          <span class="version">v1.1.0</span>
         </div>
       </header>
       <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
@@ -82,8 +82,10 @@
     </section>
 
     <section class="preview">
-      <div class="preview-grid">
-        <figure class="preview-card">
+      <div id="previewGrid" class="preview-grid">
+        <button id="sourcePreviewToggle" class="source-collapse-tab" type="button"
+          aria-label="Hide source preview" aria-expanded="true" title="Hide source preview">‹</button>
+        <figure class="preview-card source-preview-card">
           <figcaption>Source</figcaption>
           <div class="preview-stage">
             <div id="placeholder" class="placeholder">
@@ -103,12 +105,13 @@
                 <strong>Vector preview</strong>
                 <span>Generate the SVG to preview its paths.</span>
               </div>
-              <img id="vectorPreview" alt="Generated vectorized SVG preview" hidden />
+              <div id="vectorPreview" role="img" aria-label="Generated vectorized SVG preview" hidden></div>
             </div>
             <aside id="palettePanel" class="palette-panel" aria-label="Vector layers" hidden>
               <div class="palette-heading">
                 <span>Layers</span>
                 <span class="layer-actions">
+                  <button id="resetLayerPositions" type="button">Reset positions</button>
                   <button id="showAllLayers" type="button">Show all</button>
                   <button id="hideAllLayers" type="button">Hide all</button>
                 </span>

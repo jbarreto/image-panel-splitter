@@ -114,6 +114,12 @@ Project summary:
   response headers, and show layer number, swatch, hex value, and preview
   visibility controls in a docked Photoshop-style GUI panel with eye controls
   and Show all/Hide all.
+  Render the generated preview as inline SVG. Hovering a visible color region
+  highlights its Layers-panel row; dragging the region moves the full layer
+  and persists its SVG translation in the download source.
+  Provide a Layers-panel action that resets every manual layer translation.
+  A divider tab collapses the source card to the left and expands the vector
+  preview; keep both previews stacked and visible on narrow screens.
   Let users edit layer names in that panel and persist those names in the
   downloaded SVG's Inkscape labels, standard group/path IDs, `data-name`
   attributes, and title metadata for compatibility with Inkscape and other

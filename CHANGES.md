@@ -1146,6 +1146,11 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Slightly overlap adjacent retained color masks before tracing to eliminate
   transparent seams between independently smoothed fills without expanding
   the outside artwork silhouette.
+- Made the inline SVG preview layer-aware: hovering artwork highlights the
+  matching Layers-panel row, and dragging artwork moves that complete layer
+  in both the preview and downloaded SVG.
+- Added a reset action for all manually moved layer positions and a sliding
+  source-preview tab that expands the vector preview into the available space.
 - The vectorizer has no image-processing CLI command. Its `npm start` command
   only launches the separate server; any future CLI must use a distinct name
   such as `ronyka-vectorize`, never `split-image`.

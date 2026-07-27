@@ -16,6 +16,9 @@ const palettePanel = document.getElementById('palettePanel');
 const paletteSwatches = document.getElementById('paletteSwatches');
 const showAllLayers = document.getElementById('showAllLayers');
 const hideAllLayers = document.getElementById('hideAllLayers');
+const resetLayerPositions = document.getElementById('resetLayerPositions');
+const previewGrid = document.getElementById('previewGrid');
+const sourcePreviewToggle = document.getElementById('sourcePreviewToggle');
 const maximumTraceSide = document.getElementById('maximumTraceSide');
 const resolutionValue = document.getElementById('resolutionValue');
 const previewButton = document.getElementById('previewButton');
@@ -33,9 +36,9 @@ const SETTINGS_KEY = 'ronyka-vectorizer.settings.v1';
 const INKSCAPE_NAMESPACE = 'http://www.inkscape.org/namespaces/inkscape';
 let file;
 let previewUrl;
-let vectorPreviewUrl;
 let vectorDownloadUrl;
 let vectorSvgText;
+let draggedPreviewLayer;
 let resultRevision = 0;
 let previewTimer;
 let previewController;
@@ -126,12 +129,12 @@ function clearVectorResult() {
   previewController?.abort();
   previewController = undefined;
   hideProcessing();
-  if (vectorPreviewUrl) URL.revokeObjectURL(vectorPreviewUrl);
   if (vectorDownloadUrl) URL.revokeObjectURL(vectorDownloadUrl);
-  vectorPreviewUrl = undefined;
   vectorDownloadUrl = undefined;
   vectorSvgText = undefined;
-  vectorPreview.removeAttribute('src');
+  draggedPreviewLayer = undefined;
+  vectorPreview.classList.remove('dragging-layer');
+  vectorPreview.replaceChildren();
   vectorPreview.hidden = true;
   vectorPlaceholder.hidden = false;
   paletteSwatches.replaceChildren();
@@ -152,12 +155,11 @@ function renderLayerPreview() {
       layer.setAttribute('display', 'none');
     }
   }
-  const previewSvg = new XMLSerializer().serializeToString(documentNode);
-  if (vectorPreviewUrl) URL.revokeObjectURL(vectorPreviewUrl);
-  vectorPreviewUrl = URL.createObjectURL(
-    new Blob([previewSvg], { type: 'image/svg+xml' })
-  );
-  vectorPreview.src = vectorPreviewUrl;
+  const inlineSvg = document.importNode(documentNode.documentElement, true);
+  inlineSvg.removeAttribute('width');
+  inlineSvg.removeAttribute('height');
+  inlineSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+  vectorPreview.replaceChildren(inlineSvg);
 }
 
 function refreshDownloadUrl() {
@@ -220,11 +222,126 @@ function renameLayer(layerNumber, name) {
   refreshDownloadUrl();
 }
 
+function highlightLayerRow(layerNumber) {
+  for (const row of paletteSwatches.querySelectorAll('.palette-swatch')) {
+    row.classList.toggle('preview-hover', row.dataset.layer === String(layerNumber));
+  }
+}
+
+function previewPoint(svg, event) {
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return;
+  return new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+}
+
+function saveLayerPosition(layerNumber, translateX, translateY) {
+  if (!vectorSvgText) return;
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return;
+  const layer = documentNode.querySelector(`[data-layer-root="${layerNumber}"]`);
+  if (!layer) return;
+  layer.dataset.translateX = String(translateX);
+  layer.dataset.translateY = String(translateY);
+  layer.setAttribute('transform', `translate(${translateX} ${translateY})`);
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+}
+
+function resetAllLayerPositions() {
+  if (!vectorSvgText) return;
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return;
+  for (const layer of documentNode.querySelectorAll('[data-layer-root]')) {
+    if (!layer.hasAttribute('data-translate-x') && !layer.hasAttribute('data-translate-y')) {
+      continue;
+    }
+    layer.removeAttribute('data-translate-x');
+    layer.removeAttribute('data-translate-y');
+    layer.removeAttribute('transform');
+  }
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+  renderLayerPreview();
+  status.classList.remove('error');
+  status.textContent = 'Layer positions reset.';
+}
+
+vectorPreview.addEventListener('pointermove', (event) => {
+  if (draggedPreviewLayer) {
+    const point = previewPoint(draggedPreviewLayer.svg, event);
+    if (!point) return;
+    draggedPreviewLayer.translateX =
+      draggedPreviewLayer.originalX + point.x - draggedPreviewLayer.startX;
+    draggedPreviewLayer.translateY =
+      draggedPreviewLayer.originalY + point.y - draggedPreviewLayer.startY;
+    draggedPreviewLayer.element.setAttribute(
+      'transform',
+      `translate(${draggedPreviewLayer.translateX} ${draggedPreviewLayer.translateY})`
+    );
+    return;
+  }
+  const layer = event.target.closest?.('[data-layer-root]');
+  highlightLayerRow(layer?.dataset.layerRoot);
+});
+
+vectorPreview.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  const layer = event.target.closest?.('[data-layer-root]');
+  const svg = vectorPreview.querySelector('svg');
+  if (!layer || !svg) return;
+  const point = previewPoint(svg, event);
+  if (!point) return;
+  event.preventDefault();
+  const layerNumber = layer.dataset.layerRoot;
+  draggedPreviewLayer = {
+    element: layer,
+    svg,
+    layerNumber,
+    startX: point.x,
+    startY: point.y,
+    originalX: Number(layer.dataset.translateX || 0),
+    originalY: Number(layer.dataset.translateY || 0),
+    translateX: Number(layer.dataset.translateX || 0),
+    translateY: Number(layer.dataset.translateY || 0)
+  };
+  vectorPreview.setPointerCapture(event.pointerId);
+  vectorPreview.classList.add('dragging-layer');
+  highlightLayerRow(layerNumber);
+});
+
+vectorPreview.addEventListener('pointerup', (event) => {
+  if (!draggedPreviewLayer) return;
+  const movedLayer = draggedPreviewLayer;
+  draggedPreviewLayer = undefined;
+  if (vectorPreview.hasPointerCapture(event.pointerId)) {
+    vectorPreview.releasePointerCapture(event.pointerId);
+  }
+  vectorPreview.classList.remove('dragging-layer');
+  saveLayerPosition(
+    movedLayer.layerNumber,
+    movedLayer.translateX,
+    movedLayer.translateY
+  );
+  status.classList.remove('error');
+  status.textContent = `Moved layer ${movedLayer.layerNumber}.`;
+});
+
+vectorPreview.addEventListener('pointercancel', () => {
+  draggedPreviewLayer = undefined;
+  vectorPreview.classList.remove('dragging-layer');
+  renderLayerPreview();
+});
+
+vectorPreview.addEventListener('pointerleave', () => {
+  if (!draggedPreviewLayer) highlightLayerRow();
+});
+
 function showPalette(palette) {
   paletteSwatches.replaceChildren();
   for (const entry of palette) {
     const row = document.createElement('div');
     row.className = 'palette-swatch';
+    row.dataset.layer = String(entry.layer);
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'layer-visibility';
@@ -285,6 +402,18 @@ function setAllLayerVisibility(visible) {
 
 showAllLayers.addEventListener('click', () => setAllLayerVisibility(true));
 hideAllLayers.addEventListener('click', () => setAllLayerVisibility(false));
+resetLayerPositions.addEventListener('click', resetAllLayerPositions);
+
+sourcePreviewToggle.addEventListener('click', () => {
+  const collapsed = previewGrid.classList.toggle('source-collapsed');
+  sourcePreviewToggle.textContent = collapsed ? '›' : '‹';
+  sourcePreviewToggle.setAttribute('aria-expanded', String(!collapsed));
+  sourcePreviewToggle.setAttribute(
+    'aria-label',
+    collapsed ? 'Show source preview' : 'Hide source preview'
+  );
+  sourcePreviewToggle.title = collapsed ? 'Show source preview' : 'Hide source preview';
+});
 
 function selectFile(selected) {
   if (!selected) return;
