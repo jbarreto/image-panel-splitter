@@ -1,5 +1,14 @@
 # Ronyka Vectorizer Changes
 
+## v1.8.2 — Bucket fill tool
+
+- Added a bucket-fill tool and native color picker to the vector toolbar.
+  With the tool active, clicking visible preview artwork directly targets and
+  recolors its layer. It updates fill-linked strokes and palette metadata,
+  preserves independent outline strokes, and records each fill as one
+  Undo/Redo operation. The active tool uses a bucket-shaped cursor with a
+  precise pouring-edge hotspot.
+
 ## v1.8.1 — Zoomed eraser alignment
 
 - Fixed the eraser target jumping away from the pointer after zooming or

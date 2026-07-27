@@ -40,6 +40,8 @@ const sourcePreviewRestore = document.getElementById('sourcePreviewRestore');
 const vectorCursorTool = document.getElementById('vectorCursorTool');
 const vectorEraserTool = document.getElementById('vectorEraserTool');
 const vectorLassoTool = document.getElementById('vectorLassoTool');
+const fillSelectedLayers = document.getElementById('fillSelectedLayers');
+const layerFillColor = document.getElementById('layerFillColor');
 const eraserSize = document.getElementById('eraserSize');
 const eraserSizeValue = document.getElementById('eraserSizeValue');
 const vectorZoomOut = document.getElementById('vectorZoomOut');
@@ -91,6 +93,7 @@ let eraserToolActive = false;
 let activeEraserStroke;
 let lassoToolActive = false;
 let activeLassoStroke;
+let bucketToolActive = false;
 let lastVectorPointer;
 let draggedCanvasPan;
 let lastEraserPointer;
@@ -710,6 +713,8 @@ function clearVectorResult() {
   soloVisibilitySnapshot = undefined;
   mergeSelectedLayers.disabled = true;
   duplicateSelectedLayers.disabled = true;
+  fillSelectedLayers.disabled = true;
+  layerFillColor.disabled = true;
   layerStrokeWidth.disabled = true;
   layerStrokeWidth.value = '0';
   layerStrokeValue.value = '0 px';
@@ -1033,6 +1038,8 @@ function updateLayerSelectionControls() {
   duplicateSelectedLayers.disabled = selectedLayers.length === 0;
   mergeSelectedLayers.disabled = selectedLayers.length < 2;
   layerStrokeWidth.disabled = selectedLayers.length === 0;
+  fillSelectedLayers.disabled = !vectorSvgText;
+  layerFillColor.disabled = !vectorSvgText;
   if (selectedLayers.length === 0) {
     layerStrokeWidth.value = '0';
     layerStrokeValue.value = '0 px';
@@ -1041,9 +1048,68 @@ function updateLayerSelectionControls() {
   const selectedRoot = vectorPreview.querySelector(
     `[data-layer-root="${selectedLayers[0]}"]`
   );
+  const selectedEntry = currentPalette.find(
+    (entry) => Number(entry.layer) === selectedLayers[0]
+  );
+  if (/^#[0-9a-f]{6}$/i.test(selectedEntry?.color || '')) {
+    layerFillColor.value = selectedEntry.color;
+  }
   const width = Number(selectedRoot?.dataset.fillStrokeWidth || 0);
   layerStrokeWidth.value = String(width);
   layerStrokeValue.value = `${width} px`;
+}
+
+function applySelectedLayerFill(selectedLayers = selectedLayerNumbers()) {
+  if (selectedLayers.length === 0 || !vectorSvgText) return;
+  const selectedSet = new Set(selectedLayers);
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return;
+  const color = layerFillColor.value.toUpperCase();
+  const panelState = currentPalette.map((entry) => {
+    const row = paletteSwatches.querySelector(
+      `.palette-swatch[data-layer="${entry.layer}"]`
+    );
+    return {
+      visible:
+        row?.querySelector('.layer-visibility')?.getAttribute('aria-pressed') !== 'false',
+      selected: selectedSet.has(Number(entry.layer))
+    };
+  });
+  pushLayerHistory();
+  for (const layerNumber of selectedLayers) {
+    const root = documentNode.querySelector(`[data-layer-root="${layerNumber}"]`);
+    if (!root) continue;
+    const paths = root.localName === 'path'
+      ? [root]
+      : [...root.querySelectorAll('path')];
+    for (const path of paths) {
+      const previousFill = path.getAttribute('fill');
+      const previousStroke = path.getAttribute('stroke');
+      path.setAttribute('fill', color);
+      if (
+        previousStroke &&
+        (
+          previousStroke.toLowerCase() === previousFill?.toLowerCase() ||
+          root.hasAttribute('data-fill-stroke-width')
+        )
+      ) {
+        path.setAttribute('stroke', color);
+      }
+    }
+    root.dataset.color = color;
+  }
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+  showPalette(currentPalette.map((entry) => (
+    selectedSet.has(Number(entry.layer))
+      ? { ...entry, color }
+      : { ...entry }
+  )));
+  restoreLayerPanelState(panelState);
+  renderLayerPreview();
+  status.classList.remove('error');
+  status.textContent =
+    `Filled ${selectedLayers.length} selected layer${selectedLayers.length === 1 ? '' : 's'} with ${color}.`;
 }
 
 function duplicateSelectedLayerEntries() {
@@ -1641,6 +1707,18 @@ vectorPreview.addEventListener('pointermove', (event) => {
 
 vectorPreview.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
+  if (bucketToolActive) {
+    event.preventDefault();
+    const layer = event.target.closest?.('[data-layer-root]');
+    if (!layer) {
+      status.classList.add('error');
+      status.textContent = 'Click visible artwork to fill its layer.';
+      return;
+    }
+    const layerNumber = Number(layer.dataset.layerRoot);
+    applySelectedLayerFill([layerNumber]);
+    return;
+  }
   if (lassoToolActive) {
     const selectedLayers = selectedLayerNumbers();
     if (selectedLayers.length !== 1) {
@@ -2068,7 +2146,6 @@ redoLayerEdit.addEventListener('click', redoLayerChange);
 duplicateSelectedLayers.addEventListener('click', duplicateSelectedLayerEntries);
 mergeSelectedLayers.addEventListener('click', mergeSelectedLayerEntries);
 resetLayerPositions.addEventListener('click', resetAllLayerPositions);
-
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && cancelVectorization()) {
     event.preventDefault();
@@ -2086,7 +2163,10 @@ document.addEventListener('keydown', (event) => {
     deleteSelectedLayerEntries();
     return;
   }
-  if (event.key === 'Escape' && (vectorZoomTool || eraserToolActive || lassoToolActive)) {
+  if (
+    event.key === 'Escape' &&
+    (vectorZoomTool || eraserToolActive || lassoToolActive || bucketToolActive)
+  ) {
     if (activeLassoStroke) {
       activeLassoStroke.preview.remove();
       activeLassoStroke = undefined;
@@ -2096,6 +2176,7 @@ document.addEventListener('keydown', (event) => {
     vectorZoomTool = undefined;
     eraserToolActive = false;
     lassoToolActive = false;
+    bucketToolActive = false;
     updateVectorZoomTool();
     status.textContent = '';
     return;
@@ -2181,21 +2262,25 @@ sourcePreviewRestore.addEventListener('click', () => {
 });
 
 function updateVectorZoomTool() {
-  const cursorActive = !vectorZoomTool && !eraserToolActive && !lassoToolActive;
+  const cursorActive =
+    !vectorZoomTool && !eraserToolActive && !lassoToolActive && !bucketToolActive;
   vectorCursorTool.classList.toggle('active', cursorActive);
   vectorEraserTool.classList.toggle('active', eraserToolActive);
   vectorLassoTool.classList.toggle('active', lassoToolActive);
+  fillSelectedLayers.classList.toggle('active', bucketToolActive);
   vectorZoomIn.classList.toggle('active', vectorZoomTool === 'in');
   vectorZoomOut.classList.toggle('active', vectorZoomTool === 'out');
   vectorCursorTool.setAttribute('aria-pressed', String(cursorActive));
   vectorEraserTool.setAttribute('aria-pressed', String(eraserToolActive));
   vectorLassoTool.setAttribute('aria-pressed', String(lassoToolActive));
+  fillSelectedLayers.setAttribute('aria-pressed', String(bucketToolActive));
   vectorZoomIn.setAttribute('aria-pressed', String(vectorZoomTool === 'in'));
   vectorZoomOut.setAttribute('aria-pressed', String(vectorZoomTool === 'out'));
   vectorPreview.classList.toggle('zoom-in-tool', vectorZoomTool === 'in');
   vectorPreview.classList.toggle('zoom-out-tool', vectorZoomTool === 'out');
   vectorPreview.classList.toggle('eraser-tool', eraserToolActive);
   vectorPreview.classList.toggle('lasso-tool', lassoToolActive);
+  vectorPreview.classList.toggle('bucket-tool', bucketToolActive);
   if (!eraserToolActive) {
     lastEraserPointer = undefined;
     eraserCursor.hidden = true;
@@ -2206,6 +2291,7 @@ function selectVectorZoomTool(tool) {
   vectorZoomTool = vectorZoomTool === tool ? undefined : tool;
   eraserToolActive = false;
   lassoToolActive = false;
+  bucketToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = vectorZoomTool
@@ -2243,6 +2329,7 @@ vectorCursorTool.addEventListener('click', () => {
   vectorZoomTool = undefined;
   eraserToolActive = false;
   lassoToolActive = false;
+  bucketToolActive = false;
   updateVectorZoomTool();
   status.textContent = '';
 });
@@ -2250,6 +2337,7 @@ vectorEraserTool.addEventListener('click', () => {
   eraserToolActive = !eraserToolActive;
   vectorZoomTool = undefined;
   lassoToolActive = false;
+  bucketToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = eraserToolActive
@@ -2260,10 +2348,22 @@ vectorLassoTool.addEventListener('click', () => {
   lassoToolActive = !lassoToolActive;
   vectorZoomTool = undefined;
   eraserToolActive = false;
+  bucketToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = lassoToolActive
     ? 'Lasso selected. Draw around content on exactly one selected layer.'
+    : '';
+});
+fillSelectedLayers.addEventListener('click', () => {
+  bucketToolActive = !bucketToolActive;
+  vectorZoomTool = undefined;
+  eraserToolActive = false;
+  lassoToolActive = false;
+  updateVectorZoomTool();
+  status.classList.remove('error');
+  status.textContent = bucketToolActive
+    ? 'Bucket selected. Click artwork in the preview to apply the chosen color.'
     : '';
 });
 eraserSize.addEventListener('input', () => {
@@ -2276,6 +2376,7 @@ vectorZoomValue.addEventListener('click', () => {
   vectorZoomTool = undefined;
   eraserToolActive = false;
   lassoToolActive = false;
+  bucketToolActive = false;
   updateVectorZoomTool();
   vectorPreview.style.removeProperty('--vector-preview-origin-x');
   vectorPreview.style.removeProperty('--vector-preview-origin-y');
@@ -2408,6 +2509,7 @@ function selectFile(selected) {
   vectorZoomTool = undefined;
   eraserToolActive = false;
   lassoToolActive = false;
+  bucketToolActive = false;
   updateVectorZoomTool();
   setVectorPreviewZoom(1);
   file = selected;

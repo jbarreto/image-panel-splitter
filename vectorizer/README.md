@@ -163,6 +163,14 @@ Erasures are stored as SVG masks, remain editable through Undo/Redo, and are
 included in the downloaded SVG. Choose **Cursor** or press `Esc` to leave
 eraser mode.
 
+To recolor artwork, choose a color, activate the toolbar bucket, and click
+visible artwork directly in the preview. The clicked layer becomes selected,
+and its fill and palette swatch update together. Strokes created from the layer
+fill follow the new color, while independent outline strokes keep their
+existing color. Keep the bucket active to recolor additional layers; choose
+**Cursor** or press `Esc` to exit. Each fill is one Undo/Redo operation and is
+retained in SVG and PDF downloads.
+
 To split artwork out of a layer, select exactly one layer and choose the
 **Lasso Layer** tool. Draw around the desired region and release the pointer.
 The enclosed portion becomes a newly selected independent SVG layer and is

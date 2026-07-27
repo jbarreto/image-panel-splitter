@@ -135,6 +135,11 @@ button:disabled { opacity: .45; cursor: default; }
 .preview-tool-button.cursor-tool svg path:first-child { fill: currentColor; stroke: currentColor; }
 .preview-tool-button.cursor-tool#vectorEraserTool svg path:first-child { fill: none; }
 .preview-tool-button:hover:not(:disabled), .preview-tool-button.active, .preview-zoom-value:hover:not(:disabled) { border-color: var(--green); background: var(--mint); color: var(--green-dark); }
+.layer-fill-color { width: 26px; height: 24px; padding: 2px; border: 1px solid #cbd6d0; border-radius: 5px; background: white; cursor: pointer; }
+.layer-fill-color:disabled { opacity: .45; cursor: default; }
+.layer-fill-color::-webkit-color-swatch-wrapper { padding: 0; }
+.layer-fill-color::-webkit-color-swatch { border: 0; border-radius: 3px; }
+.layer-fill-color::-moz-color-swatch { border: 0; border-radius: 3px; }
 .preview-zoom-value { width: 42px; padding: 4px 2px; border-radius: 4px; background: transparent; color: #68766f; font-size: 9px; font-weight: 600; text-align: center; box-shadow: none; }
 .preview-stage { min-height: 420px; display: grid; place-items: center; padding: 16px; overflow: auto; background: white; }
 .vector-stage { position: relative; height: calc(100vh - 135px); place-items: start; background: repeating-conic-gradient(#f6f7f6 0 25%, white 0 50%) 50% / 22px 22px; }
@@ -146,6 +151,7 @@ button:disabled { opacity: .45; cursor: default; }
 .vector-stage #vectorPreview.eraser-tool { cursor: none; }
 .vector-stage #vectorPreview.erasing { cursor: none; }
 .vector-stage #vectorPreview.lasso-tool, .vector-stage #vectorPreview.lassoing { cursor: crosshair; }
+.vector-stage #vectorPreview.bucket-tool { cursor: url("/bucket-cursor.svg") 4 22, crosshair; }
 .vector-stage #vectorPreview .lasso-preview { vector-effect: non-scaling-stroke; }
 .eraser-cursor { position: absolute; z-index: 8; border: 1.5px solid white; border-radius: 50%; background: rgb(236 22 140 / .14); box-shadow: 0 0 0 1px #ec168c, 0 1px 4px rgb(0 0 0 / .25); pointer-events: none; transform: translate(-50%, -50%); }
 .vector-stage #vectorPreview svg { display: block; width: 100%; height: auto; max-height: calc((100vh - 167px) * var(--vector-preview-zoom)); overflow: visible; }

@@ -92,6 +92,11 @@ Behavior:
   scaled for brush size, SVG display scale, and zoom. Position the absolute
   cursor with the vector stage's horizontal and vertical scroll offsets, keep
   it synchronized on scroll, and do not cap it below the actual erase diameter.
+- The toolbar bucket is a persistent tool with a native color picker. Clicking
+  visible preview artwork targets and selects that layer, recolors its fill and
+  fill-linked strokes, synchronizes palette metadata, preserves independent
+  outlines, and creates one Undo/Redo history entry. Show the bucket SVG cursor
+  with its hotspot on the pouring edge. Cursor or Esc exits the tool.
 - Keep up to 40 layer-edit undo states. Support Undo/Redo buttons,
   Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, and Ctrl+Y. Clear history for a new vector
   result.
