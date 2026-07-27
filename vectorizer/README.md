@@ -38,6 +38,9 @@ short typing debounce.
 Potrace path geometry and never embeds the source raster. A modal progress bar
 reports upload, path tracing, and preview rendering, then closes automatically
 after completion.
+Press `Esc` while vectorization is active to abort the browser request, close
+the progress modal, and stop server-side multicolor processing between layer
+traces.
 
 **Curve smoothing** controls Potrace's corner threshold and Bézier optimization
 tolerance. `50%` matches the prior tracing defaults; lower values retain more

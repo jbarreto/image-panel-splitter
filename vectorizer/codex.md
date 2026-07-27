@@ -26,6 +26,10 @@ Behavior:
   abort obsolete requests, and commit slider regeneration on pointer/key
   release. Keep manual Preview and current-result Download actions.
 - Show vectorization progress in an auto-closing modal.
+- While vectorization is active, `Esc` aborts the browser fetch, immediately
+  closes the progress modal, restores Preview controls, and propagates an
+  AbortSignal through the server into tracing. Check cancellation between
+  expensive color-layer traces; do not report client cancellation as failure.
 - Accept trace resolutions from 500 through 20,000 pixels on the longest side.
   Treat upper-range Multicolor processing as memory-intensive and avoid
   exercising the full ceiling in routine validation.

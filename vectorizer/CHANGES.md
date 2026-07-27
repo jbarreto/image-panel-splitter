@@ -1,5 +1,11 @@
 # Ronyka Vectorizer Changes
 
+## v1.5.0 — Cancelable vectorization
+
+- Added `Esc` cancellation for active vectorization: abort the browser request,
+  close the progress modal, restore controls, and propagate cancellation to
+  server-side tracing between color layers.
+
 ## v1.4.0 — Layer workflow and high-resolution tracing
 
 - Added direct preview selection: click artwork to select its layer,

@@ -16,6 +16,13 @@ const TRACE_OPTIONS = {
   opt_type: undefined
 };
 
+function throwIfAborted(signal) {
+  if (!signal?.aborted) return;
+  const error = new Error('Vectorization canceled.');
+  error.name = 'AbortError';
+  throw error;
+}
+
 function traceOptions(curveSmoothing) {
   const smoothing = Math.max(0, Math.min(100, curveSmoothing));
   const alphamax = smoothing <= 50
@@ -340,8 +347,10 @@ async function multicolorPaths(
   removeBackground,
   keepWhiteLayer,
   fillColorGaps,
-  curveSmoothing
+  curveSmoothing,
+  signal
 ) {
+  throwIfAborted(signal);
   const palette = buildPalette(data, colorCount);
   const labels = new Uint8Array(width * height);
   const counts = new Uint32Array(palette.length);
@@ -415,6 +424,7 @@ async function multicolorPaths(
   );
   const layers = [];
   for (const layer of layerOrder) {
+    throwIfAborted(signal);
     const exactMask = new Int8Array(labels.length);
     for (let pixel = 0; pixel < labels.length; pixel += 1) {
       exactMask[pixel] = artworkLabels[pixel] === layer.index ? 1 : 0;
@@ -437,6 +447,7 @@ async function multicolorPaths(
       );
     }
     const pathData = await traceMask(mask, width, height, curveSmoothing);
+    throwIfAborted(signal);
     if (pathData) {
       layers.push({
         color: rgbHex(layer.color),
@@ -460,9 +471,11 @@ export async function vectorizeMonochrome(
     colorCount = 6,
     removeBackground = true,
     keepWhiteLayer = true,
-    fillColorGaps = true
+    fillColorGaps = true,
+    signal
   } = {}
 ) {
+  throwIfAborted(signal);
   validateOptions({
     targetHeightMm,
     threshold,
@@ -477,6 +490,7 @@ export async function vectorizeMonochrome(
     .ensureAlpha()
     .png()
     .toBuffer();
+  throwIfAborted(signal);
   const metadata = await sharp(normalized, { limitInputPixels: false }).metadata();
   if (!metadata.width || !metadata.height) {
     throw new Error('Could not determine the source image dimensions.');
@@ -495,11 +509,13 @@ export async function vectorizeMonochrome(
     tracePipeline = tracePipeline.ensureAlpha();
   }
   const { data, info } = await tracePipeline.raw().toBuffer({ resolveWithObject: true });
+  throwIfAborted(signal);
   let vectorLayers;
   if (mode === 'monochrome') {
     const mask = new Int8Array(info.width * info.height);
     for (let index = 0; index < data.length; index += 1) mask[index] = data[index] < 128 ? 1 : 0;
     const pathData = await traceMask(mask, info.width, info.height, curveSmoothing);
+    throwIfAborted(signal);
     vectorLayers = pathData
       ? [{ color: '#000000', pathData }]
       : [];
@@ -512,7 +528,8 @@ export async function vectorizeMonochrome(
       Boolean(removeBackground),
       Boolean(keepWhiteLayer),
       Boolean(fillColorGaps),
-      curveSmoothing
+      curveSmoothing,
+      signal
     );
   }
   if (vectorLayers.length === 0) throw new Error('No traceable artwork was found.');

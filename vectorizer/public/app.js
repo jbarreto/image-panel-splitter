@@ -181,6 +181,19 @@ function finishProcessing(success) {
   processingCloseTimer = setTimeout(hideProcessing, success ? 650 : 1200);
 }
 
+function cancelVectorization() {
+  if (!previewController) return false;
+  resultRevision += 1;
+  previewController.abort();
+  previewController = undefined;
+  hideProcessing();
+  previewButton.disabled = false;
+  downloadButton.disabled = true;
+  status.classList.remove('error');
+  status.textContent = 'Vectorization canceled.';
+  return true;
+}
+
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify({
     targetHeightMm: Number(targetHeight.value),
@@ -1386,6 +1399,10 @@ mergeSelectedLayers.addEventListener('click', mergeSelectedLayerEntries);
 resetLayerPositions.addEventListener('click', resetAllLayerPositions);
 
 document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && cancelVectorization()) {
+    event.preventDefault();
+    return;
+  }
   const editingText = event.target.matches?.(
     'input[type="text"], input[type="number"], textarea, [contenteditable="true"]'
   );

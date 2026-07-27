@@ -15,6 +15,11 @@ const upload = multer({
 app.use(express.static(path.join(rootDir, 'public')));
 
 app.post('/api/vectorize', upload.single('image'), async (req, res) => {
+  const cancellation = new AbortController();
+  req.once('aborted', () => cancellation.abort());
+  res.once('close', () => {
+    if (!res.writableEnded) cancellation.abort();
+  });
   try {
     if (!req.file) throw new Error('Choose an image to vectorize.');
     const result = await vectorizeMonochrome(req.file.buffer, {
@@ -28,7 +33,8 @@ app.post('/api/vectorize', upload.single('image'), async (req, res) => {
       colorCount: Number(req.body.colorCount || 6),
       removeBackground: req.body.removeBackground !== 'false',
       keepWhiteLayer: req.body.keepWhiteLayer !== 'false',
-      fillColorGaps: req.body.fillColorGaps !== 'false'
+      fillColorGaps: req.body.fillColorGaps !== 'false',
+      signal: cancellation.signal
     });
     console.debug('Vectorization complete.', {
       originalName: req.file.originalname,
@@ -49,6 +55,12 @@ app.post('/api/vectorize', upload.single('image'), async (req, res) => {
     );
     res.send(result.svg);
   } catch (error) {
+    if (error.name === 'AbortError' || cancellation.signal.aborted) {
+      console.debug('Vectorization canceled.', {
+        originalName: req.file?.originalname
+      });
+      return;
+    }
     console.error('Vectorization failed.', { error: error.message });
     res.status(400).json({ error: error.message });
   }
