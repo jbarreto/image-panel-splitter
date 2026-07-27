@@ -10,6 +10,12 @@ const threshold = document.getElementById('threshold');
 const thresholdValue = document.getElementById('thresholdValue');
 const colorCount = document.getElementById('colorCount');
 const colorCountValue = document.getElementById('colorCountValue');
+const multipleVariations = document.getElementById('multipleVariations');
+const variationSettings = document.getElementById('variationSettings');
+const variationChips = document.getElementById('variationChips');
+const addVariation = document.getElementById('addVariation');
+const variationResults = document.getElementById('variationResults');
+const variationGallery = document.getElementById('variationGallery');
 const removeBackground = document.getElementById('removeBackground');
 const keepWhiteLayer = document.getElementById('keepWhiteLayer');
 const fillColorGaps = document.getElementById('fillColorGaps');
@@ -89,7 +95,344 @@ let draggedCanvasPan;
 let lastEraserPointer;
 let layerUndoHistory = [];
 let layerRedoHistory = [];
+let paletteVariationCounts = [4, 8, 12];
+let paletteVariationResults = new Map();
+let activeVariationCount;
 const pendingSliderUpdates = new WeakSet();
+
+function cloneHistoryStates(states) {
+  return states.map((state) => ({
+    svgText: state.svgText,
+    palette: state.palette.map((entry) => ({ ...entry })),
+    layers: state.layers.map((layer) => ({ ...layer }))
+  }));
+}
+
+function saveActiveVariation() {
+  const result = paletteVariationResults.get(activeVariationCount);
+  const state = layerHistoryState();
+  if (!result || !state) return;
+  result.svgText = state.svgText;
+  result.palette = state.palette;
+  result.layers = state.layers;
+  result.undoHistory = cloneHistoryStates(layerUndoHistory);
+  result.redoHistory = cloneHistoryStates(layerRedoHistory);
+}
+
+function downloadVariation(result) {
+  const url = URL.createObjectURL(
+    new Blob([result.svgText], { type: 'image/svg+xml' })
+  );
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `original-vectorized-${result.count}-colors.svg`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function referencedSvgIds(root) {
+  const references = new Set();
+  for (const element of [root, ...root.querySelectorAll('*')]) {
+    for (const attribute of element.attributes) {
+      for (const match of attribute.value.matchAll(/url\(#([^)]+)\)|^#(.+)$/g)) {
+        references.add(match[1] || match[2]);
+      }
+    }
+  }
+  return references;
+}
+
+function rewriteSvgReferences(root, idMap) {
+  for (const element of [root, ...root.querySelectorAll('*')]) {
+    if (element.id && idMap.has(element.id)) {
+      element.id = idMap.get(element.id);
+    }
+    for (const attribute of [...element.attributes]) {
+      let value = attribute.value;
+      for (const [sourceId, targetId] of idMap) {
+        value = value.replaceAll(`url(#${sourceId})`, `url(#${targetId})`);
+        if (value === `#${sourceId}`) value = `#${targetId}`;
+      }
+      if (value !== attribute.value) element.setAttribute(attribute.name, value);
+    }
+  }
+}
+
+function importSelectedLayersIntoVariation(targetCount) {
+  const sourceCount = activeVariationCount;
+  const targetResult = paletteVariationResults.get(targetCount);
+  const selectedLayers = selectedLayerNumbers();
+  if (sourceCount === undefined || !targetResult) return;
+  if (selectedLayers.length === 0) {
+    status.classList.add('error');
+    status.textContent = 'Select at least one layer to import into another variation.';
+    return;
+  }
+  saveActiveVariation();
+  const sourceResult = paletteVariationResults.get(sourceCount);
+  const sourceDocument = new DOMParser().parseFromString(
+    sourceResult.svgText,
+    'image/svg+xml'
+  );
+  const targetDocument = new DOMParser().parseFromString(
+    targetResult.svgText,
+    'image/svg+xml'
+  );
+  if (
+    sourceDocument.querySelector('parsererror') ||
+    targetDocument.querySelector('parsererror')
+  ) return;
+
+  targetResult.undoHistory ||= [];
+  targetResult.undoHistory.push({
+    svgText: targetResult.svgText,
+    palette: targetResult.palette.map((entry) => ({ ...entry })),
+    layers: (targetResult.layers || []).map((layer) => ({ ...layer }))
+  });
+  if (targetResult.undoHistory.length > LAYER_HISTORY_LIMIT) {
+    targetResult.undoHistory.shift();
+  }
+  targetResult.redoHistory = [];
+
+  const targetSvg = targetDocument.documentElement;
+  let targetDefs = targetSvg.querySelector(':scope > defs');
+  if (!targetDefs) {
+    targetDefs = targetDocument.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    targetSvg.prepend(targetDefs);
+  }
+  let nextLayerNumber = Math.max(
+    0,
+    ...targetResult.palette.map((entry) => Number(entry.layer) || 0)
+  ) + 1;
+  const importedEntries = [];
+  const importedStates = [];
+
+  for (const sourceLayerNumber of selectedLayers) {
+    const sourceRoot = sourceDocument.querySelector(
+      `[data-layer-root="${sourceLayerNumber}"]`
+    );
+    const sourceEntry = sourceResult.palette.find(
+      (entry) => Number(entry.layer) === sourceLayerNumber
+    );
+    if (!sourceRoot || !sourceEntry) continue;
+    const newLayerNumber = nextLayerNumber++;
+    const newName =
+      `${sourceEntry.name || `Layer ${sourceLayerNumber}`} · ${sourceCount} colors`;
+    const importedRoot = targetDocument.importNode(sourceRoot, true);
+    const dependencyRoots = [];
+    const queuedIds = [...referencedSvgIds(importedRoot)];
+    const copiedIds = new Set();
+    while (queuedIds.length > 0) {
+      const referencedId = queuedIds.shift();
+      if (copiedIds.has(referencedId)) continue;
+      copiedIds.add(referencedId);
+      const dependency = sourceDocument.getElementById(referencedId);
+      if (!dependency || sourceRoot.contains(dependency)) continue;
+      const importedDependency = targetDocument.importNode(dependency, true);
+      dependencyRoots.push(importedDependency);
+      for (const nestedId of referencedSvgIds(importedDependency)) {
+        if (!copiedIds.has(nestedId)) queuedIds.push(nestedId);
+      }
+    }
+
+    const idMap = new Map();
+    for (const element of [
+      importedRoot,
+      ...importedRoot.querySelectorAll('[id]'),
+      ...dependencyRoots.flatMap((root) => [root, ...root.querySelectorAll('[id]')])
+    ]) {
+      if (!element.id || idMap.has(element.id)) continue;
+      idMap.set(element.id, `${element.id}-import-${targetCount}-${newLayerNumber}`);
+    }
+    rewriteSvgReferences(importedRoot, idMap);
+    for (const dependency of dependencyRoots) {
+      rewriteSvgReferences(dependency, idMap);
+      targetDefs.append(dependency);
+    }
+
+    importedRoot.dataset.layerRoot = String(newLayerNumber);
+    importedRoot.dataset.layerIndex = String(newLayerNumber);
+    importedRoot.dataset.name = newName;
+    targetSvg.append(importedRoot);
+    renameLayerInDocument(targetDocument, newLayerNumber, newName);
+    importedEntries.push({
+      ...sourceEntry,
+      layer: newLayerNumber,
+      name: newName
+    });
+    const sourceIndex = sourceResult.palette.findIndex(
+      (entry) => Number(entry.layer) === sourceLayerNumber
+    );
+    importedStates.push({
+      ...(sourceResult.layers?.[sourceIndex] || {}),
+      selected: true
+    });
+  }
+
+  if (importedEntries.length === 0) {
+    targetResult.undoHistory.pop();
+    return;
+  }
+  targetResult.svgText =
+    `${new XMLSerializer().serializeToString(targetDocument)}\n`;
+  targetResult.palette = [...targetResult.palette, ...importedEntries];
+  targetResult.layers = [
+    ...(targetResult.layers || targetResult.palette
+      .slice(0, -importedEntries.length)
+      .map(() => ({ visible: true, selected: false }))),
+    ...importedStates
+  ];
+  renderVariationGallery();
+  status.classList.remove('error');
+  status.textContent =
+    `Imported ${importedEntries.length} selected layer${importedEntries.length === 1 ? '' : 's'} from ${sourceCount} colors into ${targetCount} colors.`;
+}
+
+function renderVariationGallery() {
+  variationGallery.replaceChildren();
+  const visible = paletteVariationResults.size > 0;
+  variationResults.hidden = !visible;
+  if (!visible) return;
+  for (const result of paletteVariationResults.values()) {
+    const card = document.createElement('article');
+    card.className = 'variation-card';
+    card.classList.toggle('active', result.count === activeVariationCount);
+    card.tabIndex = 0;
+    card.dataset.variationCount = String(result.count);
+    card.setAttribute('aria-label', `${result.count} color palette variation`);
+
+    const thumbnail = document.createElement('div');
+    thumbnail.className = 'variation-thumbnail';
+    thumbnail.innerHTML = result.svgText;
+    thumbnail.querySelector('svg')?.removeAttribute('width');
+    thumbnail.querySelector('svg')?.removeAttribute('height');
+
+    const footer = document.createElement('div');
+    footer.className = 'variation-card-footer';
+    const label = document.createElement('strong');
+    label.textContent = `${result.count} colors`;
+    const actions = document.createElement('span');
+    actions.className = 'variation-card-actions';
+    if (result.count !== activeVariationCount) {
+      const importLayers = document.createElement('button');
+      importLayers.type = 'button';
+      importLayers.textContent = '⇥';
+      importLayers.title = `Import selected layers into ${result.count} colors`;
+      importLayers.setAttribute('aria-label', importLayers.title);
+      importLayers.addEventListener('click', (event) => {
+        event.stopPropagation();
+        importSelectedLayersIntoVariation(result.count);
+      });
+      actions.append(importLayers);
+    }
+    const download = document.createElement('button');
+    download.type = 'button';
+    download.textContent = '↓';
+    download.title = `Download ${result.count}-color SVG`;
+    download.setAttribute('aria-label', download.title);
+    download.addEventListener('click', (event) => {
+      event.stopPropagation();
+      if (result.count === activeVariationCount) saveActiveVariation();
+      downloadVariation(result);
+    });
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '×';
+    remove.title = `Delete ${result.count}-color variation`;
+    remove.setAttribute('aria-label', remove.title);
+    remove.addEventListener('click', (event) => {
+      event.stopPropagation();
+      deleteVariation(result.count);
+    });
+    actions.append(download, remove);
+    footer.append(label, actions);
+    card.append(thumbnail, footer);
+    card.addEventListener('click', () => activateVariation(result.count));
+    card.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activateVariation(result.count);
+      }
+    });
+    variationGallery.append(card);
+  }
+}
+
+function activateVariation(count) {
+  if (count === activeVariationCount) return;
+  const result = paletteVariationResults.get(count);
+  if (!result) return;
+  saveActiveVariation();
+  activeVariationCount = count;
+  vectorSvgText = result.svgText;
+  currentPalette = result.palette.map((entry) => ({ ...entry }));
+  refreshDownloadUrl();
+  showPalette(currentPalette);
+  restoreLayerPanelState(result.layers || currentPalette.map(() => ({
+    visible: true,
+    selected: false
+  })));
+  layerUndoHistory = cloneHistoryStates(result.undoHistory || []);
+  layerRedoHistory = cloneHistoryStates(result.redoHistory || []);
+  updateLayerHistoryControls();
+  renderLayerPreview();
+  vectorPreview.hidden = false;
+  vectorPlaceholder.hidden = true;
+  downloadButton.disabled = false;
+  renderVariationGallery();
+  status.classList.remove('error');
+  status.textContent = `${count}-color variation selected.`;
+}
+
+function deleteVariation(count) {
+  const deletingActive = count === activeVariationCount;
+  paletteVariationResults.delete(count);
+  if (deletingActive) {
+    activeVariationCount = undefined;
+    const next = paletteVariationResults.keys().next().value;
+    if (next !== undefined) {
+      activateVariation(next);
+      return;
+    }
+    clearVectorResult();
+  }
+  renderVariationGallery();
+}
+
+function clearVariationResults() {
+  paletteVariationResults.clear();
+  activeVariationCount = undefined;
+  variationGallery.replaceChildren();
+  variationResults.hidden = true;
+}
+
+function renderVariationChips() {
+  variationChips.replaceChildren();
+  for (const count of paletteVariationCounts) {
+    const chip = document.createElement('span');
+    chip.className = 'variation-chip';
+    chip.append(`${count} colors`);
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.textContent = '×';
+    remove.setAttribute('aria-label', `Remove ${count}-color variation`);
+    remove.disabled = paletteVariationCounts.length === 1;
+    remove.addEventListener('click', () => {
+      paletteVariationCounts = paletteVariationCounts.filter(
+        (variationCount) => variationCount !== count
+      );
+      renderVariationChips();
+      saveSettings();
+      clearVectorResult();
+    });
+    chip.append(remove);
+    variationChips.append(chip);
+  }
+  previewButton.textContent =
+    vectorMode.value === 'multicolor' && multipleVariations.checked
+    ? `Generate ${paletteVariationCounts.length} variations`
+    : 'Preview vector';
+}
 
 function updateLayerHistoryControls() {
   undoLayerEdit.disabled = layerUndoHistory.length === 0;
@@ -207,6 +550,8 @@ function saveSettings() {
     svgStructure: svgStructure.value,
     threshold: Number(threshold.value),
     colorCount: Number(colorCount.value),
+    multipleVariations: multipleVariations.checked,
+    paletteVariationCounts,
     removeBackground: removeBackground.checked,
     keepWhiteLayer: keepWhiteLayer.checked,
     fillColorGaps: fillColorGaps.checked,
@@ -236,6 +581,16 @@ function restoreSettings() {
     if (Number(settings.colorCount) >= 2 && Number(settings.colorCount) <= 33) {
       colorCount.value = String(settings.colorCount);
     }
+    if (typeof settings.multipleVariations === 'boolean') {
+      multipleVariations.checked = settings.multipleVariations;
+    }
+    if (Array.isArray(settings.paletteVariationCounts)) {
+      const counts = [...new Set(settings.paletteVariationCounts
+        .map(Number)
+        .filter((count) => Number.isInteger(count) && count >= 2 && count <= 33))]
+        .sort((left, right) => left - right);
+      if (counts.length > 0) paletteVariationCounts = counts;
+    }
     if (typeof settings.removeBackground === 'boolean') {
       removeBackground.checked = settings.removeBackground;
     }
@@ -258,10 +613,13 @@ function updateOutputs() {
   const multicolor = vectorMode.value === 'multicolor';
   monochromeSettings.hidden = multicolor;
   multicolorSettings.hidden = !multicolor;
+  variationSettings.hidden = !multicolor || !multipleVariations.checked;
+  renderVariationChips();
 }
 
 function clearVectorResult() {
   resultRevision += 1;
+  clearVariationResults();
   if (previewTimer) clearTimeout(previewTimer);
   previewTimer = undefined;
   previewController?.abort();
@@ -2019,9 +2377,66 @@ targetHeight.addEventListener('input', () => {
 
 const sliders = [threshold, colorCount, maximumTraceSide, curveSmoothing];
 
+addVariation.addEventListener('click', () => {
+  const count = Number(colorCount.value);
+  if (paletteVariationCounts.includes(count)) {
+    status.classList.remove('error');
+    status.textContent = `${count} colors is already in the variation set.`;
+    return;
+  }
+  paletteVariationCounts = [...paletteVariationCounts, count]
+    .sort((left, right) => left - right);
+  renderVariationChips();
+  saveSettings();
+  clearVectorResult();
+  status.classList.remove('error');
+  status.textContent = `${count} colors added. Generate the updated variation set.`;
+});
+
+for (const preset of document.querySelectorAll('[data-variation-preset]')) {
+  preset.addEventListener('click', () => {
+    paletteVariationCounts = preset.dataset.variationPreset
+      .split(',')
+      .map(Number);
+    renderVariationChips();
+    saveSettings();
+    clearVectorResult();
+  });
+}
+
+multipleVariations.addEventListener('change', () => {
+  if (
+    multipleVariations.checked &&
+    !paletteVariationCounts.includes(Number(colorCount.value))
+  ) {
+    paletteVariationCounts = [...paletteVariationCounts, Number(colorCount.value)]
+      .sort((left, right) => left - right);
+  }
+  updateOutputs();
+  saveSettings();
+  clearVectorResult();
+  if (file) {
+    status.textContent = multipleVariations.checked
+      ? 'Choose palette counts, then generate the variations.'
+      : 'Updating vector preview…';
+    if (!multipleVariations.checked) scheduleAutomaticPreview(0);
+  }
+});
+
 function commitSliderUpdate(slider) {
   if (!pendingSliderUpdates.has(slider)) return;
   pendingSliderUpdates.delete(slider);
+  if (
+    slider === colorCount &&
+    vectorMode.value === 'multicolor' &&
+    multipleVariations.checked
+  ) {
+    status.classList.remove('error');
+    status.textContent = paletteVariationCounts.includes(Number(colorCount.value))
+      ? `${colorCount.value} colors is already in the variation set.`
+      : `Add ${colorCount.value} colors to the variation set when ready.`;
+    return;
+  }
   scheduleAutomaticPreview(0);
 }
 
@@ -2030,6 +2445,15 @@ for (const slider of sliders) {
     pendingSliderUpdates.add(slider);
     updateOutputs();
     saveSettings();
+    if (
+      slider === colorCount &&
+      vectorMode.value === 'multicolor' &&
+      multipleVariations.checked
+    ) {
+      status.classList.remove('error');
+      status.textContent = `Release the slider, then add ${colorCount.value} colors.`;
+      return;
+    }
     captureLayerConfiguration();
     clearVectorResult();
     status.classList.remove('error');
@@ -2078,84 +2502,142 @@ for (const input of [
   });
 }
 
+function vectorizationForm(paletteCount) {
+  const form = new FormData();
+  form.append('image', file);
+  form.append('targetHeightMm', targetHeight.value);
+  form.append('mode', vectorMode.value);
+  form.append('svgStructure', svgStructure.value);
+  form.append('threshold', threshold.value);
+  form.append('colorCount', paletteCount);
+  form.append('removeBackground', String(removeBackground.checked));
+  form.append('keepWhiteLayer', String(keepWhiteLayer.checked));
+  form.append('fillColorGaps', String(fillColorGaps.checked));
+  form.append('maximumTraceSide', maximumTraceSide.value);
+  form.append('allowTraceUpscaling', String(allowTraceUpscaling.checked));
+  form.append('curveSmoothing', curveSmoothing.value);
+  return form;
+}
+
+async function requestVectorization(paletteCount, signal) {
+  const response = await fetch('/api/vectorize', {
+    method: 'POST',
+    body: vectorizationForm(paletteCount),
+    signal
+  });
+  if (!response.ok) {
+    const payload = await response.json().catch(() => ({}));
+    throw new Error(payload.error || 'Vectorization failed.');
+  }
+  let palette = [];
+  try {
+    palette = JSON.parse(
+      decodeURIComponent(response.headers.get('X-Vector-Palette') || '[]')
+    );
+  } catch {
+    // The SVG preview remains usable if optional palette metadata is absent.
+  }
+  return {
+    count: paletteCount,
+    palette,
+    svgText: await response.text(),
+    layers: palette.map(() => ({ visible: true, selected: false })),
+    undoHistory: [],
+    redoHistory: []
+  };
+}
+
 async function generatePreview() {
   if (!file) return;
   if (previewTimer) clearTimeout(previewTimer);
   previewTimer = undefined;
-  captureLayerConfiguration();
+  const batchMode = vectorMode.value === 'multicolor' && multipleVariations.checked;
+  if (batchMode) {
+    pendingLayerConfiguration = undefined;
+  } else {
+    captureLayerConfiguration();
+  }
   clearVectorResult();
   const requestRevision = resultRevision;
   previewController = new AbortController();
   previewButton.disabled = true;
   downloadButton.disabled = true;
   status.classList.remove('error');
-  status.textContent = `Vectorizing ${vectorMode.value} artwork…`;
-  showProcessing(10, 'Uploading source image…');
-  let vectorizingStatusTimer;
+  const counts = batchMode ? paletteVariationCounts : [Number(colorCount.value)];
+  status.textContent = batchMode
+    ? `Generating ${counts.length} palette variations…`
+    : `Vectorizing ${vectorMode.value} artwork…`;
+  showProcessing(
+    5,
+    batchMode
+      ? `Preparing variation 1 of ${counts.length}…`
+      : 'Uploading source image…'
+  );
   try {
-    const form = new FormData();
-    form.append('image', file);
-    form.append('targetHeightMm', targetHeight.value);
-    form.append('mode', vectorMode.value);
-    form.append('svgStructure', svgStructure.value);
-    form.append('threshold', threshold.value);
-    form.append('colorCount', colorCount.value);
-    form.append('removeBackground', String(removeBackground.checked));
-    form.append('keepWhiteLayer', String(keepWhiteLayer.checked));
-    form.append('fillColorGaps', String(fillColorGaps.checked));
-    form.append('maximumTraceSide', maximumTraceSide.value);
-    form.append('allowTraceUpscaling', String(allowTraceUpscaling.checked));
-    form.append('curveSmoothing', curveSmoothing.value);
-    vectorizingStatusTimer = setTimeout(() => {
-      if (requestRevision === resultRevision) {
-        showProcessing(
-          45,
-          vectorMode.value === 'multicolor'
-            ? `Tracing ${colorCount.value} color layers…`
+    for (let index = 0; index < counts.length; index += 1) {
+      const count = counts[index];
+      const startPercent = 5 + ((index / counts.length) * 85);
+      showProcessing(
+        startPercent,
+        batchMode
+          ? `Generating variation ${index + 1} of ${counts.length} · ${count} colors…`
+          : vectorMode.value === 'multicolor'
+            ? `Tracing ${count} color layers…`
             : 'Tracing monochrome SVG paths…'
-        );
+      );
+      const result = await requestVectorization(
+        count,
+        previewController.signal
+      );
+      if (requestRevision !== resultRevision) return;
+      if (batchMode) {
+        paletteVariationResults.set(count, result);
+        renderVariationGallery();
+      } else {
+        vectorSvgText = result.svgText;
+        let palette = result.palette;
+        const restoredLayers = restoreLayerConfiguration(palette);
+        palette = restoredLayers.palette;
+        refreshDownloadUrl();
+        showPalette(palette);
+        restoreLayerPanelState(restoredLayers.configuration);
+        renderLayerPreview();
+        vectorPreview.hidden = false;
+        vectorPlaceholder.hidden = true;
+        downloadButton.disabled = false;
+        status.textContent = restoredLayers.restored
+          ? 'Vector preview ready. Layer settings preserved.'
+          : 'Vector preview ready.';
       }
-    }, 250);
-    const response = await fetch('/api/vectorize', {
-      method: 'POST',
-      body: form,
-      signal: previewController.signal
-    });
-    clearTimeout(vectorizingStatusTimer);
-    if (!response.ok) {
-      const payload = await response.json().catch(() => ({}));
-      throw new Error(payload.error || 'Vectorization failed.');
     }
-    let palette = [];
-    try {
-      palette = JSON.parse(decodeURIComponent(response.headers.get('X-Vector-Palette') || '[]'));
-    } catch {
-      // The SVG preview remains usable if optional palette metadata is absent.
+    if (batchMode) {
+      const preferredCount = paletteVariationResults.has(Number(colorCount.value))
+        ? Number(colorCount.value)
+        : counts[0];
+      activateVariation(preferredCount);
+      status.textContent =
+        `${counts.length} palette variations ready. Select one to edit its layers.`;
     }
-    const svgText = await response.text();
-    if (requestRevision !== resultRevision) return;
-    showProcessing(90, 'Rendering vector preview…');
-    vectorSvgText = svgText;
-    const restoredLayers = restoreLayerConfiguration(palette);
-    palette = restoredLayers.palette;
-    refreshDownloadUrl();
-    showPalette(palette);
-    restoreLayerPanelState(restoredLayers.configuration);
-    renderLayerPreview();
-    vectorPreview.hidden = false;
-    vectorPlaceholder.hidden = true;
-    downloadButton.disabled = false;
-    status.textContent = restoredLayers.restored
-      ? 'Vector preview ready. Layer settings preserved.'
-      : 'Vector preview ready.';
+    showProcessing(95, batchMode ? 'Rendering palette gallery…' : 'Rendering vector preview…');
     finishProcessing(true);
   } catch (error) {
-    if (error.name === 'AbortError') return;
+    if (error.name === 'AbortError') {
+      if (batchMode && paletteVariationResults.size > 0) {
+        activateVariation(paletteVariationResults.keys().next().value);
+        status.textContent =
+          `Vectorization canceled. ${paletteVariationResults.size} completed variation preserved.`;
+      }
+      return;
+    }
+    if (batchMode && paletteVariationResults.size > 0) {
+      activateVariation(paletteVariationResults.keys().next().value);
+    }
     status.classList.add('error');
-    status.textContent = error.message;
+    status.textContent = batchMode && paletteVariationResults.size > 0
+      ? `${error.message} Completed variations remain available.`
+      : error.message;
     finishProcessing(false);
   } finally {
-    if (vectorizingStatusTimer) clearTimeout(vectorizingStatusTimer);
     if (requestRevision === resultRevision) {
       previewController = undefined;
       previewButton.disabled = false;
@@ -2166,6 +2648,15 @@ async function generatePreview() {
 previewButton.addEventListener('click', generatePreview);
 
 downloadButton.addEventListener('click', () => {
+  if (activeVariationCount !== undefined) {
+    saveActiveVariation();
+    const result = paletteVariationResults.get(activeVariationCount);
+    if (!result) return;
+    downloadVariation(result);
+    status.classList.remove('error');
+    status.textContent = `${activeVariationCount}-color SVG downloaded.`;
+    return;
+  }
   if (!vectorDownloadUrl) return;
   const link = document.createElement('a');
   link.href = vectorDownloadUrl;

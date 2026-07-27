@@ -1,5 +1,19 @@
 # Ronyka Vectorizer Changes
 
+## v1.7.0 — Palette variations
+
+- Added optional multiple palette variations for Multicolor mode. Users can
+  build a set of 2–33 color counts or choose Low detail, Balanced, and Detailed
+  presets, generate them in one sequential progress flow, and compare results
+  in a thumbnail gallery.
+- Each variation retains its own SVG, layer visibility and selection state,
+  layer edits, and Undo/Redo history when switching results. Variations can be
+  selected, downloaded individually, or removed from the gallery.
+- Added cross-variation layer import: select layers in the active result and
+  use the import action on another variation card. Imported artwork receives
+  independent layer and definition IDs, retains masks/clips and transforms,
+  and is added to the target variation's Undo history.
+
 ## v1.6.0 — Lasso and canvas navigation
 
 - Added a Lasso Layer toolbar tool. Drawing a closed region on exactly one

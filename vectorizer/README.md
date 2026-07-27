@@ -76,6 +76,21 @@ remain separate. Before tracing, small isolated mask components are removed
 using a threshold scaled to the tracing resolution, reducing antialias-derived
 color dots without removing connected strokes or significant fills.
 
+Enable **Multiple palette variations** to compare the same source at several
+palette counts. Add the current slider value or choose the Low detail,
+Balanced, or Detailed preset, then generate the set in one operation. Completed
+results appear as thumbnail cards above the preview. Select a card to edit its
+layers, download that variation directly, or remove it. Switching cards keeps
+each result's SVG edits, layer visibility and selection state, and independent
+Undo/Redo history. Press `Esc` during the batch to cancel the active request;
+variations that already completed remain available.
+
+To combine results, select one or more layers in the active variation and use
+the **⇥** import action on a different variation card. The layers are copied
+into that target result with their colors, transforms, masks, and clip paths.
+The copies receive independent SVG IDs and are added as one Undoable change in
+the target variation.
+
 Use **Layer groups (Inkscape)** to export native Inkscape layer groups, or
 **Flat paths** to export each color as one top-level path without a
 parent group. Layer naming and preview visibility work with either structure.

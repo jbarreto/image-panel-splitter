@@ -25,6 +25,15 @@ Behavior:
 - Generate a first preview immediately after image selection. Debounce settings,
   abort obsolete requests, and commit slider regeneration on pointer/key
   release. Keep manual Preview and current-result Download actions.
+- In Multicolor mode, optional palette variations run the chosen color counts
+  sequentially and display a selectable thumbnail gallery. Preserve an
+  independent SVG, layer panel state, and 40-step Undo/Redo histories for each
+  result when switching, downloading, or removing variations. Completed
+  results remain usable if a later batch request is canceled.
+- Cross-variation import copies selected active-result layers into a target
+  variation as independent layers. Preserve referenced masks/clip paths and
+  transforms, remap SVG IDs, and add the import to the target's Undo history
+  without changing the active variation.
 - Show vectorization progress in an auto-closing modal.
 - While vectorization is active, `Esc` aborts the browser fetch, immediately
   closes the progress modal, restores Preview controls, and propagates an
