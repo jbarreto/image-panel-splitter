@@ -103,20 +103,28 @@ button:disabled { opacity: .45; cursor: default; }
 .preview-card { min-width: 0; margin: 0; display: grid; grid-template-rows: auto 1fr; border: 1px solid #dceee5; border-radius: 16px; overflow: hidden; background: var(--mint-light); }
 .vector-preview-card { grid-template-rows: auto auto 1fr; }
 .preview-card figcaption { padding: 10px 14px; border-bottom: 1px solid #dceee5; background: white; color: var(--green-dark); font-size: 13px; font-weight: 600; }
-.vector-toolbar { min-width: 0; display: flex; align-items: center; gap: 5px; padding: 6px 12px; border-bottom: 1px solid #dceee5; background: #f8faf9; color: #68766f; }
+.vector-toolbar { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; padding: 6px 12px; border-bottom: 1px solid #dceee5; background: #f8faf9; color: #68766f; }
 .toolbar-label { margin-right: 2px; color: var(--green-dark); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .toolbar-separator { align-self: stretch; width: 1px; margin: 0 3px; background: #d7dfdb; }
 .toolbar-hint { min-width: 0; margin-left: 5px; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.eraser-size-control { display: flex; align-items: center; gap: 4px; color: #68766f; font-size: 8px; }
+.eraser-size-control input { width: 70px; accent-color: var(--green); }
+.eraser-size-control output { min-width: 20px; text-align: right; }
 .preview-tool-button { display: grid; width: 26px; height: 24px; place-items: center; padding: 0; border: 1px solid #cbd6d0; border-radius: 5px; background: white; color: #68766f; font-size: 16px; line-height: 1; box-shadow: none; }
-.preview-tool-button.cursor-tool { width: auto; padding: 0 8px; font-size: 9px; font-weight: 700; }
+.preview-tool-button svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.preview-tool-button.cursor-tool svg path:first-child { fill: currentColor; stroke: currentColor; }
+.preview-tool-button.cursor-tool#vectorEraserTool svg path:first-child { fill: none; }
 .preview-tool-button:hover:not(:disabled), .preview-tool-button.active, .preview-zoom-value:hover:not(:disabled) { border-color: var(--green); background: var(--mint); color: var(--green-dark); }
 .preview-zoom-value { width: 42px; padding: 4px 2px; border-radius: 4px; background: transparent; color: #68766f; font-size: 9px; font-weight: 600; text-align: center; box-shadow: none; }
 .preview-stage { min-height: 420px; display: grid; place-items: center; padding: 16px; overflow: auto; background: white; }
-.vector-stage { background: repeating-conic-gradient(#f6f7f6 0 25%, white 0 50%) 50% / 22px 22px; }
+.vector-stage { position: relative; background: repeating-conic-gradient(#f6f7f6 0 25%, white 0 50%) 50% / 22px 22px; }
 .vector-stage #vectorPreview { --vector-preview-zoom: 1; --vector-preview-origin-x: 50%; --vector-preview-origin-y: 50%; width: 100%; max-height: calc(100vh - 135px); touch-action: none; cursor: grab; transform: scale(var(--vector-preview-zoom)); transform-origin: var(--vector-preview-origin-x) var(--vector-preview-origin-y); }
 .vector-stage #vectorPreview.dragging-layer { cursor: grabbing; }
 .vector-stage #vectorPreview.zoom-in-tool { cursor: zoom-in; }
 .vector-stage #vectorPreview.zoom-out-tool { cursor: zoom-out; }
+.vector-stage #vectorPreview.eraser-tool { cursor: none; }
+.vector-stage #vectorPreview.erasing { cursor: none; }
+.eraser-cursor { position: absolute; z-index: 8; border: 1.5px solid white; border-radius: 50%; background: rgb(236 22 140 / .14); box-shadow: 0 0 0 1px #ec168c, 0 1px 4px rgb(0 0 0 / .25); pointer-events: none; transform: translate(-50%, -50%); }
 .vector-stage #vectorPreview svg { display: block; width: 100%; height: auto; max-height: calc(100vh - 135px); overflow: visible; }
 .vector-stage #vectorPreview.list-layer-hovering [data-layer-root] { opacity: .2; transition: opacity .12s ease; }
 .vector-stage #vectorPreview.list-layer-hovering [data-layer-root].list-hover-highlight { opacity: 1; filter: drop-shadow(0 0 2px #ec168c) drop-shadow(0 0 4px rgb(236 22 140 / .55)); }

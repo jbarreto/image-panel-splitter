@@ -19,6 +19,7 @@ const showAllLayers = document.getElementById('showAllLayers');
 const hideAllLayers = document.getElementById('hideAllLayers');
 const undoLayerEdit = document.getElementById('undoLayerEdit');
 const redoLayerEdit = document.getElementById('redoLayerEdit');
+const duplicateSelectedLayers = document.getElementById('duplicateSelectedLayers');
 const mergeSelectedLayers = document.getElementById('mergeSelectedLayers');
 const resetLayerPositions = document.getElementById('resetLayerPositions');
 const layerStrokeWidth = document.getElementById('layerStrokeWidth');
@@ -31,6 +32,9 @@ const sourcePreviewResize = document.getElementById('sourcePreviewResize');
 const sourcePreviewHide = document.getElementById('sourcePreviewHide');
 const sourcePreviewRestore = document.getElementById('sourcePreviewRestore');
 const vectorCursorTool = document.getElementById('vectorCursorTool');
+const vectorEraserTool = document.getElementById('vectorEraserTool');
+const eraserSize = document.getElementById('eraserSize');
+const eraserSizeValue = document.getElementById('eraserSizeValue');
 const vectorZoomOut = document.getElementById('vectorZoomOut');
 const vectorZoomIn = document.getElementById('vectorZoomIn');
 const vectorZoomValue = document.getElementById('vectorZoomValue');
@@ -45,6 +49,7 @@ const placeholder = document.getElementById('placeholder');
 const previewImage = document.getElementById('previewImage');
 const vectorPlaceholder = document.getElementById('vectorPlaceholder');
 const vectorPreview = document.getElementById('vectorPreview');
+const eraserCursor = document.getElementById('eraserCursor');
 const processingModal = document.getElementById('processingModal');
 const processingText = document.getElementById('processingText');
 const processingPercent = document.getElementById('processingPercent');
@@ -71,6 +76,9 @@ let layerStrokePending = false;
 let sourcePreviewInteraction;
 let vectorPreviewZoom = 1;
 let vectorZoomTool;
+let eraserToolActive = false;
+let activeEraserStroke;
+let lastEraserPointer;
 let layerUndoHistory = [];
 let layerRedoHistory = [];
 const pendingSliderUpdates = new WeakSet();
@@ -204,7 +212,7 @@ function restoreSettings() {
     if (Number(settings.curveSmoothing) >= 0 && Number(settings.curveSmoothing) <= 100) {
       curveSmoothing.value = String(settings.curveSmoothing);
     }
-    if (Number(settings.colorCount) >= 2 && Number(settings.colorCount) <= 16) {
+    if (Number(settings.colorCount) >= 2 && Number(settings.colorCount) <= 33) {
       colorCount.value = String(settings.colorCount);
     }
     if (typeof settings.removeBackground === 'boolean') {
@@ -245,6 +253,7 @@ function clearVectorResult() {
   activeSoloLayer = undefined;
   soloVisibilitySnapshot = undefined;
   mergeSelectedLayers.disabled = true;
+  duplicateSelectedLayers.disabled = true;
   layerStrokeWidth.disabled = true;
   layerStrokeWidth.value = '0';
   layerStrokeValue.value = '0 px';
@@ -494,6 +503,7 @@ function selectedLayerNumbers() {
 
 function updateLayerSelectionControls() {
   const selectedLayers = selectedLayerNumbers();
+  duplicateSelectedLayers.disabled = selectedLayers.length === 0;
   mergeSelectedLayers.disabled = selectedLayers.length < 2;
   layerStrokeWidth.disabled = selectedLayers.length === 0;
   if (selectedLayers.length === 0) {
@@ -507,6 +517,71 @@ function updateLayerSelectionControls() {
   const width = Number(selectedRoot?.dataset.fillStrokeWidth || 0);
   layerStrokeWidth.value = String(width);
   layerStrokeValue.value = `${width} px`;
+}
+
+function duplicateSelectedLayerEntries() {
+  const selectedLayers = selectedLayerNumbers();
+  if (selectedLayers.length === 0 || !vectorSvgText) return;
+  const selectedSet = new Set(selectedLayers);
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return;
+  const sourceRoots = new Map(
+    [...documentNode.querySelectorAll('[data-layer-root]')]
+      .filter((root) => selectedSet.has(Number(root.dataset.layerRoot)))
+      .map((root) => [Number(root.dataset.layerRoot), root])
+  );
+  if (sourceRoots.size === 0) return;
+  const visibilityByLayer = new Map(
+    [...paletteSwatches.querySelectorAll('.palette-swatch')].map((row) => [
+      Number(row.dataset.layer),
+      row.querySelector('.layer-visibility')?.getAttribute('aria-pressed') !== 'false'
+    ])
+  );
+  pushLayerHistory();
+  let nextLayerNumber = Math.max(
+    0,
+    ...currentPalette.map((entry) => Number(entry.layer) || 0)
+  ) + 1;
+  const duplicatedPalette = [];
+  const duplicateSourceByLayer = new Map();
+  for (const entry of currentPalette) {
+    duplicatedPalette.push({ ...entry });
+    const sourceLayerNumber = Number(entry.layer);
+    const sourceRoot = sourceRoots.get(sourceLayerNumber);
+    if (!sourceRoot) continue;
+    const duplicateLayerNumber = nextLayerNumber++;
+    const duplicateName = `${entry.name || `Layer ${sourceLayerNumber}`} copy`;
+    const clone = sourceRoot.cloneNode(true);
+    clone.dataset.layerRoot = String(duplicateLayerNumber);
+    clone.dataset.name = duplicateName;
+    const idSuffix = `-copy-${duplicateLayerNumber}`;
+    for (const element of [clone, ...clone.querySelectorAll('[id]')]) {
+      if (element.id) element.id = `${element.id}${idSuffix}`;
+    }
+    sourceRoot.parentNode.insertBefore(clone, sourceRoot.nextSibling);
+    renameLayerInDocument(documentNode, duplicateLayerNumber, duplicateName);
+    duplicatedPalette.push({
+      ...entry,
+      layer: duplicateLayerNumber,
+      name: duplicateName
+    });
+    duplicateSourceByLayer.set(duplicateLayerNumber, sourceLayerNumber);
+  }
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+  showPalette(duplicatedPalette);
+  restoreLayerPanelState(duplicatedPalette.map((entry) => {
+    const layerNumber = Number(entry.layer);
+    const sourceLayer = duplicateSourceByLayer.get(layerNumber);
+    return {
+      visible: visibilityByLayer.get(sourceLayer ?? layerNumber) !== false,
+      selected: sourceLayer !== undefined
+    };
+  }));
+  renderLayerPreview();
+  status.classList.remove('error');
+  status.textContent =
+    `Duplicated ${selectedLayers.length} layer${selectedLayers.length === 1 ? '' : 's'}.`;
 }
 
 function mergeSelectedLayerEntries() {
@@ -703,7 +778,149 @@ function commitSelectedLayerStroke() {
     : 'Removed the fill stroke from the selected layers.';
 }
 
+function ensureLayerEraserMask(documentNode, root, layerNumber) {
+  const svg = root.ownerSVGElement || documentNode.documentElement;
+  let defs = svg.querySelector(':scope > defs');
+  if (!defs) {
+    defs = documentNode.createElementNS('http://www.w3.org/2000/svg', 'defs');
+    svg.prepend(defs);
+  }
+  const maskId = `eraser-mask-layer-${layerNumber}`;
+  let mask = documentNode.getElementById(maskId);
+  if (!mask) {
+    const existingId = root.getAttribute('mask')?.match(/^url\(#(.+)\)$/)?.[1];
+    const existing = existingId ? documentNode.getElementById(existingId) : undefined;
+    mask = existing
+      ? existing.cloneNode(true)
+      : documentNode.createElementNS('http://www.w3.org/2000/svg', 'mask');
+    mask.id = maskId;
+    mask.setAttribute('maskUnits', 'userSpaceOnUse');
+    if (!existing) {
+      const viewBox = (svg.getAttribute('viewBox') || '0 0 1 1')
+        .trim()
+        .split(/\s+/)
+        .map(Number);
+      const [x, y, width, height] = viewBox;
+      mask.setAttribute('x', String(x));
+      mask.setAttribute('y', String(y));
+      mask.setAttribute('width', String(width));
+      mask.setAttribute('height', String(height));
+      const background = documentNode.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'rect'
+      );
+      background.setAttribute('x', String(x));
+      background.setAttribute('y', String(y));
+      background.setAttribute('width', String(width));
+      background.setAttribute('height', String(height));
+      background.setAttribute('fill', 'white');
+      mask.append(background);
+    }
+    defs.append(mask);
+  }
+  root.setAttribute('mask', `url(#${maskId})`);
+  return mask;
+}
+
+function appendEraserPoint(documentNode, layerNumber, point, radius) {
+  const root = documentNode.querySelector(`[data-layer-root="${layerNumber}"]`);
+  if (!root) return;
+  const mask = ensureLayerEraserMask(documentNode, root, layerNumber);
+  const circle = documentNode.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', String(point.x));
+  circle.setAttribute('cy', String(point.y));
+  circle.setAttribute('r', String(radius));
+  circle.setAttribute('fill', 'black');
+  mask.append(circle);
+}
+
+function addEraserStrokePoint(event) {
+  if (!activeEraserStroke) return;
+  for (const layer of activeEraserStroke.layers) {
+    const matrix = layer.root.getScreenCTM();
+    if (!matrix) continue;
+    const point = new DOMPoint(event.clientX, event.clientY)
+      .matrixTransform(matrix.inverse());
+    const previous = layer.points.at(-1);
+    if (
+      previous &&
+      Math.hypot(point.x - previous.x, point.y - previous.y)
+        < activeEraserStroke.radius / 3
+    ) continue;
+    const nextPoint = { x: point.x, y: point.y };
+    layer.points.push(nextPoint);
+    appendEraserPoint(
+      layer.root.ownerDocument,
+      layer.layerNumber,
+      nextPoint,
+      activeEraserStroke.radius
+    );
+  }
+}
+
+function updateEraserCursor(event = lastEraserPointer) {
+  if (!eraserToolActive || !event || vectorPreview.hidden) {
+    eraserCursor.hidden = true;
+    return;
+  }
+  lastEraserPointer = { clientX: event.clientX, clientY: event.clientY };
+  const selectedLayer = vectorPreview.querySelector(
+    `[data-layer-root="${selectedLayerNumbers()[0]}"]`
+  );
+  const scaleTarget = selectedLayer || vectorPreview.querySelector('svg');
+  const matrix = scaleTarget?.getScreenCTM();
+  if (!matrix) {
+    eraserCursor.hidden = true;
+    return;
+  }
+  const scale = (
+    Math.hypot(matrix.a, matrix.b) +
+    Math.hypot(matrix.c, matrix.d)
+  ) / 2;
+  const diameter = Math.max(4, Math.min(500, Number(eraserSize.value) * scale));
+  const stageBounds = eraserCursor.parentElement.getBoundingClientRect();
+  eraserCursor.style.width = `${diameter}px`;
+  eraserCursor.style.height = `${diameter}px`;
+  eraserCursor.style.left = `${event.clientX - stageBounds.left}px`;
+  eraserCursor.style.top = `${event.clientY - stageBounds.top}px`;
+  eraserCursor.hidden = false;
+}
+
+function commitEraserStroke() {
+  if (!activeEraserStroke || !vectorSvgText) return;
+  const stroke = activeEraserStroke;
+  activeEraserStroke = undefined;
+  if (!stroke.layers.some((layer) => layer.points.length > 0)) {
+    renderLayerPreview();
+    return;
+  }
+  pushLayerHistory();
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return;
+  for (const layer of stroke.layers) {
+    for (const point of layer.points) {
+      appendEraserPoint(
+        documentNode,
+        layer.layerNumber,
+        point,
+        stroke.radius
+      );
+    }
+  }
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+  renderLayerPreview();
+  status.classList.remove('error');
+  status.textContent =
+    `Erased artwork from ${stroke.layers.length} selected layer${stroke.layers.length === 1 ? '' : 's'}.`;
+}
+
 vectorPreview.addEventListener('pointermove', (event) => {
+  updateEraserCursor(event);
+  if (activeEraserStroke) {
+    addEraserStrokePoint(event);
+    return;
+  }
   if (draggedPreviewLayer) {
     const point = previewPoint(draggedPreviewLayer.svg, event);
     if (!point) return;
@@ -723,6 +940,32 @@ vectorPreview.addEventListener('pointermove', (event) => {
 
 vectorPreview.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
+  if (eraserToolActive) {
+    const selectedLayers = selectedLayerNumbers();
+    if (selectedLayers.length === 0) {
+      status.classList.add('error');
+      status.textContent = 'Select at least one layer before using the eraser.';
+      return;
+    }
+    const layers = selectedLayers
+      .map((layerNumber) => ({
+        layerNumber,
+        root: vectorPreview.querySelector(`[data-layer-root="${layerNumber}"]`),
+        points: []
+      }))
+      .filter((layer) => layer.root);
+    if (layers.length === 0) return;
+    event.preventDefault();
+    activeEraserStroke = {
+      pointerId: event.pointerId,
+      radius: Number(eraserSize.value) / 2,
+      layers
+    };
+    vectorPreview.setPointerCapture(event.pointerId);
+    vectorPreview.classList.add('erasing');
+    addEraserStrokePoint(event);
+    return;
+  }
   if (vectorZoomTool) {
     event.preventDefault();
     event.stopPropagation();
@@ -756,6 +999,14 @@ vectorPreview.addEventListener('pointerdown', (event) => {
 });
 
 vectorPreview.addEventListener('pointerup', (event) => {
+  if (activeEraserStroke?.pointerId === event.pointerId) {
+    if (vectorPreview.hasPointerCapture(event.pointerId)) {
+      vectorPreview.releasePointerCapture(event.pointerId);
+    }
+    vectorPreview.classList.remove('erasing');
+    commitEraserStroke();
+    return;
+  }
   if (!draggedPreviewLayer) return;
   const movedLayer = draggedPreviewLayer;
   draggedPreviewLayer = undefined;
@@ -779,12 +1030,21 @@ vectorPreview.addEventListener('pointerup', (event) => {
 });
 
 vectorPreview.addEventListener('pointercancel', () => {
+  if (activeEraserStroke) {
+    activeEraserStroke = undefined;
+    vectorPreview.classList.remove('erasing');
+    renderLayerPreview();
+  }
   draggedPreviewLayer = undefined;
   vectorPreview.classList.remove('dragging-layer');
   renderLayerPreview();
 });
 
 vectorPreview.addEventListener('pointerleave', () => {
+  if (!activeEraserStroke) {
+    lastEraserPointer = undefined;
+    eraserCursor.hidden = true;
+  }
   if (!draggedPreviewLayer) highlightLayerRow();
 });
 
@@ -1003,12 +1263,14 @@ showAllLayers.addEventListener('click', () => setAllLayerVisibility(true));
 hideAllLayers.addEventListener('click', () => setAllLayerVisibility(false));
 undoLayerEdit.addEventListener('click', undoLayerChange);
 redoLayerEdit.addEventListener('click', redoLayerChange);
+duplicateSelectedLayers.addEventListener('click', duplicateSelectedLayerEntries);
 mergeSelectedLayers.addEventListener('click', mergeSelectedLayerEntries);
 resetLayerPositions.addEventListener('click', resetAllLayerPositions);
 
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && vectorZoomTool) {
+  if (event.key === 'Escape' && (vectorZoomTool || eraserToolActive)) {
     vectorZoomTool = undefined;
+    eraserToolActive = false;
     updateVectorZoomTool();
     status.textContent = '';
     return;
@@ -1074,18 +1336,27 @@ sourcePreviewRestore.addEventListener('click', () => {
 });
 
 function updateVectorZoomTool() {
-  vectorCursorTool.classList.toggle('active', !vectorZoomTool);
+  const cursorActive = !vectorZoomTool && !eraserToolActive;
+  vectorCursorTool.classList.toggle('active', cursorActive);
+  vectorEraserTool.classList.toggle('active', eraserToolActive);
   vectorZoomIn.classList.toggle('active', vectorZoomTool === 'in');
   vectorZoomOut.classList.toggle('active', vectorZoomTool === 'out');
-  vectorCursorTool.setAttribute('aria-pressed', String(!vectorZoomTool));
+  vectorCursorTool.setAttribute('aria-pressed', String(cursorActive));
+  vectorEraserTool.setAttribute('aria-pressed', String(eraserToolActive));
   vectorZoomIn.setAttribute('aria-pressed', String(vectorZoomTool === 'in'));
   vectorZoomOut.setAttribute('aria-pressed', String(vectorZoomTool === 'out'));
   vectorPreview.classList.toggle('zoom-in-tool', vectorZoomTool === 'in');
   vectorPreview.classList.toggle('zoom-out-tool', vectorZoomTool === 'out');
+  vectorPreview.classList.toggle('eraser-tool', eraserToolActive);
+  if (!eraserToolActive) {
+    lastEraserPointer = undefined;
+    eraserCursor.hidden = true;
+  }
 }
 
 function selectVectorZoomTool(tool) {
   vectorZoomTool = vectorZoomTool === tool ? undefined : tool;
+  eraserToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = vectorZoomTool
@@ -1116,13 +1387,28 @@ function setVectorPreviewZoom(nextZoom, focalEvent) {
 
 vectorCursorTool.addEventListener('click', () => {
   vectorZoomTool = undefined;
+  eraserToolActive = false;
   updateVectorZoomTool();
   status.textContent = '';
+});
+vectorEraserTool.addEventListener('click', () => {
+  eraserToolActive = !eraserToolActive;
+  vectorZoomTool = undefined;
+  updateVectorZoomTool();
+  status.classList.remove('error');
+  status.textContent = eraserToolActive
+    ? 'Eraser selected. Drag over the preview to erase from selected layers.'
+    : '';
+});
+eraserSize.addEventListener('input', () => {
+  eraserSizeValue.value = eraserSize.value;
+  updateEraserCursor();
 });
 vectorZoomOut.addEventListener('click', () => selectVectorZoomTool('out'));
 vectorZoomIn.addEventListener('click', () => selectVectorZoomTool('in'));
 vectorZoomValue.addEventListener('click', () => {
   vectorZoomTool = undefined;
+  eraserToolActive = false;
   updateVectorZoomTool();
   vectorPreview.style.removeProperty('--vector-preview-origin-x');
   vectorPreview.style.removeProperty('--vector-preview-origin-y');
@@ -1253,6 +1539,7 @@ function selectFile(selected) {
   if (!selected) return;
   pendingLayerConfiguration = undefined;
   vectorZoomTool = undefined;
+  eraserToolActive = false;
   updateVectorZoomTool();
   setVectorPreviewZoom(1);
   file = selected;

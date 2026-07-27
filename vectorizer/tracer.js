@@ -52,8 +52,8 @@ function validateOptions({
   if (!['groups', 'flat'].includes(svgStructure)) {
     throw new Error('SVG structure must be groups or flat.');
   }
-  if (!Number.isInteger(colorCount) || colorCount < 2 || colorCount > 16) {
-    throw new Error('Color count must be between 2 and 16.');
+  if (!Number.isInteger(colorCount) || colorCount < 2 || colorCount > 33) {
+    throw new Error('Color count must be between 2 and 33.');
   }
   if (
     !Number.isInteger(maximumTraceSide) ||
@@ -186,13 +186,58 @@ function rgbHex({ r, g, b }) {
   return `#${[r, g, b].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
 }
 
-function createOverlappingMask(labels, width, height, layerIndex, retainedIndexes) {
-  const mask = new Int8Array(labels.length);
-  for (let pixel = 0; pixel < labels.length; pixel += 1) {
-    if (labels[pixel] === layerIndex) {
-      mask[pixel] = 1;
-      continue;
+function mergeMinorPaletteLabels(labels, palette, counts) {
+  const visiblePixels = counts.reduce((total, count) => total + count, 0);
+  if (visiblePixels === 0) return;
+  const redirects = new Int16Array(palette.length);
+  redirects.fill(-1);
+  const indexes = palette
+    .map((_, index) => index)
+    .filter((index) => counts[index] > 0)
+    .sort((a, b) => counts[a] - counts[b]);
+  for (const source of indexes) {
+    const share = counts[source] / visiblePixels;
+    let target = -1;
+    let nearestDistance = Infinity;
+    for (const candidate of indexes) {
+      if (
+        candidate === source ||
+        redirects[candidate] !== -1 ||
+        counts[candidate] <= counts[source]
+      ) continue;
+      const distance = colorDistance(palette[source], palette[candidate]);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        target = candidate;
+      }
     }
+    const closeAntialiasShade = share <= 0.0075 && nearestDistance <= 35 ** 2;
+    const tinyColorFragment = share <= 0.0005 && nearestDistance <= 80 ** 2;
+    if (target !== -1 && (closeAntialiasShade || tinyColorFragment)) {
+      redirects[source] = target;
+    }
+  }
+  if (![...redirects].some((target) => target !== -1)) return;
+  counts.fill(0);
+  for (let pixel = 0; pixel < labels.length; pixel += 1) {
+    let label = labels[pixel];
+    if (label === 255) continue;
+    while (redirects[label] !== -1) label = redirects[label];
+    labels[pixel] = label;
+    counts[label] += 1;
+  }
+}
+
+function createOverlappingMask(
+  labels,
+  width,
+  height,
+  retainedIndexes,
+  exactMask
+) {
+  const mask = exactMask.slice();
+  for (let pixel = 0; pixel < labels.length; pixel += 1) {
+    if (exactMask[pixel]) continue;
     if (!retainedIndexes.has(labels[pixel])) continue;
     const x = pixel % width;
     const y = Math.floor(pixel / width);
@@ -202,7 +247,7 @@ function createOverlappingMask(labels, width, height, layerIndex, retainedIndexe
       for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
         const neighborX = x + offsetX;
         if (neighborX < 0 || neighborX >= width) continue;
-        if (labels[neighborY * width + neighborX] === layerIndex) {
+        if (exactMask[neighborY * width + neighborX]) {
           mask[pixel] = 1;
           break;
         }
@@ -210,6 +255,35 @@ function createOverlappingMask(labels, width, height, layerIndex, retainedIndexe
     }
   }
   return mask;
+}
+
+function removeBorderConnectedLabel(labels, width, height, layerIndex, queue) {
+  const artworkLabels = labels.slice();
+  let head = 0;
+  let tail = 0;
+  const enqueue = (pixel) => {
+    if (artworkLabels[pixel] !== layerIndex) return;
+    artworkLabels[pixel] = 255;
+    queue[tail++] = pixel;
+  };
+  for (let x = 0; x < width; x += 1) {
+    enqueue(x);
+    enqueue((height - 1) * width + x);
+  }
+  for (let y = 1; y < height - 1; y += 1) {
+    enqueue(y * width);
+    enqueue(y * width + width - 1);
+  }
+  while (head < tail) {
+    const pixel = queue[head++];
+    const x = pixel % width;
+    const y = Math.floor(pixel / width);
+    if (x > 0) enqueue(pixel - 1);
+    if (x + 1 < width) enqueue(pixel + 1);
+    if (y > 0) enqueue(pixel - width);
+    if (y + 1 < height) enqueue(pixel + width);
+  }
+  return artworkLabels;
 }
 
 function removeSmallMaskComponents(mask, width, height, minimumArea, queue) {
@@ -290,6 +364,7 @@ async function multicolorPaths(
     labels[pixel] = nearest;
     counts[nearest] += 1;
   }
+  if (fillColorGaps) mergeMinorPaletteLabels(labels, palette, counts);
   const cornerIndexes = [0, width - 1, (height - 1) * width, width * height - 1];
   const backgroundLayer = cornerIndexes
     .map((index) => labels[index])
@@ -309,6 +384,21 @@ async function multicolorPaths(
     palette[backgroundLayer] = { r: 255, g: 255, b: 255 };
   }
   const isWhite = (color) => color.r >= 240 && color.g >= 240 && color.b >= 240;
+  const componentQueue = new Int32Array(labels.length);
+  const artworkLabels = (
+    removeBackground &&
+    keepWhiteLayer &&
+    whiteBackground &&
+    backgroundLayer !== undefined
+  )
+    ? removeBorderConnectedLabel(
+      labels,
+      width,
+      height,
+      backgroundLayer,
+      componentQueue
+    )
+    : labels;
   const layerOrder = palette
     .map((color, index) => ({ color, index, luminance: color.r + color.g + color.b }))
     .filter((layer) => counts[layer.index] > 0)
@@ -319,35 +409,33 @@ async function multicolorPaths(
     ))
     .sort((a, b) => b.luminance - a.luminance);
   const retainedIndexes = new Set(layerOrder.map((layer) => layer.index));
-  const componentQueue = new Int32Array(labels.length);
   const minimumComponentArea = Math.max(
     3,
     Math.round(width * height / 20000)
   );
   const layers = [];
   for (const layer of layerOrder) {
-    let mask;
-    if (fillColorGaps) {
-      mask = createOverlappingMask(
-        labels,
-        width,
-        height,
-        layer.index,
-        retainedIndexes
-      );
-    } else {
-      mask = new Int8Array(labels.length);
-      for (let pixel = 0; pixel < labels.length; pixel += 1) {
-        mask[pixel] = labels[pixel] === layer.index ? 1 : 0;
-      }
+    const exactMask = new Int8Array(labels.length);
+    for (let pixel = 0; pixel < labels.length; pixel += 1) {
+      exactMask[pixel] = artworkLabels[pixel] === layer.index ? 1 : 0;
     }
     removeSmallMaskComponents(
-      mask,
+      exactMask,
       width,
       height,
       minimumComponentArea,
       componentQueue
     );
+    let mask = exactMask;
+    if (fillColorGaps) {
+      mask = createOverlappingMask(
+        artworkLabels,
+        width,
+        height,
+        retainedIndexes,
+        exactMask
+      );
+    }
     const pathData = await traceMask(mask, width, height, curveSmoothing);
     if (pathData) {
       layers.push({

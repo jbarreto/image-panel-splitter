@@ -4,6 +4,11 @@ Standalone server and browser GUI for converting monochrome or flat-color
 artwork into genuine editable SVG paths. It runs independently from Ronyka
 Panel Splitter.
 
+Vectorizer release history is maintained in [CHANGES.md](CHANGES.md), and its
+development prompt and implementation invariants are maintained in
+[codex.md](codex.md). Vectorizer documentation updates belong in this folder,
+not in the parent panel-splitter documentation.
+
 ## Install
 
 ```bash
@@ -42,19 +47,23 @@ increases progressively above `50%`, producing cleaner contours instead of
 only simplifying already-jagged paths. The preview is retraced after pointer
 or keyboard release.
 
-Choose **Multicolor** to quantize the source into 2–16 palette colors and
+Choose **Multicolor** to quantize the source into 2–33 palette colors and
 trace each color as a separate filled path layer. Background-color removal is
 enabled by default, while **Keep white as a layer** detects white from the
 original corner pixels, preserves it as a true-white palette layer, and keeps
-white details even when white is the background. This mode works best for
+white details even when white is the background. Background removal clears
+only pixels of that color connected to the canvas border, preserving enclosed
+same-color artwork such as white eye highlights. This mode works best for
 logos, cartoons, and flat-color illustrations; photographs and gradients
 produce more approximate results. **Fill gaps between colors** optionally
 overlaps adjacent retained color masks by one trace pixel inside the artwork
 boundary to prevent transparent hairline gaps caused by independently smoothed
-vector paths. Before tracing, small isolated
-mask components are removed using a threshold scaled to the tracing
-resolution, reducing antialias-derived color dots without removing connected
-strokes or significant fills.
+vector paths. When enabled, it also merges only small palette regions that are
+very close to a larger neighboring color, preventing narrow antialias shades
+from becoming unnecessary layers. Substantial and distinctly colored regions
+remain separate. Before tracing, small isolated mask components are removed
+using a threshold scaled to the tracing resolution, reducing antialias-derived
+color dots without removing connected strokes or significant fills.
 
 Use **Layer groups (Inkscape)** to export native Inkscape layer groups, or
 **Flat paths** to export each color as one top-level path without a
@@ -82,10 +91,18 @@ become the zoom focus. Click the percentage to reset to 100%, toggle the active
 tool button, choose **Cursor**, or press `Esc` to return to normal layer
 selection and dragging.
 
+Select one or more layers, choose **Eraser** in the vector toolbar, adjust its
+brush size, and drag over the preview to remove content only from those
+selected layers. A circular cursor follows the pointer and scales with the
+brush setting, SVG display scale, and preview zoom to show the affected area.
+Erasures are stored as SVG masks, remain editable through Undo/Redo, and are
+included in the downloaded SVG. Choose **Cursor** or press `Esc` to leave
+eraser mode.
+
 Layer edits retain up to ten undo steps. Use the **Undo** and **Redo** buttons,
 `Ctrl/Cmd+Z` to undo, and `Ctrl/Cmd+Shift+Z` or `Ctrl+Y` to redo. History
-includes layer names, visibility, positions, grouping, color merging, and
-selected-layer strokes. Generating a different vector result starts a new
+includes layer names, visibility, positions, grouping, color merging, strokes,
+and erasing. Generating a different vector result starts a new
 history.
 **Split view** switches to side-by-side source and vector previews for direct
 image comparison, and **Picture in picture** returns to the compact overlay
@@ -96,6 +113,9 @@ preview-only and does not alter the downloaded SVG.
 Select two or more Layers-panel rows and choose **Group selected** to combine
 them into one SVG layer. The merged group retains every child path's fill and
 manual translation, so merging does not flatten the colors into one fill.
+Choose **Duplicate selected** to clone one or more selected layers directly
+after their sources while retaining paths, colors, strokes, and transforms.
+Copies receive independent layer numbers, names, and SVG IDs.
 To merge colors, drag a source layer's color swatch onto a solid-color target
 swatch. Every source path adopts the target fill (and matching fill stroke),
 then moves into the target layer; the source layer is removed.

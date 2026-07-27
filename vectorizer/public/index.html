@@ -13,7 +13,7 @@
         <span class="brand-mark" aria-hidden="true">R</span>
         <div>
           <h1>Vectorizer</h1>
-          <span class="version">v1.2.0</span>
+          <span class="version">v1.3.0</span>
         </div>
       </header>
       <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
@@ -55,7 +55,7 @@
         <div id="multicolorSettings" hidden>
           <label class="field">
             <span>Palette colors <output id="colorCountValue">6</output></span>
-            <input id="colorCount" type="range" min="2" max="16" step="1" value="6" />
+            <input id="colorCount" type="range" min="2" max="33" step="1" value="6" />
           </label>
           <label class="check-field">
             <input id="removeBackground" type="checkbox" checked />
@@ -120,17 +120,44 @@
           <div class="vector-toolbar" role="toolbar" aria-label="Vector preview tools">
             <button id="vectorCursorTool" class="preview-tool-button cursor-tool active" type="button"
               aria-label="Select normal cursor tool" aria-pressed="true"
-              title="Normal cursor: select and move layers">Cursor</button>
+              title="Normal cursor: select and move layers">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 3l13 9-6 1.4 3.6 5.4-2.5 1.7-3.5-5.4L6 20z"></path>
+              </svg>
+            </button>
+            <button id="vectorEraserTool" class="preview-tool-button cursor-tool" type="button"
+              aria-label="Select eraser tool" aria-pressed="false"
+              title="Erase from selected layers">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4.3 14.7l8.9-8.9a2 2 0 012.8 0l2.2 2.2a2 2 0 010 2.8L10 19H6.6l-2.3-2.3a1.4 1.4 0 010-2z"></path>
+                <path d="M10.5 18.5l-5-5M9.8 19H20"></path>
+              </svg>
+            </button>
+            <label class="eraser-size-control">
+              <span>Size</span>
+              <input id="eraserSize" type="range" min="5" max="150" step="5" value="30" />
+              <output id="eraserSizeValue">30</output>
+            </label>
             <span class="toolbar-separator" aria-hidden="true"></span>
             <span class="toolbar-label">Zoom</span>
             <button id="vectorZoomOut" class="preview-tool-button" type="button"
               aria-label="Select zoom-out tool" aria-pressed="false"
-              title="Zoom out: select, then click the preview">−</button>
+              title="Zoom out: select, then click the preview">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <path d="M15.5 15.5L21 21M7.5 10.5h6"></path>
+              </svg>
+            </button>
             <button id="vectorZoomValue" class="preview-zoom-value" type="button"
               aria-label="Reset vector preview zoom" title="Reset zoom">100%</button>
             <button id="vectorZoomIn" class="preview-tool-button" type="button"
               aria-label="Select zoom-in tool" aria-pressed="false"
-              title="Zoom in: select, then click the preview">+</button>
+              title="Zoom in: select, then click the preview">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5"></circle>
+                <path d="M15.5 15.5L21 21M7.5 10.5h6M10.5 7.5v6"></path>
+              </svg>
+            </button>
             <span class="toolbar-hint">Select − or +, then click the image · Esc to exit</span>
           </div>
           <div class="vector-workspace">
@@ -141,6 +168,7 @@
                 <span>Generate the SVG to preview its paths.</span>
               </div>
               <div id="vectorPreview" role="img" aria-label="Generated vectorized SVG preview" hidden></div>
+              <div id="eraserCursor" class="eraser-cursor" aria-hidden="true" hidden></div>
             </div>
             <aside id="palettePanel" class="palette-panel" aria-label="Vector layers" hidden>
               <div class="palette-heading">
@@ -148,6 +176,7 @@
                 <span class="layer-actions">
                   <button id="undoLayerEdit" type="button" disabled title="Undo layer edit (Ctrl/Cmd+Z)">Undo</button>
                   <button id="redoLayerEdit" type="button" disabled title="Redo layer edit (Ctrl/Cmd+Shift+Z)">Redo</button>
+                  <button id="duplicateSelectedLayers" type="button" disabled>Duplicate selected</button>
                   <button id="mergeSelectedLayers" type="button" disabled>Group selected</button>
                   <button id="resetLayerPositions" type="button">Reset positions</button>
                   <button id="showAllLayers" type="button">Show all</button>
