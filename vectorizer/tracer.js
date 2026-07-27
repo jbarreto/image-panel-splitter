@@ -16,10 +16,26 @@ const TRACE_OPTIONS = {
   opt_type: undefined
 };
 
+function traceOptions(curveSmoothing) {
+  const smoothing = Math.max(0, Math.min(100, curveSmoothing));
+  const alphamax = smoothing <= 50
+    ? smoothing / 50
+    : 1 + (smoothing - 50) / 150;
+  const opttolerance = smoothing <= 50
+    ? 0.02 + 0.18 * smoothing / 50
+    : 0.2 + 0.8 * (smoothing - 50) / 50;
+  return {
+    ...TRACE_OPTIONS,
+    alphamax,
+    opttolerance
+  };
+}
+
 function validateOptions({
   targetHeightMm,
   threshold,
   maximumTraceSide,
+  curveSmoothing,
   mode,
   svgStructure,
   colorCount
@@ -46,17 +62,49 @@ function validateOptions({
   ) {
     throw new Error('Trace resolution must be between 500 and 6000 pixels.');
   }
+  if (
+    !Number.isInteger(curveSmoothing) ||
+    curveSmoothing < 0 ||
+    curveSmoothing > 100
+  ) {
+    throw new Error('Curve smoothing must be between 0 and 100.');
+  }
 }
 
-function traceMask(mask, width, height) {
-  const bitmap = new PotraceBitmap(width, height, TRACE_OPTIONS);
-  bitmap.data.set(mask);
+async function smoothTraceMask(mask, width, height, curveSmoothing) {
+  if (curveSmoothing <= 50) return mask;
+  const strength = (curveSmoothing - 50) / 50;
+  const sigma = Math.max(0.3, strength * 6);
+  const pixels = Buffer.allocUnsafe(mask.length);
+  for (let index = 0; index < mask.length; index += 1) {
+    pixels[index] = mask[index] ? 255 : 0;
+  }
+  const smoothed = await sharp(pixels, {
+    raw: { width, height, channels: 1 }
+  })
+    .blur(sigma)
+    .threshold(128)
+    .extractChannel(0)
+    .raw()
+    .toBuffer();
+  const result = new Int8Array(smoothed.length);
+  for (let index = 0; index < smoothed.length; index += 1) {
+    result[index] = smoothed[index] >= 128 ? 1 : 0;
+  }
+  return result;
+}
+
+async function traceMask(mask, width, height, curveSmoothing) {
+  const traceableMask = await smoothTraceMask(mask, width, height, curveSmoothing);
+  const options = traceOptions(curveSmoothing);
+  const bitmap = new PotraceBitmap(width, height, options);
+  bitmap.data.set(traceableMask);
   const paths = [];
   bitmap.pathlist(paths);
   if (paths.length === 0) return '';
-  const processor = new PotraceProcessor(TRACE_OPTIONS, paths);
+  const processor = new PotraceProcessor(options, paths);
   processor.init();
-  const svg = new PotraceSvg(TRACE_OPTIONS, paths, bitmap).get();
+  const svg = new PotraceSvg(options, paths, bitmap).get();
   return svg.match(/<path\b[^>]*\bd="([^"]*)"/i)?.[1] || '';
 }
 
@@ -164,6 +212,41 @@ function createOverlappingMask(labels, width, height, layerIndex, retainedIndexe
   return mask;
 }
 
+function removeSmallMaskComponents(mask, width, height, minimumArea, queue) {
+  for (let start = 0; start < mask.length; start += 1) {
+    if (mask[start] !== 1) continue;
+    let head = 0;
+    let tail = 0;
+    queue[tail++] = start;
+    mask[start] = 2;
+    while (head < tail) {
+      const pixel = queue[head++];
+      const x = pixel % width;
+      const y = Math.floor(pixel / width);
+      for (let offsetY = -1; offsetY <= 1; offsetY += 1) {
+        const neighborY = y + offsetY;
+        if (neighborY < 0 || neighborY >= height) continue;
+        for (let offsetX = -1; offsetX <= 1; offsetX += 1) {
+          if (offsetX === 0 && offsetY === 0) continue;
+          const neighborX = x + offsetX;
+          if (neighborX < 0 || neighborX >= width) continue;
+          const neighbor = neighborY * width + neighborX;
+          if (mask[neighbor] !== 1) continue;
+          mask[neighbor] = 2;
+          queue[tail++] = neighbor;
+        }
+      }
+    }
+    const replacement = tail < minimumArea ? 0 : 2;
+    for (let index = 0; index < tail; index += 1) {
+      mask[queue[index]] = replacement;
+    }
+  }
+  for (let pixel = 0; pixel < mask.length; pixel += 1) {
+    if (mask[pixel] === 2) mask[pixel] = 1;
+  }
+}
+
 function svgNameId(name) {
   const slug = name
     .normalize('NFKD')
@@ -175,7 +258,16 @@ function svgNameId(name) {
   return slug || 'layer';
 }
 
-function multicolorPaths(data, width, height, colorCount, removeBackground, keepWhiteLayer) {
+async function multicolorPaths(
+  data,
+  width,
+  height,
+  colorCount,
+  removeBackground,
+  keepWhiteLayer,
+  fillColorGaps,
+  curveSmoothing
+) {
   const palette = buildPalette(data, colorCount);
   const labels = new Uint8Array(width * height);
   const counts = new Uint32Array(palette.length);
@@ -227,16 +319,36 @@ function multicolorPaths(data, width, height, colorCount, removeBackground, keep
     ))
     .sort((a, b) => b.luminance - a.luminance);
   const retainedIndexes = new Set(layerOrder.map((layer) => layer.index));
+  const componentQueue = new Int32Array(labels.length);
+  const minimumComponentArea = Math.max(
+    3,
+    Math.round(width * height / 20000)
+  );
   const layers = [];
   for (const layer of layerOrder) {
-    const mask = createOverlappingMask(
-      labels,
+    let mask;
+    if (fillColorGaps) {
+      mask = createOverlappingMask(
+        labels,
+        width,
+        height,
+        layer.index,
+        retainedIndexes
+      );
+    } else {
+      mask = new Int8Array(labels.length);
+      for (let pixel = 0; pixel < labels.length; pixel += 1) {
+        mask[pixel] = labels[pixel] === layer.index ? 1 : 0;
+      }
+    }
+    removeSmallMaskComponents(
+      mask,
       width,
       height,
-      layer.index,
-      retainedIndexes
+      minimumComponentArea,
+      componentQueue
     );
-    const pathData = traceMask(mask, width, height);
+    const pathData = await traceMask(mask, width, height, curveSmoothing);
     if (pathData) {
       layers.push({
         color: rgbHex(layer.color),
@@ -253,17 +365,20 @@ export async function vectorizeMonochrome(
     targetHeightMm = 1000,
     threshold = 200,
     maximumTraceSide = 3000,
+    curveSmoothing = 50,
     mode = 'monochrome',
     svgStructure = 'groups',
     colorCount = 6,
     removeBackground = true,
-    keepWhiteLayer = true
+    keepWhiteLayer = true,
+    fillColorGaps = true
   } = {}
 ) {
   validateOptions({
     targetHeightMm,
     threshold,
     maximumTraceSide,
+    curveSmoothing,
     mode,
     svgStructure,
     colorCount
@@ -295,18 +410,20 @@ export async function vectorizeMonochrome(
   if (mode === 'monochrome') {
     const mask = new Int8Array(info.width * info.height);
     for (let index = 0; index < data.length; index += 1) mask[index] = data[index] < 128 ? 1 : 0;
-    const pathData = traceMask(mask, info.width, info.height);
+    const pathData = await traceMask(mask, info.width, info.height, curveSmoothing);
     vectorLayers = pathData
       ? [{ color: '#000000', pathData }]
       : [];
   } else {
-    vectorLayers = multicolorPaths(
+    vectorLayers = await multicolorPaths(
       data,
       info.width,
       info.height,
       colorCount,
       Boolean(removeBackground),
-      Boolean(keepWhiteLayer)
+      Boolean(keepWhiteLayer),
+      Boolean(fillColorGaps),
+      curveSmoothing
     );
   }
   if (vectorLayers.length === 0) throw new Error('No traceable artwork was found.');

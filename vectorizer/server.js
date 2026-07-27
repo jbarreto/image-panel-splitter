@@ -21,11 +21,13 @@ app.post('/api/vectorize', upload.single('image'), async (req, res) => {
       targetHeightMm: Number(req.body.targetHeightMm || 1000),
       threshold: Number(req.body.threshold || 200),
       maximumTraceSide: Number(req.body.maximumTraceSide || 3000),
+      curveSmoothing: Number(req.body.curveSmoothing ?? 50),
       mode: req.body.mode || 'monochrome',
       svgStructure: req.body.svgStructure || 'groups',
       colorCount: Number(req.body.colorCount || 6),
       removeBackground: req.body.removeBackground !== 'false',
-      keepWhiteLayer: req.body.keepWhiteLayer !== 'false'
+      keepWhiteLayer: req.body.keepWhiteLayer !== 'false',
+      fillColorGaps: req.body.fillColorGaps !== 'false'
     });
     console.debug('Vectorization complete.', {
       originalName: req.file.originalname,

@@ -1114,6 +1114,8 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Automatically regenerate the vector preview after a debounced valid setting
   update, aborting obsolete browser requests while retaining the manual
   preview action for immediate refresh.
+- Generate the first vector preview immediately after a new image is selected
+  or dropped, using the current saved settings.
 - Added a modal vectorization progress bar with upload, SVG path-tracing, and
   preview-rendering statuses that closes automatically after completion.
 - Deferred automatic regeneration from range controls until mouse/touch
@@ -1146,11 +1148,52 @@ The history currently runs continuously from `v1.0.0` through `v1.31.0`.
 - Slightly overlap adjacent retained color masks before tracing to eliminate
   transparent seams between independently smoothed fills without expanding
   the outside artwork silhouette.
+- Remove resolution-scaled, isolated color-mask components before tracing to
+  prevent antialias-derived dots from cluttering individual fill layers.
+- Added a persisted **Fill gaps between colors** toggle for the one-pixel
+  neighboring-mask overlap while retaining isolated-dot cleanup in both modes.
 - Made the inline SVG preview layer-aware: hovering artwork highlights the
   matching Layers-panel row, and dragging artwork moves that complete layer
   in both the preview and downloaded SVG.
-- Added a reset action for all manually moved layer positions and a sliding
-  source-preview tab that expands the vector preview into the available space.
+- Added reverse layer identification: hovering a Layers-panel row emphasizes
+  its complete preview layer while temporarily dimming all other artwork.
+- Added a per-layer Solo control that hides every other preview layer, with
+  **Show all** restoring the complete layer stack.
+- Made Solo reversible: clicking the active control again restores the exact
+  pre-Solo visibility state, even after switching between Solo layers.
+- Added a reset action for all manually moved layer positions.
+- Replaced the source column with a compact picture-in-picture overlay by
+  default, with a Split view option for side-by-side image comparison.
+- Made the picture-in-picture source preview draggable by its caption and
+  resizable from its lower-right corner, retaining its geometry across view
+  switches.
+- Added a hide control and compact Source edge tab for restoring the preview.
+- Added vector-preview zoom controls from 50% to 400%, with a clickable
+  percentage reset.
+- Moved zoom into a dedicated toolbar and made Zoom In/Out selectable tools;
+  clicking the vector preview now focuses the zoom on the chosen image region,
+  while `Esc` returns to normal layer interaction.
+- Added an explicit Cursor toolbar tool for normal layer selection and dragging.
+- Added a ten-step layer-edit Undo/Redo history for names, visibility,
+  positions, grouping, color merging, and strokes, with standard
+  `Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`, and `Ctrl+Y` shortcuts.
+- Added multi-selection and **Group selected** to combine paths into one SVG
+  layer while preserving each child path's fill color and translation.
+- Added drag-to-merge color swatches: dropping a source swatch onto a target
+  recolors all source paths with the target color, combines their geometry
+  under the target layer, and removes the source layer.
+- Added a release-committed **Selected layer stroke** control that expands
+  selected paths using their own fill colors to manually cover remaining gaps.
+- Added persisted **Curve smoothing** that maps to Potrace corner suppression
+  and Bézier optimization, retracing only after pointer or keyboard release.
+- Extended curve smoothing above 50% with native Gaussian preprocessing of
+  each binary color mask, removing pixel-scale contour noise before Potrace.
+- Preserve names, visibility, selection, manual positions, and fill-stroke
+  widths across setting-driven regeneration when the layer count remains
+  unchanged; discard the snapshot when the count changes.
+- Preserve grouped and color-merged layer structures during retracing by
+  replacing their original member paths with newly generated geometry when
+  the base path count matches.
 - The vectorizer has no image-processing CLI command. Its `npm start` command
   only launches the separate server; any future CLI must use a distinct name
   such as `ronyka-vectorize`, never `split-image`.

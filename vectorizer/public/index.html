@@ -13,7 +13,7 @@
         <span class="brand-mark" aria-hidden="true">R</span>
         <div>
           <h1>Vectorizer</h1>
-          <span class="version">v1.1.0</span>
+          <span class="version">v1.2.0</span>
         </div>
       </header>
       <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
@@ -65,11 +65,19 @@
             <input id="keepWhiteLayer" type="checkbox" checked />
             <span>Keep white as a layer</span>
           </label>
+          <label class="check-field">
+            <input id="fillColorGaps" type="checkbox" checked />
+            <span>Fill gaps between colors</span>
+          </label>
           <div class="note">Flat-color logos and illustrations produce the cleanest layered paths.</div>
         </div>
         <label class="field">
           <span>Trace resolution <output id="resolutionValue">3000 px</output></span>
           <input id="maximumTraceSide" type="range" min="500" max="6000" step="100" value="3000" />
+        </label>
+        <label class="field">
+          <span>Curve smoothing <output id="curveSmoothingValue">50%</output></span>
+          <input id="curveSmoothing" type="range" min="0" max="100" step="1" value="50" />
         </label>
         <div class="note">Higher resolution preserves more detail but takes longer and creates larger SVG files.</div>
       </fieldset>
@@ -83,10 +91,19 @@
 
     <section class="preview">
       <div id="previewGrid" class="preview-grid">
-        <button id="sourcePreviewToggle" class="source-collapse-tab" type="button"
-          aria-label="Hide source preview" aria-expanded="true" title="Hide source preview">‹</button>
+        <button id="sourcePreviewToggle" class="source-view-toggle" type="button"
+          aria-label="Compare source and vector side by side" aria-pressed="false"
+          title="Compare source and vector side by side">Split view</button>
+        <button id="sourcePreviewRestore" class="source-restore-tab" type="button"
+          aria-label="Show source preview" title="Show source preview" hidden>Source ›</button>
         <figure class="preview-card source-preview-card">
-          <figcaption>Source</figcaption>
+          <figcaption title="Drag to move the source preview">
+            <span>Source</span>
+            <span class="source-preview-actions">
+              <button id="sourcePreviewHide" class="source-caption-button source-hide-button" type="button"
+                aria-label="Minimize source preview" title="Minimize source preview">−</button>
+            </span>
+          </figcaption>
           <div class="preview-stage">
             <div id="placeholder" class="placeholder">
               <div class="placeholder-icon">◇</div>
@@ -95,9 +112,27 @@
             </div>
             <img id="previewImage" alt="Selected source preview" hidden />
           </div>
+          <div id="sourcePreviewResize" class="source-preview-resize" role="separator"
+            aria-label="Resize source preview" aria-orientation="horizontal" tabindex="0"></div>
         </figure>
-        <figure class="preview-card">
+        <figure class="preview-card vector-preview-card">
           <figcaption>Vectorized SVG</figcaption>
+          <div class="vector-toolbar" role="toolbar" aria-label="Vector preview tools">
+            <button id="vectorCursorTool" class="preview-tool-button cursor-tool active" type="button"
+              aria-label="Select normal cursor tool" aria-pressed="true"
+              title="Normal cursor: select and move layers">Cursor</button>
+            <span class="toolbar-separator" aria-hidden="true"></span>
+            <span class="toolbar-label">Zoom</span>
+            <button id="vectorZoomOut" class="preview-tool-button" type="button"
+              aria-label="Select zoom-out tool" aria-pressed="false"
+              title="Zoom out: select, then click the preview">−</button>
+            <button id="vectorZoomValue" class="preview-zoom-value" type="button"
+              aria-label="Reset vector preview zoom" title="Reset zoom">100%</button>
+            <button id="vectorZoomIn" class="preview-tool-button" type="button"
+              aria-label="Select zoom-in tool" aria-pressed="false"
+              title="Zoom in: select, then click the preview">+</button>
+            <span class="toolbar-hint">Select − or +, then click the image · Esc to exit</span>
+          </div>
           <div class="vector-workspace">
             <div class="preview-stage vector-stage">
               <div id="vectorPlaceholder" class="placeholder">
@@ -111,13 +146,20 @@
               <div class="palette-heading">
                 <span>Layers</span>
                 <span class="layer-actions">
+                  <button id="undoLayerEdit" type="button" disabled title="Undo layer edit (Ctrl/Cmd+Z)">Undo</button>
+                  <button id="redoLayerEdit" type="button" disabled title="Redo layer edit (Ctrl/Cmd+Shift+Z)">Redo</button>
+                  <button id="mergeSelectedLayers" type="button" disabled>Group selected</button>
                   <button id="resetLayerPositions" type="button">Reset positions</button>
                   <button id="showAllLayers" type="button">Show all</button>
                   <button id="hideAllLayers" type="button">Hide all</button>
                 </span>
               </div>
               <div id="paletteSwatches" class="palette-swatches"></div>
-              <div class="layer-note">Preview visibility only. Downloads retain every layer.</div>
+              <label class="layer-stroke-control">
+                <span>Selected layer stroke <output id="layerStrokeValue">0 px</output></span>
+                <input id="layerStrokeWidth" type="range" min="0" max="25" step="0.5" value="0" disabled />
+              </label>
+              <div class="layer-note">Drag one color swatch onto another to merge into its color. Select layers to group them without recoloring.</div>
             </aside>
           </div>
         </figure>

@@ -100,6 +100,8 @@ Project summary:
   aborting obsolete browser requests. For range sliders, update displayed
   values during input but wait for mouse/touch release or keyboard key release
   before regenerating; keep the manual preview action for an immediate refresh.
+  Selecting or dropping a new image immediately starts its first preview using
+  the current settings.
   Show upload, path-tracing, and preview-rendering status in a modal progress
   bar, and close it automatically when processing finishes.
   Provide Monochrome and Multicolor modes. Multicolor quantizes the source to
@@ -107,8 +109,11 @@ Project summary:
   background color, can preserve near-white as its own layer even when
   background removal is enabled, traces each retained color mask with Potrace,
   and stacks the resulting filled paths in one genuine SVG. Retained
-  neighboring color masks overlap by one trace pixel within the
-  artwork region to avoid transparent seams between independently traced paths.
+  A persisted **Fill gaps between colors** toggle controls whether neighboring
+  color masks overlap by one trace pixel within the artwork region to avoid
+  transparent seams between independently traced paths.
+  Remove small isolated mask components with a trace-resolution-scaled area
+  threshold before Potrace so antialias colors do not create speckled layers.
   Put every color in a named Inkscape-compatible layer group or top-level flat
   path according to the selected SVG structure, return palette metadata in
   response headers, and show layer number, swatch, hex value, and preview
@@ -117,9 +122,48 @@ Project summary:
   Render the generated preview as inline SVG. Hovering a visible color region
   highlights its Layers-panel row; dragging the region moves the full layer
   and persists its SVG translation in the download source.
+  Hovering a Layers-panel row highlights its complete inline-SVG root and dims
+  the other roots without writing that visual state into the SVG download.
+  Each layer row has a preview-only Solo control that shows only that layer;
+  **Show all** restores the complete stack.
+  Solo snapshots all eye states when first enabled. Clicking the active Solo
+  control again restores that snapshot; switching Solo targets retains it.
   Provide a Layers-panel action that resets every manual layer translation.
-  A divider tab collapses the source card to the left and expands the vector
-  preview; keep both previews stacked and visible on narrow screens.
+  Allow checkbox multi-selection and manual grouping. A grouped layer is an SVG
+  group that preserves each selected child path's fill and translation.
+  Color merging is separate: dragging a source swatch onto a solid target
+  recolors all source paths and existing fill strokes with the target color,
+  moves that geometry under the target layer, and removes the source entry.
+  Provide a selected-layer stroke slider that applies each path's own fill as
+  a rounded stroke. Update inline during interaction, commit on pointer or key
+  release, and persist the stroke in the downloaded SVG.
+  Provide persisted **Curve smoothing** from 0–100. Map 50 to Potrace defaults
+  (`alphamax: 1`, `opttolerance: 0.2`), increase both toward completely smooth
+  corners and more aggressive Bézier optimization, and retrace on release.
+  Above 50, also Gaussian-smooth each binary mask before tracing, increasing
+  sigma progressively to 6 at 100 to remove pixel-scale contour noise.
+  Before setting-driven regeneration, snapshot layer names, visibility,
+  selection, translations, and fill-stroke widths. Restore by palette order
+  only when the regenerated base-path count matches; discard on count mismatch
+  or when a new source image is loaded. Preserve grouped and color-merged SVG
+  structure as a template and replace each member path's `d` with its newly
+  traced geometry so smoothing applies inside merged layers.
+  Show the source as a compact picture-in-picture card over the vector
+  workspace by default. Allow dragging it by its caption and resizing it from
+  its lower-right corner while retaining that geometry across view switches.
+  It can be hidden, leaving a compact Source edge tab that restores it.
+  Provide generated vector-preview zoom from 50% to 400% in 25% increments and
+  reset to 100% by clicking the displayed percentage. Put zoom in a dedicated
+  toolbar: selecting Zoom In/Out changes the preview cursor, and the next
+  preview clicks use the clicked artwork region as the zoom origin. Toggle the
+  active tool, choose the explicit Cursor tool, or press `Esc` to return to
+  layer interaction.
+  Keep up to ten layer-edit undo states covering names, visibility, positions,
+  grouping, color merging, and strokes. Provide Undo/Redo actions with
+  `Ctrl/Cmd+Z`, `Ctrl/Cmd+Shift+Z`, and `Ctrl+Y`; clear this history when a new
+  vector result is generated.
+  A view toggle switches to side-by-side comparison and back; stack the split
+  comparison on narrow screens.
   Let users edit layer names in that panel and persist those names in the
   downloaded SVG's Inkscape labels, standard group/path IDs, `data-name`
   attributes, and title metadata for compatibility with Inkscape and other
