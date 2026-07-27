@@ -13,8 +13,22 @@ Project invariants:
 - The server runs on port 4174 and accepts an in-memory upload. `npm start`
   launches the server. There is no processing CLI; any future CLI name must be
   distinct from the splitter's `split-image`.
+- The Windows launcher is
+  `scripts/windows/ronyka-vectorizer-launcher.bat`. It checks the remote
+  `vectorizer/package.json`, updates the complete installation only for a newer
+  vectorizer version, runs the vectorizer's own locked dependency install when
+  required, starts the server separately, and opens port 4174.
 - The GUI generates path-only `original-vectorized.svg`; never embed the source
   raster.
+- The CorelDRAW PDF action posts the flattened edited SVG to
+  `/api/export-pdf`, where PDFKit and SVG-to-PDFKit create a genuine vector PDF
+  at the SVG's physical millimeter dimensions. Never rasterize this export.
+- SVG structure supports Inkscape layers, CorelDRAW-compatible ungrouped paths,
+  and ordinary flat paths. CorelDRAW downloads must flatten artwork groups,
+  inherit their transforms and visual attributes on child artwork, and strip
+  Inkscape/vectorizer layer metadata while preserving SVG definitions and
+  edits. Do not claim this can disable CorelDRAW's application-created locked
+  import container; that state is not represented in the source SVG.
 - Keep package.json, package-lock.json, and the visible GUI version synchronized
   only when committing a release.
 - Update vectorizer/CHANGES.md, vectorizer/codex.md, and

@@ -13,7 +13,7 @@
         <span class="brand-mark" aria-hidden="true">R</span>
         <div>
           <h1>Vectorizer</h1>
-          <span class="version">v1.7.0</span>
+          <span class="version">v1.8.0</span>
         </div>
       </header>
       <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
@@ -42,9 +42,11 @@
           <span>SVG structure</span>
           <select id="svgStructure">
             <option value="groups" selected>Layer groups (Inkscape)</option>
+            <option value="corel">Ungrouped paths (CorelDRAW)</option>
             <option value="flat">Flat paths</option>
           </select>
         </label>
+        <div class="note">Use CorelDRAW paths to export artwork without layer or group containers.</div>
         <div id="monochromeSettings">
           <label class="field">
             <span>Black threshold <output id="thresholdValue">200</output></span>
@@ -106,6 +108,7 @@
       <div class="action-row">
         <button id="previewButton" type="button" disabled>Preview vector</button>
         <button id="downloadButton" class="secondary-button" type="button" disabled>Download SVG</button>
+        <button id="downloadPdfButton" class="secondary-button" type="button" disabled>CorelDRAW PDF</button>
       </div>
       <div id="status" class="status" role="status" aria-live="polite"></div>
     </section>

@@ -56,8 +56,8 @@ function validateOptions({
   if (!['monochrome', 'multicolor'].includes(mode)) {
     throw new Error('Vector mode must be monochrome or multicolor.');
   }
-  if (!['groups', 'flat'].includes(svgStructure)) {
-    throw new Error('SVG structure must be groups or flat.');
+  if (!['groups', 'corel', 'flat'].includes(svgStructure)) {
+    throw new Error('SVG structure must be groups, corel, or flat.');
   }
   if (!Number.isInteger(colorCount) || colorCount < 2 || colorCount > 33) {
     throw new Error('Color count must be between 2 and 33.');
@@ -541,13 +541,15 @@ export async function vectorizeMonochrome(
     const pathId = svgNameId(label);
     const groupId = `${pathId}-group`;
     const path = `<path id="${pathId}" data-name="${label}" ` +
-      `${svgStructure === 'flat' ? `data-layer-root="${layerNumber}" ` : ''}` +
+      `${svgStructure !== 'groups' ? `data-layer-root="${layerNumber}" ` : ''}` +
       `data-layer-index="${layerNumber}" d="${layer.pathData}" ` +
       `fill="${layer.color}" fill-rule="evenodd"><title>${label}</title></path>`;
-    if (svgStructure === 'flat') return path;
+    if (svgStructure !== 'groups') return path;
+    const editorLayerAttributes =
+      `inkscape:groupmode="layer" inkscape:label="${label}" `;
     return `<g id="${groupId}" data-name="${label}" data-layer-root="${layerNumber}" ` +
-      `data-layer-index="${layerNumber}" ` +
-      `inkscape:groupmode="layer" inkscape:label="${label}" data-color="${layer.color}">` +
+      `data-layer-index="${layerNumber}" ${editorLayerAttributes}` +
+      `data-color="${layer.color}">` +
       `<title>${label}</title>${path}</g>`;
   });
   const svg =

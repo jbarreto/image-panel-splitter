@@ -52,6 +52,7 @@ const curveSmoothing = document.getElementById('curveSmoothing');
 const curveSmoothingValue = document.getElementById('curveSmoothingValue');
 const previewButton = document.getElementById('previewButton');
 const downloadButton = document.getElementById('downloadButton');
+const downloadPdfButton = document.getElementById('downloadPdfButton');
 const status = document.getElementById('status');
 const placeholder = document.getElementById('placeholder');
 const previewImage = document.getElementById('previewImage');
@@ -119,15 +120,89 @@ function saveActiveVariation() {
   result.redoHistory = cloneHistoryStates(layerRedoHistory);
 }
 
-function downloadVariation(result) {
+function svgTextForDownload(svgText, forceCorelCompatibility = false) {
+  if (!forceCorelCompatibility && svgStructure.value !== 'corel') return svgText;
+  const documentNode = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return svgText;
+  const inheritedAttributes = [
+    'mask',
+    'clip-path',
+    'opacity',
+    'filter',
+    'fill',
+    'fill-opacity',
+    'fill-rule',
+    'stroke',
+    'stroke-width',
+    'stroke-opacity',
+    'stroke-linecap',
+    'stroke-linejoin',
+    'stroke-miterlimit'
+  ];
+  const groups = [...documentNode.querySelectorAll('g')]
+    .filter((group) => !group.closest('defs'))
+    .reverse();
+  for (const group of groups) {
+    const children = [...group.children].filter(
+      (child) => child.localName !== 'title'
+    );
+    for (const child of children) {
+      const groupTransform = group.getAttribute('transform');
+      const childTransform = child.getAttribute('transform');
+      if (groupTransform) {
+        child.setAttribute(
+          'transform',
+          childTransform ? `${groupTransform} ${childTransform}` : groupTransform
+        );
+      }
+      const groupStyle = group.getAttribute('style');
+      if (groupStyle) {
+        const childStyle = child.getAttribute('style');
+        child.setAttribute(
+          'style',
+          childStyle ? `${groupStyle};${childStyle}` : groupStyle
+        );
+      }
+      for (const attribute of inheritedAttributes) {
+        if (group.hasAttribute(attribute) && !child.hasAttribute(attribute)) {
+          child.setAttribute(attribute, group.getAttribute(attribute));
+        }
+      }
+      group.parentNode.insertBefore(child, group);
+    }
+    group.remove();
+  }
+  for (const element of documentNode.querySelectorAll('*')) {
+    element.removeAttributeNS(INKSCAPE_NAMESPACE, 'groupmode');
+    element.removeAttributeNS(INKSCAPE_NAMESPACE, 'label');
+    element.removeAttribute('inkscape:groupmode');
+    element.removeAttribute('inkscape:label');
+    element.removeAttribute('sodipodi:insensitive');
+    element.removeAttribute('data-layer-root');
+    element.removeAttribute('data-layer-index');
+    element.removeAttribute('data-name');
+    element.removeAttribute('data-color');
+  }
+  documentNode.documentElement.removeAttribute('xmlns:inkscape');
+  return `${new XMLSerializer().serializeToString(documentNode)}\n`;
+}
+
+function downloadSvgText(svgText, filename) {
   const url = URL.createObjectURL(
-    new Blob([result.svgText], { type: 'image/svg+xml' })
+    new Blob([svgTextForDownload(svgText)], { type: 'image/svg+xml' })
   );
   const link = document.createElement('a');
   link.href = url;
-  link.download = `original-vectorized-${result.count}-colors.svg`;
+  link.download = filename;
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function downloadVariation(result) {
+  downloadSvgText(
+    result.svgText,
+    `original-vectorized-${result.count}-colors.svg`
+  );
 }
 
 function referencedSvgIds(root) {
@@ -379,6 +454,7 @@ function activateVariation(count) {
   vectorPreview.hidden = false;
   vectorPlaceholder.hidden = true;
   downloadButton.disabled = false;
+  downloadPdfButton.disabled = false;
   renderVariationGallery();
   status.classList.remove('error');
   status.textContent = `${count}-color variation selected.`;
@@ -538,6 +614,7 @@ function cancelVectorization() {
   hideProcessing();
   previewButton.disabled = false;
   downloadButton.disabled = true;
+  downloadPdfButton.disabled = true;
   status.classList.remove('error');
   status.textContent = 'Vectorization canceled.';
   return true;
@@ -566,7 +643,7 @@ function restoreSettings() {
     if (!settings) return;
     if (Number(settings.targetHeightMm) > 0) targetHeight.value = String(settings.targetHeightMm);
     if (['monochrome', 'multicolor'].includes(settings.mode)) vectorMode.value = settings.mode;
-    if (['groups', 'flat'].includes(settings.svgStructure)) {
+    if (['groups', 'corel', 'flat'].includes(settings.svgStructure)) {
       svgStructure.value = settings.svgStructure;
     }
     if (Number(settings.threshold) >= 1 && Number(settings.threshold) <= 254) {
@@ -645,6 +722,7 @@ function clearVectorResult() {
   palettePanel.hidden = true;
   previewButton.disabled = !file;
   downloadButton.disabled = true;
+  downloadPdfButton.disabled = true;
   clearLayerHistory();
 }
 
@@ -2562,6 +2640,7 @@ async function generatePreview() {
   previewController = new AbortController();
   previewButton.disabled = true;
   downloadButton.disabled = true;
+  downloadPdfButton.disabled = true;
   status.classList.remove('error');
   const counts = batchMode ? paletteVariationCounts : [Number(colorCount.value)];
   status.textContent = batchMode
@@ -2605,6 +2684,7 @@ async function generatePreview() {
         vectorPreview.hidden = false;
         vectorPlaceholder.hidden = true;
         downloadButton.disabled = false;
+        downloadPdfButton.disabled = false;
         status.textContent = restoredLayers.restored
           ? 'Vector preview ready. Layer settings preserved.'
           : 'Vector preview ready.';
@@ -2658,12 +2738,46 @@ downloadButton.addEventListener('click', () => {
     return;
   }
   if (!vectorDownloadUrl) return;
-  const link = document.createElement('a');
-  link.href = vectorDownloadUrl;
-  link.download = 'original-vectorized.svg';
-  link.click();
+  downloadSvgText(vectorSvgText, 'original-vectorized.svg');
   status.classList.remove('error');
   status.textContent = 'Vector SVG downloaded.';
+});
+
+downloadPdfButton.addEventListener('click', async () => {
+  if (!vectorSvgText) return;
+  if (activeVariationCount !== undefined) saveActiveVariation();
+  downloadPdfButton.disabled = true;
+  status.classList.remove('error');
+  status.textContent = 'Creating CorelDRAW vector PDF…';
+  showProcessing(25, 'Converting SVG paths to vector PDF…');
+  try {
+    const response = await fetch('/api/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'image/svg+xml' },
+      body: svgTextForDownload(vectorSvgText, true)
+    });
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({}));
+      throw new Error(payload.error || 'PDF export failed.');
+    }
+    showProcessing(85, 'Preparing PDF download…');
+    const url = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = activeVariationCount === undefined
+      ? 'original-vectorized-coreldraw.pdf'
+      : `original-vectorized-${activeVariationCount}-colors-coreldraw.pdf`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+    status.textContent = 'CorelDRAW vector PDF downloaded.';
+    finishProcessing(true);
+  } catch (error) {
+    status.classList.add('error');
+    status.textContent = error.message;
+    finishProcessing(false);
+  } finally {
+    downloadPdfButton.disabled = !vectorSvgText;
+  }
 });
 
 restoreSettings();

@@ -1,5 +1,21 @@
 # Ronyka Vectorizer Changes
 
+## v1.8.0 — CorelDRAW exports and Windows launcher
+
+- Added `scripts/windows/ronyka-vectorizer-launcher.bat`, a dedicated Windows
+  launcher that checks the published vectorizer version, updates only when
+  newer, installs the vectorizer's locked dependencies, reuses a running
+  server, and opens the GUI on port 4174.
+- Added an **Ungrouped paths (CorelDRAW)** SVG structure. Downloads flatten
+  artwork groups into top-level editable paths, inherit group transforms and
+  visual attributes, and remove Inkscape layer metadata plus vectorizer-only
+  attributes. CorelDRAW may still apply its own locked import container, which
+  must be unlocked inside CorelDRAW.
+- Added **CorelDRAW PDF** download using PDFKit and SVG-to-PDFKit. It converts
+  the current edited result or active palette variation into a genuine vector
+  PDF at the artwork's physical dimensions using flattened Corel-compatible
+  SVG paths.
+
 ## v1.7.0 — Palette variations
 
 - Added optional multiple palette variations for Multicolor mode. Users can

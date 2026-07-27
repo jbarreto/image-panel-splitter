@@ -2,6 +2,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import multer from 'multer';
+import PDFDocument from 'pdfkit';
+import SVGtoPDF from 'svg-to-pdfkit';
 import { vectorizeMonochrome } from './tracer.js';
 
 const app = express();
@@ -65,6 +67,61 @@ app.post('/api/vectorize', upload.single('image'), async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 });
+
+app.post(
+  '/api/export-pdf',
+  express.text({ type: ['image/svg+xml', 'text/plain'], limit: '100mb' }),
+  async (req, res) => {
+    try {
+      const svg = req.body;
+      if (typeof svg !== 'string' || !svg.includes('<svg')) {
+        throw new Error('A valid SVG is required for PDF export.');
+      }
+      const widthMm = Number(svg.match(/\bwidth="([\d.]+)mm"/)?.[1]);
+      const heightMm = Number(svg.match(/\bheight="([\d.]+)mm"/)?.[1]);
+      if (
+        !Number.isFinite(widthMm) ||
+        !Number.isFinite(heightMm) ||
+        widthMm <= 0 ||
+        heightMm <= 0
+      ) {
+        throw new Error('The SVG must include physical width and height in millimeters.');
+      }
+      const widthPoints = widthMm * 72 / 25.4;
+      const heightPoints = heightMm * 72 / 25.4;
+      const document = new PDFDocument({
+        autoFirstPage: false,
+        compress: true,
+        margin: 0
+      });
+      const chunks = [];
+      document.on('data', (chunk) => chunks.push(chunk));
+      const complete = new Promise((resolve, reject) => {
+        document.once('end', resolve);
+        document.once('error', reject);
+      });
+      document.addPage({ size: [widthPoints, heightPoints], margin: 0 });
+      SVGtoPDF(document, svg, 0, 0, {
+        width: widthPoints,
+        height: heightPoints,
+        preserveAspectRatio: 'xMidYMid meet',
+        assumePt: true
+      });
+      document.end();
+      await complete;
+      const pdf = Buffer.concat(chunks);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        'attachment; filename="original-vectorized-coreldraw.pdf"'
+      );
+      res.send(pdf);
+    } catch (error) {
+      console.error('Vector PDF export failed.', { error: error.message });
+      res.status(400).json({ error: error.message });
+    }
+  }
+);
 
 app.use((error, req, res, next) => {
   if (!error) return next();

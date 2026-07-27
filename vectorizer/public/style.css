@@ -87,6 +87,7 @@ button { width: 100%; padding: 13px; border: 0; border-radius: 999px; background
 button:hover:not(:disabled) { background: var(--green-dark); }
 button:disabled { opacity: .45; cursor: default; }
 .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.action-row > :first-child { grid-column: 1 / -1; }
 .secondary-button { border: 1px solid var(--green); background: white; color: var(--green-dark); box-shadow: none; }
 .secondary-button:hover:not(:disabled) { background: var(--mint); }
 .status { min-height: 20px; margin-top: 10px; color: var(--green-dark); font-size: 12px; text-align: center; }

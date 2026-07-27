@@ -24,6 +24,14 @@ npm start
 
 Open `http://localhost:4174`. Set `PORT` to use another port.
 
+### Windows launcher
+
+Run `scripts\windows\ronyka-vectorizer-launcher.bat` from the installed project.
+It compares the local `vectorizer/package.json` version with the version
+published on GitHub, updates the project only when a newer vectorizer version
+exists, installs the vectorizer's locked dependencies when required, starts
+the server in a separate terminal, and opens `http://localhost:4174/`.
+
 The GUI accepts any Sharp-supported image, lets you set the physical artwork
 height, black threshold, and trace resolution, shows source and generated
 vector previews side by side, and downloads `original-vectorized.svg`. Use
@@ -93,7 +101,23 @@ the target variation.
 
 Use **Layer groups (Inkscape)** to export native Inkscape layer groups, or
 **Flat paths** to export each color as one top-level path without a
-parent group. Layer naming and preview visibility work with either structure.
+parent group. Choose **Ungrouped paths (CorelDRAW)** to flatten generated and
+edited artwork groups into top-level SVG paths. Group transforms and visual
+attributes are inherited by their child artwork, and vectorizer-only layer
+attributes are removed while preserving IDs, paths, masks, clips, colors, and
+positions. CorelDRAW can still place imported SVG artwork into an
+application-created locked container even when the SVG contains no lock or
+group metadata. That container must be unlocked in CorelDRAW; it cannot be
+disabled by an SVG attribute.
+Layer naming and preview visibility work with every structure.
+
+Use **CorelDRAW PDF** to download the current edited result as a genuine vector
+PDF. The export uses the same flattened Corel-compatible paths regardless of
+the selected SVG structure and retains the artwork's millimeter dimensions,
+colors, curves, masks, clips, transforms, and stacking order. When palette
+variations are active, the PDF action exports the currently selected
+variation. The PDF contains vector drawing operators rather than a rasterized
+copy of the source.
 The generated palette appears in the GUI with a swatch, layer number, and hex
 value. The SVG stores every color in a named Inkscape-compatible layer group,
 or as a named top-level path when flat structure is selected. The GUI
