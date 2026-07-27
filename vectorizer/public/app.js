@@ -1420,14 +1420,20 @@ function updateEraserCursor(event = lastEraserPointer) {
     Math.hypot(matrix.a, matrix.b) +
     Math.hypot(matrix.c, matrix.d)
   ) / 2;
-  const diameter = Math.max(4, Math.min(500, Number(eraserSize.value) * scale));
+  const diameter = Math.max(4, Number(eraserSize.value) * scale);
   const stageBounds = eraserCursor.parentElement.getBoundingClientRect();
   eraserCursor.style.width = `${diameter}px`;
   eraserCursor.style.height = `${diameter}px`;
-  eraserCursor.style.left = `${event.clientX - stageBounds.left}px`;
-  eraserCursor.style.top = `${event.clientY - stageBounds.top}px`;
+  eraserCursor.style.left =
+    `${event.clientX - stageBounds.left + vectorStage.scrollLeft}px`;
+  eraserCursor.style.top =
+    `${event.clientY - stageBounds.top + vectorStage.scrollTop}px`;
   eraserCursor.hidden = false;
 }
+
+vectorStage.addEventListener('scroll', () => {
+  if (eraserToolActive && lastEraserPointer) updateEraserCursor();
+});
 
 function commitEraserStroke() {
   if (!activeEraserStroke || !vectorSvgText) return;
@@ -2230,6 +2236,7 @@ function setVectorPreviewZoom(nextZoom, focalEvent) {
   vectorZoomValue.textContent = `${Math.round(vectorPreviewZoom * 100)}%`;
   vectorZoomOut.disabled = vectorPreviewZoom <= 0.5;
   vectorZoomIn.disabled = vectorPreviewZoom >= 4;
+  if (eraserToolActive && lastEraserPointer) updateEraserCursor();
 }
 
 vectorCursorTool.addEventListener('click', () => {

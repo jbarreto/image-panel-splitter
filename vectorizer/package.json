@@ -1,6 +1,6 @@
 {
   "name": "ronyka-vectorizer",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "private": true,
   "description": "Standalone monochrome line-art vectorizer for Ronyka Piñatas.",
   "type": "module",

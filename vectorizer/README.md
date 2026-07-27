@@ -157,6 +157,8 @@ Select one or more layers, choose **Eraser** in the vector toolbar, adjust its
 brush size, and drag over the preview to remove content only from those
 selected layers. A circular cursor follows the pointer and scales with the
 brush setting, SVG display scale, and preview zoom to show the affected area.
+The cursor remains aligned with the actual erased region while the zoomed
+preview is scrolled horizontally or vertically.
 Erasures are stored as SVG masks, remain editable through Undo/Redo, and are
 included in the downloaded SVG. Choose **Cursor** or press `Esc` to leave
 eraser mode.

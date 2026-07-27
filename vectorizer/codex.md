@@ -89,7 +89,9 @@ Behavior:
   but assign independent layer numbers, names, IDs, and cloned mask definitions.
   A duplicate must never share a mutable eraser mask with its source.
 - Eraser mode has an adjustable brush, live mask preview, and a circular cursor
-  scaled for brush size, SVG display scale, and zoom.
+  scaled for brush size, SVG display scale, and zoom. Position the absolute
+  cursor with the vector stage's horizontal and vertical scroll offsets, keep
+  it synchronized on scroll, and do not cap it below the actual erase diameter.
 - Keep up to 40 layer-edit undo states. Support Undo/Redo buttons,
   Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, and Ctrl+Y. Clear history for a new vector
   result.

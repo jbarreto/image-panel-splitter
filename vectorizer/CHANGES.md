@@ -1,5 +1,12 @@
 # Ronyka Vectorizer Changes
 
+## v1.8.1 — Zoomed eraser alignment
+
+- Fixed the eraser target jumping away from the pointer after zooming or
+  scrolling. Its absolute canvas position now includes both scroll axes, stays
+  synchronized while the preview scrolls, and no longer caps the displayed
+  circle below the actual high-zoom erase diameter.
+
 ## v1.8.0 — CorelDRAW exports and Windows launcher
 
 - Added `scripts/windows/ronyka-vectorizer-launcher.bat`, a dedicated Windows
