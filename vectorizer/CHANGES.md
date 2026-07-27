@@ -1,5 +1,26 @@
 # Ronyka Vectorizer Changes
 
+## v1.4.0 — Layer workflow and high-resolution tracing
+
+- Added direct preview selection: click artwork to select its layer,
+  Shift+click to toggle layers in a multi-selection, and press `Delete` to
+  remove selected layers with Undo/Redo support.
+- Dragging any selected artwork now moves the complete multi-selection in one
+  history operation while retaining each layer's relative position.
+- Keep inline translation metadata synchronized during dragging so subsequent
+  drags continue from the moved position instead of snapping to the original.
+- Accept both browser `Delete` and macOS-style `Backspace` key events for
+  deleting selected layers outside editable fields.
+- Clone referenced eraser masks into independent SVG definitions when
+  duplicating layers so erasing a copy never changes its source.
+- Increased layer-edit Undo/Redo history from 10 to 40 states.
+- Moved the source picture-in-picture and its minimized restore tab below the
+  vector toolbar by default so neither obscures tool controls.
+- Increased the maximum trace resolution from 6,000 to 20,000 pixels, with
+  documentation warning about high memory and processing costs.
+- Added a session-only **Allow trace upscaling** option, disabled by default
+  and intentionally excluded from browser local storage.
+
 ## v1.3.0 — Palette refinement and vector editing tools
 
 - Increased the Multicolor palette limit from 16 to 33 colors.
@@ -31,7 +52,7 @@
   preprocessing above 50%.
 - Preserved compatible layer configuration and grouped/merged structure across
   setting-driven retracing when the generated base layer count is unchanged.
-- Added a ten-step Undo/Redo history with `Ctrl/Cmd+Z`,
+- Added a 40-step Undo/Redo history with `Ctrl/Cmd+Z`,
   `Ctrl/Cmd+Shift+Z`, and `Ctrl+Y`.
 - Added a draggable and resizable source picture-in-picture, minimize/restore
   tab, split comparison view, and a region-focused 50%–400% vector zoom

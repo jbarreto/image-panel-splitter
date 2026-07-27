@@ -47,6 +47,14 @@ increases progressively above `50%`, producing cleaner contours instead of
 only simplifying already-jagged paths. The preview is retraced after pointer
 or keyboard release.
 
+**Trace resolution** supports a longest side from 500 to 20,000 pixels.
+Resolutions near the upper limit can require several gigabytes of memory,
+especially with large Multicolor palettes, and may take substantially longer
+to process. Increase it only when the exported paths require that detail.
+**Allow trace upscaling** optionally enlarges smaller source images to that
+resolution. It defaults off, is intentionally not saved in browser settings,
+and should generally be limited to modest enlargement of small clean artwork.
+
 Choose **Multicolor** to quantize the source into 2–33 palette colors and
 trace each color as a separate filled path layer. Background-color removal is
 enabled by default, while **Keep white as a layer** detects white from the
@@ -80,8 +88,14 @@ second time restores the exact visibility state from before Solo was enabled;
 switching between Solo layers keeps that original snapshot.
 Hovering a color region in the inline SVG preview highlights its corresponding
 Layers-panel row. Dragging that region moves the complete layer and writes its
-translation into the downloaded SVG. **Reset positions** removes all manual
-layer translations. The source is a small picture-in-picture card over the
+translation into the downloaded SVG. When the dragged layer belongs to a
+multi-selection, every selected layer moves together while retaining its
+relative offset. Clicking artwork selects its layer;
+Shift+click toggles additional layers for multi-selection. Press `Delete`
+(`Backspace` on keyboards where the Delete key reports that value) to remove
+every selected layer, including its unused eraser mask, with Undo/Redo support.
+**Reset positions** removes all manual layer translations. The source
+is a small picture-in-picture card over the
 vector workspace by default, leaving most space for the result. Drag its
 caption to reposition it, use its lower-right handle to resize it, or hide it
 with its minimize control. A compact **Source** edge tab restores a hidden preview.
@@ -99,7 +113,7 @@ Erasures are stored as SVG masks, remain editable through Undo/Redo, and are
 included in the downloaded SVG. Choose **Cursor** or press `Esc` to leave
 eraser mode.
 
-Layer edits retain up to ten undo steps. Use the **Undo** and **Redo** buttons,
+Layer edits retain up to 40 undo steps. Use the **Undo** and **Redo** buttons,
 `Ctrl/Cmd+Z` to undo, and `Ctrl/Cmd+Shift+Z` or `Ctrl+Y` to redo. History
 includes layer names, visibility, positions, grouping, color merging, strokes,
 and erasing. Generating a different vector result starts a new
@@ -115,7 +129,8 @@ them into one SVG layer. The merged group retains every child path's fill and
 manual translation, so merging does not flatten the colors into one fill.
 Choose **Duplicate selected** to clone one or more selected layers directly
 after their sources while retaining paths, colors, strokes, and transforms.
-Copies receive independent layer numbers, names, and SVG IDs.
+Copies receive independent layer numbers, names, SVG IDs, and eraser masks;
+later erasing a copy cannot modify its source layer.
 To merge colors, drag a source layer's color swatch onto a solid-color target
 swatch. Every source path adopts the target fill (and matching fill stroke),
 then moves into the target layer; the source layer is removed.

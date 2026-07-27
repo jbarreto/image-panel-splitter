@@ -58,9 +58,9 @@ function validateOptions({
   if (
     !Number.isInteger(maximumTraceSide) ||
     maximumTraceSide < 500 ||
-    maximumTraceSide > 6000
+    maximumTraceSide > 20000
   ) {
-    throw new Error('Trace resolution must be between 500 and 6000 pixels.');
+    throw new Error('Trace resolution must be between 500 and 20000 pixels.');
   }
   if (
     !Number.isInteger(curveSmoothing) ||
@@ -453,6 +453,7 @@ export async function vectorizeMonochrome(
     targetHeightMm = 1000,
     threshold = 200,
     maximumTraceSide = 3000,
+    allowTraceUpscaling = false,
     curveSmoothing = 50,
     mode = 'monochrome',
     svgStructure = 'groups',
@@ -486,7 +487,7 @@ export async function vectorizeMonochrome(
       width: maximumTraceSide,
       height: maximumTraceSide,
       fit: 'inside',
-      withoutEnlargement: true
+      withoutEnlargement: !allowTraceUpscaling
     });
   if (mode === 'monochrome') {
     tracePipeline = tracePipeline.flatten({ background: 'white' }).grayscale().threshold(threshold);

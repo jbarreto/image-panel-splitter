@@ -13,7 +13,7 @@
         <span class="brand-mark" aria-hidden="true">R</span>
         <div>
           <h1>Vectorizer</h1>
-          <span class="version">v1.3.0</span>
+          <span class="version">v1.4.0</span>
         </div>
       </header>
       <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
@@ -73,7 +73,11 @@
         </div>
         <label class="field">
           <span>Trace resolution <output id="resolutionValue">3000 px</output></span>
-          <input id="maximumTraceSide" type="range" min="500" max="6000" step="100" value="3000" />
+          <input id="maximumTraceSide" type="range" min="500" max="20000" step="100" value="3000" />
+        </label>
+        <label class="check-field">
+          <input id="allowTraceUpscaling" type="checkbox" />
+          <span>Allow trace upscaling</span>
         </label>
         <label class="field">
           <span>Curve smoothing <output id="curveSmoothingValue">50%</output></span>

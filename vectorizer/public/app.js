@@ -39,6 +39,7 @@ const vectorZoomOut = document.getElementById('vectorZoomOut');
 const vectorZoomIn = document.getElementById('vectorZoomIn');
 const vectorZoomValue = document.getElementById('vectorZoomValue');
 const maximumTraceSide = document.getElementById('maximumTraceSide');
+const allowTraceUpscaling = document.getElementById('allowTraceUpscaling');
 const resolutionValue = document.getElementById('resolutionValue');
 const curveSmoothing = document.getElementById('curveSmoothing');
 const curveSmoothingValue = document.getElementById('curveSmoothingValue');
@@ -56,6 +57,7 @@ const processingPercent = document.getElementById('processingPercent');
 const processingProgress = document.getElementById('processingProgress');
 const SETTINGS_KEY = 'ronyka-vectorizer.settings.v1';
 const INKSCAPE_NAMESPACE = 'http://www.inkscape.org/namespaces/inkscape';
+const LAYER_HISTORY_LIMIT = 40;
 let file;
 let previewUrl;
 let vectorDownloadUrl;
@@ -109,7 +111,7 @@ function pushLayerHistory() {
   const state = layerHistoryState();
   if (!state) return;
   layerUndoHistory.push(state);
-  if (layerUndoHistory.length > 10) layerUndoHistory.shift();
+  if (layerUndoHistory.length > LAYER_HISTORY_LIMIT) layerUndoHistory.shift();
   layerRedoHistory = [];
   updateLayerHistoryControls();
 }
@@ -135,7 +137,7 @@ function undoLayerChange() {
   const current = layerHistoryState();
   if (current) {
     layerRedoHistory.push(current);
-    if (layerRedoHistory.length > 10) layerRedoHistory.shift();
+    if (layerRedoHistory.length > LAYER_HISTORY_LIMIT) layerRedoHistory.shift();
   }
   restoreLayerHistoryState(layerUndoHistory.pop());
   status.classList.remove('error');
@@ -147,7 +149,7 @@ function redoLayerChange() {
   const current = layerHistoryState();
   if (current) {
     layerUndoHistory.push(current);
-    if (layerUndoHistory.length > 10) layerUndoHistory.shift();
+    if (layerUndoHistory.length > LAYER_HISTORY_LIMIT) layerUndoHistory.shift();
   }
   restoreLayerHistoryState(layerRedoHistory.pop());
   status.classList.remove('error');
@@ -206,7 +208,7 @@ function restoreSettings() {
     if (Number(settings.threshold) >= 1 && Number(settings.threshold) <= 254) {
       threshold.value = String(settings.threshold);
     }
-    if (Number(settings.maximumTraceSide) >= 500 && Number(settings.maximumTraceSide) <= 6000) {
+    if (Number(settings.maximumTraceSide) >= 500 && Number(settings.maximumTraceSide) <= 20000) {
       maximumTraceSide.value = String(settings.maximumTraceSide);
     }
     if (Number(settings.curveSmoothing) >= 0 && Number(settings.curveSmoothing) <= 100) {
@@ -464,15 +466,17 @@ function previewPoint(svg, event) {
   return new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
 }
 
-function saveLayerPosition(layerNumber, translateX, translateY) {
+function saveLayerPositions(positions) {
   if (!vectorSvgText) return;
   const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
   if (documentNode.querySelector('parsererror')) return;
-  const layer = documentNode.querySelector(`[data-layer-root="${layerNumber}"]`);
-  if (!layer) return;
-  layer.dataset.translateX = String(translateX);
-  layer.dataset.translateY = String(translateY);
-  layer.setAttribute('transform', `translate(${translateX} ${translateY})`);
+  for (const { layerNumber, translateX, translateY } of positions) {
+    const layer = documentNode.querySelector(`[data-layer-root="${layerNumber}"]`);
+    if (!layer) continue;
+    layer.dataset.translateX = String(translateX);
+    layer.dataset.translateY = String(translateY);
+    layer.setAttribute('transform', `translate(${translateX} ${translateY})`);
+  }
   vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
   refreshDownloadUrl();
 }
@@ -499,6 +503,74 @@ function resetAllLayerPositions() {
 function selectedLayerNumbers() {
   return [...paletteSwatches.querySelectorAll('.layer-selection:checked')]
     .map((checkbox) => Number(checkbox.dataset.layer));
+}
+
+function selectLayerFromPreview(layerNumber, additive) {
+  const target = paletteSwatches.querySelector(
+    `.layer-selection[data-layer="${layerNumber}"]`
+  );
+  if (!target) return;
+  if (!additive) {
+    for (const selection of paletteSwatches.querySelectorAll('.layer-selection')) {
+      selection.checked = false;
+      selection.closest('.palette-swatch')?.classList.remove('merge-selected');
+    }
+    target.checked = true;
+  } else {
+    target.checked = !target.checked;
+  }
+  target.closest('.palette-swatch')?.classList.toggle(
+    'merge-selected',
+    target.checked
+  );
+  updateLayerSelectionControls();
+  status.classList.remove('error');
+  status.textContent = target.checked
+    ? `Selected layer ${layerNumber}.`
+    : `Deselected layer ${layerNumber}.`;
+}
+
+function deleteSelectedLayerEntries() {
+  const selectedLayers = selectedLayerNumbers();
+  if (selectedLayers.length === 0 || !vectorSvgText) return;
+  const selectedSet = new Set(selectedLayers);
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  if (documentNode.querySelector('parsererror')) return;
+  const roots = [...documentNode.querySelectorAll('[data-layer-root]')]
+    .filter((root) => selectedSet.has(Number(root.dataset.layerRoot)));
+  if (roots.length === 0) return;
+  const visibilityByLayer = new Map(
+    [...paletteSwatches.querySelectorAll('.palette-swatch')].map((row) => [
+      Number(row.dataset.layer),
+      row.querySelector('.layer-visibility')?.getAttribute('aria-pressed') !== 'false'
+    ])
+  );
+  pushLayerHistory();
+  const possibleMaskIds = [];
+  for (const root of roots) {
+    const maskId = root.getAttribute('mask')?.match(/^url\(#(.+)\)$/)?.[1];
+    if (maskId) possibleMaskIds.push(maskId);
+    root.remove();
+  }
+  for (const maskId of possibleMaskIds) {
+    if (!documentNode.querySelector(`[mask="url(#${CSS.escape(maskId)})"]`)) {
+      documentNode.getElementById(maskId)?.remove();
+    }
+  }
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+  const remainingPalette = currentPalette.filter(
+    (entry) => !selectedSet.has(Number(entry.layer))
+  );
+  showPalette(remainingPalette);
+  restoreLayerPanelState(remainingPalette.map((entry) => ({
+    visible: visibilityByLayer.get(Number(entry.layer)) !== false,
+    selected: false
+  })));
+  renderLayerPreview();
+  status.classList.remove('error');
+  status.textContent =
+    `Deleted ${selectedLayers.length} layer${selectedLayers.length === 1 ? '' : 's'}.`;
 }
 
 function updateLayerSelectionControls() {
@@ -557,6 +629,22 @@ function duplicateSelectedLayerEntries() {
     const idSuffix = `-copy-${duplicateLayerNumber}`;
     for (const element of [clone, ...clone.querySelectorAll('[id]')]) {
       if (element.id) element.id = `${element.id}${idSuffix}`;
+    }
+    const sourceMaskId = sourceRoot.getAttribute('mask')?.match(/^url\(#(.+)\)$/)?.[1];
+    const sourceMask = sourceMaskId
+      ? documentNode.getElementById(sourceMaskId)
+      : undefined;
+    if (sourceMask) {
+      const duplicateMaskId = `eraser-mask-layer-${duplicateLayerNumber}`;
+      const duplicateMask = sourceMask.cloneNode(true);
+      duplicateMask.id = duplicateMaskId;
+      let defs = documentNode.documentElement.querySelector(':scope > defs');
+      if (!defs) {
+        defs = documentNode.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        documentNode.documentElement.prepend(defs);
+      }
+      defs.append(duplicateMask);
+      clone.setAttribute('mask', `url(#${duplicateMaskId})`);
     }
     sourceRoot.parentNode.insertBefore(clone, sourceRoot.nextSibling);
     renameLayerInDocument(documentNode, duplicateLayerNumber, duplicateName);
@@ -924,14 +1012,23 @@ vectorPreview.addEventListener('pointermove', (event) => {
   if (draggedPreviewLayer) {
     const point = previewPoint(draggedPreviewLayer.svg, event);
     if (!point) return;
-    draggedPreviewLayer.translateX =
-      draggedPreviewLayer.originalX + point.x - draggedPreviewLayer.startX;
-    draggedPreviewLayer.translateY =
-      draggedPreviewLayer.originalY + point.y - draggedPreviewLayer.startY;
-    draggedPreviewLayer.element.setAttribute(
-      'transform',
-      `translate(${draggedPreviewLayer.translateX} ${draggedPreviewLayer.translateY})`
-    );
+    const deltaX = point.x - draggedPreviewLayer.startX;
+    const deltaY = point.y - draggedPreviewLayer.startY;
+    draggedPreviewLayer.moved =
+      Math.hypot(
+        event.clientX - draggedPreviewLayer.startClientX,
+        event.clientY - draggedPreviewLayer.startClientY
+      ) >= 4;
+    for (const layer of draggedPreviewLayer.layers) {
+      layer.translateX = layer.originalX + deltaX;
+      layer.translateY = layer.originalY + deltaY;
+      layer.element.setAttribute(
+        'transform',
+        `translate(${layer.translateX} ${layer.translateY})`
+      );
+      layer.element.dataset.translateX = String(layer.translateX);
+      layer.element.dataset.translateY = String(layer.translateY);
+    }
     return;
   }
   const layer = event.target.closest?.('[data-layer-root]');
@@ -982,16 +1079,36 @@ vectorPreview.addEventListener('pointerdown', (event) => {
   if (!point) return;
   event.preventDefault();
   const layerNumber = layer.dataset.layerRoot;
+  const selectedLayers = selectedLayerNumbers();
+  const dragLayerNumbers = selectedLayers.includes(Number(layerNumber))
+    ? selectedLayers
+    : [Number(layerNumber)];
+  const dragLayers = dragLayerNumbers
+    .map((selectedLayerNumber) => {
+      const element = vectorPreview.querySelector(
+        `[data-layer-root="${selectedLayerNumber}"]`
+      );
+      if (!element) return;
+      return {
+        element,
+        layerNumber: selectedLayerNumber,
+        originalX: Number(element.dataset.translateX || 0),
+        originalY: Number(element.dataset.translateY || 0),
+        translateX: Number(element.dataset.translateX || 0),
+        translateY: Number(element.dataset.translateY || 0)
+      };
+    })
+    .filter(Boolean);
   draggedPreviewLayer = {
-    element: layer,
     svg,
     layerNumber,
+    layers: dragLayers,
     startX: point.x,
     startY: point.y,
-    originalX: Number(layer.dataset.translateX || 0),
-    originalY: Number(layer.dataset.translateY || 0),
-    translateX: Number(layer.dataset.translateX || 0),
-    translateY: Number(layer.dataset.translateY || 0)
+    startClientX: event.clientX,
+    startClientY: event.clientY,
+    additiveSelection: event.shiftKey,
+    moved: false
   };
   vectorPreview.setPointerCapture(event.pointerId);
   vectorPreview.classList.add('dragging-layer');
@@ -1014,19 +1131,20 @@ vectorPreview.addEventListener('pointerup', (event) => {
     vectorPreview.releasePointerCapture(event.pointerId);
   }
   vectorPreview.classList.remove('dragging-layer');
-  if (
-    movedLayer.translateX !== movedLayer.originalX
-    || movedLayer.translateY !== movedLayer.originalY
-  ) {
+  if (movedLayer.moved) {
     pushLayerHistory();
+    saveLayerPositions(movedLayer.layers);
+    status.classList.remove('error');
+    status.textContent = movedLayer.layers.length === 1
+      ? `Moved layer ${movedLayer.layerNumber}.`
+      : `Moved ${movedLayer.layers.length} selected layers.`;
+  } else {
+    renderLayerPreview();
+    selectLayerFromPreview(
+      movedLayer.layerNumber,
+      movedLayer.additiveSelection
+    );
   }
-  saveLayerPosition(
-    movedLayer.layerNumber,
-    movedLayer.translateX,
-    movedLayer.translateY
-  );
-  status.classList.remove('error');
-  status.textContent = `Moved layer ${movedLayer.layerNumber}.`;
 });
 
 vectorPreview.addEventListener('pointercancel', () => {
@@ -1268,6 +1386,18 @@ mergeSelectedLayers.addEventListener('click', mergeSelectedLayerEntries);
 resetLayerPositions.addEventListener('click', resetAllLayerPositions);
 
 document.addEventListener('keydown', (event) => {
+  const editingText = event.target.matches?.(
+    'input[type="text"], input[type="number"], textarea, [contenteditable="true"]'
+  );
+  if (
+    (event.key === 'Delete' || event.key === 'Backspace') &&
+    !editingText &&
+    selectedLayerNumbers().length > 0
+  ) {
+    event.preventDefault();
+    deleteSelectedLayerEntries();
+    return;
+  }
   if (event.key === 'Escape' && (vectorZoomTool || eraserToolActive)) {
     vectorZoomTool = undefined;
     eraserToolActive = false;
@@ -1275,9 +1405,6 @@ document.addEventListener('keydown', (event) => {
     status.textContent = '';
     return;
   }
-  const editingText = event.target.matches?.(
-    'input[type="text"], input[type="number"], textarea, [contenteditable="true"]'
-  );
   if (editingText || !(event.ctrlKey || event.metaKey) || event.altKey) return;
   const key = event.key.toLowerCase();
   if (key === 'z') {
@@ -1641,7 +1768,8 @@ for (const input of [
   svgStructure,
   removeBackground,
   keepWhiteLayer,
-  fillColorGaps
+  fillColorGaps,
+  allowTraceUpscaling
 ]) {
   input.addEventListener('change', () => {
     updateOutputs();
@@ -1678,6 +1806,7 @@ async function generatePreview() {
     form.append('keepWhiteLayer', String(keepWhiteLayer.checked));
     form.append('fillColorGaps', String(fillColorGaps.checked));
     form.append('maximumTraceSide', maximumTraceSide.value);
+    form.append('allowTraceUpscaling', String(allowTraceUpscaling.checked));
     form.append('curveSmoothing', curveSmoothing.value);
     vectorizingStatusTimer = setTimeout(() => {
       if (requestRevision === resultRevision) {
