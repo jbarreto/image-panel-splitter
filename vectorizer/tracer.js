@@ -115,6 +115,13 @@ async function traceMask(mask, width, height, curveSmoothing) {
   return svg.match(/<path\b[^>]*\bd="([^"]*)"/i)?.[1] || '';
 }
 
+export async function traceBinaryMask(mask, width, height, curveSmoothing = 50) {
+  if (!(mask instanceof Int8Array) || mask.length !== width * height) {
+    throw new Error('Fill mask dimensions are invalid.');
+  }
+  return traceMask(mask, width, height, curveSmoothing);
+}
+
 function colorDistance(first, second) {
   return (
     (first.r - second.r) ** 2 +

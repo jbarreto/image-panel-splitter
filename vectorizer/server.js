@@ -4,7 +4,8 @@ import express from 'express';
 import multer from 'multer';
 import PDFDocument from 'pdfkit';
 import SVGtoPDF from 'svg-to-pdfkit';
-import { vectorizeMonochrome } from './tracer.js';
+import sharp from 'sharp';
+import { traceBinaryMask, vectorizeMonochrome } from './tracer.js';
 
 const app = express();
 const rootDir = path.dirname(fileURLToPath(import.meta.url));
@@ -15,6 +16,99 @@ const upload = multer({
 });
 
 app.use(express.static(path.join(rootDir, 'public')));
+app.use(express.json({ limit: '25mb' }));
+
+app.post('/api/flood-fill', async (req, res) => {
+  try {
+    const svg = String(req.body.svg || '');
+    const viewWidth = Number(req.body.viewWidth);
+    const viewHeight = Number(req.body.viewHeight);
+    const sourceX = Number(req.body.x);
+    const sourceY = Number(req.body.y);
+    const curveSmoothing = Number(req.body.curveSmoothing ?? 50);
+    if (!svg.includes('<svg') || !viewWidth || !viewHeight) {
+      throw new Error('The vector preview is not available for region filling.');
+    }
+    const scale = Math.min(1, 4000 / Math.max(viewWidth, viewHeight));
+    const width = Math.max(1, Math.round(viewWidth * scale));
+    const height = Math.max(1, Math.round(viewHeight * scale));
+    const rasterSvg = svg.replace(/<svg\b([^>]*)>/i, (_match, attributes) => {
+      const sizedAttributes = attributes
+        .replace(/\swidth=(?:"[^"]*"|'[^']*')/gi, '')
+        .replace(/\sheight=(?:"[^"]*"|'[^']*')/gi, '');
+      return `<svg${sizedAttributes} width="${width}" height="${height}">`;
+    });
+    const { data } = await sharp(Buffer.from(rasterSvg), { limitInputPixels: false })
+      .resize(width, height, { fit: 'fill' })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const startX = Math.max(0, Math.min(width - 1, Math.floor(sourceX * scale)));
+    const startY = Math.max(0, Math.min(height - 1, Math.floor(sourceY * scale)));
+    const startOffset = (startY * width + startX) * 4;
+    const target = [
+      data[startOffset],
+      data[startOffset + 1],
+      data[startOffset + 2],
+      data[startOffset + 3]
+    ];
+    const toleranceSquared = 24 ** 2 * 3;
+    const visited = new Uint8Array(width * height);
+    const mask = new Int8Array(width * height);
+    const queue = new Int32Array(width * height);
+    let head = 0;
+    let tail = 0;
+    let touchesBorder = false;
+    queue[tail++] = startY * width + startX;
+    visited[queue[0]] = 1;
+    const matchesTarget = (pixel) => {
+      const offset = pixel * 4;
+      const alphaDifference = data[offset + 3] - target[3];
+      return (
+        (data[offset] - target[0]) ** 2 +
+        (data[offset + 1] - target[1]) ** 2 +
+        (data[offset + 2] - target[2]) ** 2 +
+        alphaDifference ** 2 <= toleranceSquared
+      );
+    };
+    while (head < tail) {
+      const pixel = queue[head++];
+      if (!matchesTarget(pixel)) continue;
+      mask[pixel] = 1;
+      const x = pixel % width;
+      const y = Math.floor(pixel / width);
+      if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+        touchesBorder = true;
+      }
+      for (const neighbor of [
+        x > 0 ? pixel - 1 : -1,
+        x + 1 < width ? pixel + 1 : -1,
+        y > 0 ? pixel - width : -1,
+        y + 1 < height ? pixel + width : -1
+      ]) {
+        if (neighbor < 0 || visited[neighbor]) continue;
+        visited[neighbor] = 1;
+        queue[tail++] = neighbor;
+      }
+    }
+    const area = mask.reduce((sum, value) => sum + value, 0);
+    if (area < 4) throw new Error('The selected enclosed region is too small to fill.');
+    if (touchesBorder) {
+      throw new Error('The selected area is open to the canvas edge and is not enclosed.');
+    }
+    const pathData = await traceBinaryMask(
+      mask,
+      width,
+      height,
+      Math.min(50, Math.max(0, curveSmoothing))
+    );
+    if (!pathData) throw new Error('Could not trace the selected enclosed region.');
+    res.json({ pathData, width, height, viewWidth, viewHeight, area });
+  } catch (error) {
+    console.error('Region fill failed.', { error: error.message });
+    res.status(400).json({ error: error.message });
+  }
+});
 
 app.post('/api/vectorize', upload.single('image'), async (req, res) => {
   const cancellation = new AbortController();

@@ -1501,6 +1501,100 @@ function applySelectedLayerFill(selectedLayers = selectedLayerNumbers()) {
     `Filled ${selectedLayers.length} selected layer${selectedLayers.length === 1 ? '' : 's'} with ${color}.`;
 }
 
+async function fillEnclosedRegion(event) {
+  const svg = vectorPreview.querySelector('svg');
+  const point = previewPoint(svg, event);
+  const viewBox = (svg?.getAttribute('viewBox') || '').split(/[\s,]+/).map(Number);
+  if (!svg || !point || !viewBox[2] || !viewBox[3]) return;
+  status.classList.remove('error');
+  status.textContent = 'Finding enclosed region…';
+  try {
+    const response = await fetch('/api/flood-fill', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        svg: new XMLSerializer().serializeToString(svg),
+        x: point.x,
+        y: point.y,
+        viewWidth: viewBox[2],
+        viewHeight: viewBox[3],
+        curveSmoothing: Number(curveSmoothing.value)
+      })
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Could not fill the selected region.');
+    const commands = parseEditablePath(result.pathData);
+    if (!commands) throw new Error('The filled region produced an unsupported path.');
+    const scaleX = result.viewWidth / result.width;
+    const scaleY = result.viewHeight / result.height;
+    for (const command of commands) {
+      if (command.type === 'C') {
+        for (let index = 0; index < 6; index += 2) {
+          command.values[index] *= scaleX;
+          command.values[index + 1] *= scaleY;
+        }
+      } else if (command.type === 'A') {
+        command.values[0] *= scaleX;
+        command.values[1] *= scaleY;
+        command.values[5] *= scaleX;
+        command.values[6] *= scaleY;
+      } else if (command.type !== 'Z') {
+        command.values[0] *= scaleX;
+        command.values[1] *= scaleY;
+      }
+    }
+    const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+    if (documentNode.querySelector('parsererror')) throw new Error('Could not update the SVG.');
+    const layerNumber = Math.max(
+      0,
+      ...currentPalette.map((entry) => Number(entry.layer) || 0)
+    ) + 1;
+    const color = layerFillColor.value.toUpperCase();
+    const name = `Filled region ${layerNumber}`;
+    const pathId = `filled-region-${layerNumber}`;
+    const path = documentNode.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.id = pathId;
+    path.dataset.name = name;
+    path.dataset.layerIndex = String(layerNumber);
+    path.setAttribute('d', serializeEditablePath(commands));
+    path.setAttribute('fill', color);
+    path.setAttribute('fill-rule', 'evenodd');
+    const title = documentNode.createElementNS('http://www.w3.org/2000/svg', 'title');
+    title.textContent = name;
+    path.append(title);
+    let root = path;
+    if (svgStructure.value === 'groups') {
+      const group = documentNode.createElementNS('http://www.w3.org/2000/svg', 'g');
+      group.id = `${pathId}-group`;
+      group.dataset.name = name;
+      group.dataset.layerRoot = String(layerNumber);
+      group.dataset.layerIndex = String(layerNumber);
+      group.dataset.color = color;
+      group.setAttributeNS(INKSCAPE_NAMESPACE, 'inkscape:groupmode', 'layer');
+      group.setAttributeNS(INKSCAPE_NAMESPACE, 'inkscape:label', name);
+      group.append(path);
+      root = group;
+    } else {
+      path.dataset.layerRoot = String(layerNumber);
+    }
+    pushLayerHistory();
+    documentNode.documentElement.append(root);
+    vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+    refreshDownloadUrl();
+    const palette = [...currentPalette, { layer: layerNumber, color, name }];
+    showPalette(palette);
+    restoreLayerPanelState(palette.map((entry) => ({
+      visible: true,
+      selected: Number(entry.layer) === layerNumber
+    })));
+    renderLayerPreview();
+    status.textContent = `${name} created with ${color}.`;
+  } catch (error) {
+    status.classList.add('error');
+    status.textContent = error.message;
+  }
+}
+
 function duplicateSelectedLayerEntries() {
   const selectedLayers = selectedLayerNumbers();
   if (selectedLayers.length === 0 || !vectorSvgText) return;
@@ -2131,13 +2225,11 @@ vectorPreview.addEventListener('pointerdown', (event) => {
   if (bucketToolActive) {
     event.preventDefault();
     const layer = event.target.closest?.('[data-layer-root]');
-    if (!layer) {
-      status.classList.add('error');
-      status.textContent = 'Click visible artwork to fill its layer.';
-      return;
+    if (event.shiftKey && layer) {
+      applySelectedLayerFill([Number(layer.dataset.layerRoot)]);
+    } else {
+      fillEnclosedRegion(event);
     }
-    const layerNumber = Number(layer.dataset.layerRoot);
-    applySelectedLayerFill([layerNumber]);
     return;
   }
   if (lassoToolActive) {
@@ -2890,7 +2982,7 @@ fillSelectedLayers.addEventListener('click', () => {
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = bucketToolActive
-    ? 'Bucket selected. Click artwork in the preview to apply the chosen color.'
+    ? 'Bucket selected. Click an enclosed region to fill it. Shift-click recolors its entire layer.'
     : '';
 });
 eraserSize.addEventListener('input', () => {

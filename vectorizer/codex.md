@@ -73,6 +73,9 @@ Behavior:
   layer; dragging preserves adjacent cubic handles, segment insertion splits
   cubic curves, **N** toggles the tool, and node edits are included in layer
   Undo/Redo history.
+- Bucket clicks flood-fill the connected rasterized preview region, reject
+  areas open to the canvas border, trace the mask, and append it as a new
+  editable vector layer. Shift-click preserves whole-layer recoloring.
 - Trace retained masks with Potrace. Support Inkscape layer groups and flat
   paths with palette metadata, editable names, unique IDs, titles, and
   data-name attributes.

@@ -13,6 +13,10 @@ select an anchor and press Backspace/Delete to remove it. The toolbar displays
 the active node count. Press **N** to toggle node editing. Undo/Redo includes
 node edits.
 
+The bucket tool fills enclosed regions into new editable vector layers.
+Shift-click existing artwork when you instead want to recolor its entire
+layer.
+
 Vectorizer release history is maintained in [CHANGES.md](CHANGES.md), and its
 development prompt and implementation invariants are maintained in
 [codex.md](codex.md). Vectorizer documentation updates belong in this folder,

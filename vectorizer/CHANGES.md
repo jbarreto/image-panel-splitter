@@ -1,5 +1,11 @@
 # Ronyka Vectorizer Changes
 
+## v1.10.0 — Enclosed-region bucket fill
+
+- Upgraded the bucket into a true enclosed-region fill. Clicking inside a
+  bounded area flood-fills and traces that connected region into a new,
+  editable color layer; Shift-click retains whole-layer recoloring.
+
 ## v1.9.0 — Multicolor edges and node editing
 
 - Added a Multicolor **Find edges** option that detects boundaries between
