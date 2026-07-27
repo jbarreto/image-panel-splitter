@@ -107,6 +107,12 @@ Select Zoom In or Zoom Out, then click the exact image region that should
 become the zoom focus. Click the percentage to reset to 100%, toggle the active
 tool button, choose **Cursor**, or press `Esc` to return to normal layer
 selection and dragging.
+Press `+` or `−` to zoom immediately in 25% steps. When the pointer is over the
+vector canvas, the shortcut zooms around that position; otherwise it uses the
+canvas center. Numpad Add and Subtract are also supported.
+In Cursor mode, drag empty canvas space to pan the scrollable preview vertically
+or horizontally. Dragging
+directly on artwork continues to move its layer or current multi-selection.
 
 Select one or more layers, choose **Eraser** in the vector toolbar, adjust its
 brush size, and drag over the preview to remove content only from those
@@ -116,10 +122,16 @@ Erasures are stored as SVG masks, remain editable through Undo/Redo, and are
 included in the downloaded SVG. Choose **Cursor** or press `Esc` to leave
 eraser mode.
 
+To split artwork out of a layer, select exactly one layer and choose the
+**Lasso Layer** tool. Draw around the desired region and release the pointer.
+The enclosed portion becomes a newly selected independent SVG layer and is
+masked out of the source layer, preserving the combined appearance. The split,
+new clip path, and source mask are included in downloads and Undo/Redo history.
+
 Layer edits retain up to 40 undo steps. Use the **Undo** and **Redo** buttons,
 `Ctrl/Cmd+Z` to undo, and `Ctrl/Cmd+Shift+Z` or `Ctrl+Y` to redo. History
 includes layer names, visibility, positions, grouping, color merging, strokes,
-and erasing. Generating a different vector result starts a new
+erasing, and lasso splits. Generating a different vector result starts a new
 history.
 **Split view** switches to side-by-side source and vector previews for direct
 image comparison, and **Picture in picture** returns to the compact overlay

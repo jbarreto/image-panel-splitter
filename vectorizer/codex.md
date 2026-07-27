@@ -49,6 +49,11 @@ Behavior:
   manual movement, reset positions, duplication, grouping without recoloring,
   swatch-to-swatch color merging, selected-layer strokes, and downloadable SVG
   masks for erasing selected layers.
+- Lasso Layer requires exactly one selected layer. Capture a freehand polygon
+  in that root's local SVG coordinates, clone the enclosed artwork into a new
+  clipped layer, and append the polygon as a black exclusion to the source
+  layer's mask. Preserve existing source masks and clips, assign independent
+  IDs, select the new layer, and commit the split as one history entry.
 - In Cursor mode, a click without a drag selects the clicked artwork layer,
   Shift+click toggles it in the current selection, and Delete/Backspace removes
   all selected layer roots plus masks no longer referenced by another root.
@@ -72,6 +77,12 @@ Behavior:
   split comparison. The vector toolbar uses accessible icon-only Cursor,
   Eraser, Zoom Out, and Zoom In tools. Region clicks focus 50%–400% zoom;
   displayed percentage resets to 100%; Cursor or Esc exits a drawing/zoom tool.
+- Unmodified `+`/`−` and Numpad Add/Subtract zoom by 25%. Use the last pointer
+  position while it remains over the vector canvas; otherwise reset the zoom
+  origin to its center. Do not override browser `Ctrl/Cmd` zoom shortcuts.
+- In Cursor mode, pointer-dragging empty SVG canvas pans the scroll container
+  vertically and horizontally; dragging a layer still moves the layer or
+  selected layer set. Panning does not alter SVG source or history.
 - Keep the picture-in-picture and minimized Source restore tab below the vector
   toolbar at their default positions; user dragging may reposition the card.
 - Curve smoothing maps 50 to Potrace defaults and uses progressively stronger

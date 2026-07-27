@@ -1,5 +1,15 @@
 # Ronyka Vectorizer Changes
 
+## v1.6.0 — Lasso and canvas navigation
+
+- Added a Lasso Layer toolbar tool. Drawing a closed region on exactly one
+  selected layer creates a new clipped layer and masks that region out of the
+  source, with downloadable SVG definitions and Undo/Redo support.
+- Added `+`/`−` and numpad zoom shortcuts. They focus on the pointer while it
+  is over the vector canvas and otherwise use the canvas center.
+- Added vertical and horizontal empty-canvas drag panning in Cursor mode
+  without changing layers or creating history entries.
+
 ## v1.5.0 — Cancelable vectorization
 
 - Added `Esc` cancellation for active vectorization: abort the browser request,
