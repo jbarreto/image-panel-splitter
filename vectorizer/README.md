@@ -4,6 +4,15 @@ Standalone server and browser GUI for converting monochrome or flat-color
 artwork into genuine editable SVG paths. It runs independently from Ronyka
 Panel Splitter.
 
+In Multicolor mode, enable **Find edges** to add boundaries between palette
+regions as a separate, editable dark outline layer.
+
+Use **Edit nodes** with exactly one selected layer to adjust its path anchors.
+Drag an anchor to reshape it, double-click a segment to add an anchor, or
+select an anchor and press Backspace/Delete to remove it. The toolbar displays
+the active node count. Press **N** to toggle node editing. Undo/Redo includes
+node edits.
+
 Vectorizer release history is maintained in [CHANGES.md](CHANGES.md), and its
 development prompt and implementation invariants are maintained in
 [codex.md](codex.md). Vectorizer documentation updates belong in this folder,

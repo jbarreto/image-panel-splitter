@@ -6,6 +6,7 @@ const vectorMode = document.getElementById('vectorMode');
 const svgStructure = document.getElementById('svgStructure');
 const monochromeSettings = document.getElementById('monochromeSettings');
 const multicolorSettings = document.getElementById('multicolorSettings');
+const findEdges = document.getElementById('findEdges');
 const threshold = document.getElementById('threshold');
 const thresholdValue = document.getElementById('thresholdValue');
 const colorCount = document.getElementById('colorCount');
@@ -40,6 +41,8 @@ const sourcePreviewRestore = document.getElementById('sourcePreviewRestore');
 const vectorCursorTool = document.getElementById('vectorCursorTool');
 const vectorEraserTool = document.getElementById('vectorEraserTool');
 const vectorLassoTool = document.getElementById('vectorLassoTool');
+const vectorNodeTool = document.getElementById('vectorNodeTool');
+const nodeEditorCount = document.getElementById('nodeEditorCount');
 const fillSelectedLayers = document.getElementById('fillSelectedLayers');
 const layerFillColor = document.getElementById('layerFillColor');
 const eraserSize = document.getElementById('eraserSize');
@@ -47,6 +50,7 @@ const eraserSizeValue = document.getElementById('eraserSizeValue');
 const vectorZoomOut = document.getElementById('vectorZoomOut');
 const vectorZoomIn = document.getElementById('vectorZoomIn');
 const vectorZoomValue = document.getElementById('vectorZoomValue');
+const vectorToolbarHint = document.getElementById('vectorToolbarHint');
 const maximumTraceSide = document.getElementById('maximumTraceSide');
 const allowTraceUpscaling = document.getElementById('allowTraceUpscaling');
 const resolutionValue = document.getElementById('resolutionValue');
@@ -94,6 +98,9 @@ let activeEraserStroke;
 let lassoToolActive = false;
 let activeLassoStroke;
 let bucketToolActive = false;
+let nodeToolActive = false;
+let activePathNode;
+let selectedPathNode;
 let lastVectorPointer;
 let draggedCanvasPan;
 let lastEraserPointer;
@@ -628,6 +635,7 @@ function saveSettings() {
     targetHeightMm: Number(targetHeight.value),
     mode: vectorMode.value,
     svgStructure: svgStructure.value,
+    findEdges: findEdges.checked,
     threshold: Number(threshold.value),
     colorCount: Number(colorCount.value),
     multipleVariations: multipleVariations.checked,
@@ -648,6 +656,9 @@ function restoreSettings() {
     if (['monochrome', 'multicolor'].includes(settings.mode)) vectorMode.value = settings.mode;
     if (['groups', 'corel', 'flat'].includes(settings.svgStructure)) {
       svgStructure.value = settings.svgStructure;
+    }
+    if (typeof settings.findEdges === 'boolean') {
+      findEdges.checked = settings.findEdges;
     }
     if (Number(settings.threshold) >= 1 && Number(settings.threshold) <= 254) {
       threshold.value = String(settings.threshold);
@@ -748,6 +759,383 @@ function renderLayerPreview() {
   inlineSvg.removeAttribute('height');
   inlineSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   vectorPreview.replaceChildren(inlineSvg);
+  renderPathNodes();
+}
+
+function parseEditablePath(pathData) {
+  const tokens = pathData.match(/[a-z]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/gi) || [];
+  const sizes = { M: 2, L: 2, H: 1, V: 1, C: 6, S: 4, Q: 4, T: 2, A: 7 };
+  const commands = [];
+  let rawType;
+  let index = 0;
+  let x = 0;
+  let y = 0;
+  let startX = 0;
+  let startY = 0;
+  let previousCubicControl;
+  let previousQuadraticControl;
+  while (index < tokens.length) {
+    if (/^[a-z]$/i.test(tokens[index])) {
+      const token = tokens[index++];
+      if (token === 'Z' || token === 'z') {
+        commands.push({ type: 'Z', values: [] });
+        x = startX;
+        y = startY;
+        rawType = undefined;
+        previousCubicControl = undefined;
+        previousQuadraticControl = undefined;
+        continue;
+      }
+      rawType = token;
+    }
+    const type = rawType?.toUpperCase();
+    if (!type || !sizes[type]) return;
+    const relative = rawType === rawType.toLowerCase();
+    const values = tokens.slice(index, index + sizes[type]).map(Number);
+    if (values.length !== sizes[type] || values.some((value) => !Number.isFinite(value))) return;
+    index += sizes[type];
+    const absolute = (value, axis) => value + (relative ? axis : 0);
+    if (type === 'M' || type === 'L' || type === 'T') {
+      const nextX = absolute(values[0], x);
+      const nextY = absolute(values[1], y);
+      if (type === 'T') {
+        const control = previousQuadraticControl
+          ? { x: 2 * x - previousQuadraticControl.x, y: 2 * y - previousQuadraticControl.y }
+          : { x, y };
+        commands.push({
+          type: 'C',
+          values: [
+            x + (2 / 3) * (control.x - x),
+            y + (2 / 3) * (control.y - y),
+            nextX + (2 / 3) * (control.x - nextX),
+            nextY + (2 / 3) * (control.y - nextY),
+            nextX,
+            nextY
+          ]
+        });
+        previousQuadraticControl = control;
+      } else {
+        commands.push({ type, values: [nextX, nextY] });
+        if (type === 'M') {
+          startX = nextX;
+          startY = nextY;
+          rawType = relative ? 'l' : 'L';
+        }
+        previousQuadraticControl = undefined;
+      }
+      x = nextX;
+      y = nextY;
+      previousCubicControl = undefined;
+      continue;
+    }
+    if (type === 'H' || type === 'V') {
+      if (type === 'H') x = absolute(values[0], x);
+      else y = absolute(values[0], y);
+      commands.push({ type: 'L', values: [x, y] });
+      previousCubicControl = undefined;
+      previousQuadraticControl = undefined;
+      continue;
+    }
+    if (type === 'C' || type === 'S') {
+      const firstControl = type === 'C'
+        ? { x: absolute(values[0], x), y: absolute(values[1], y) }
+        : previousCubicControl
+          ? { x: 2 * x - previousCubicControl.x, y: 2 * y - previousCubicControl.y }
+          : { x, y };
+      const offset = type === 'C' ? 2 : 0;
+      const secondControl = {
+        x: absolute(values[offset], x),
+        y: absolute(values[offset + 1], y)
+      };
+      const nextX = absolute(values[offset + 2], x);
+      const nextY = absolute(values[offset + 3], y);
+      commands.push({
+        type: 'C',
+        values: [
+          firstControl.x,
+          firstControl.y,
+          secondControl.x,
+          secondControl.y,
+          nextX,
+          nextY
+        ]
+      });
+      x = nextX;
+      y = nextY;
+      previousCubicControl = secondControl;
+      previousQuadraticControl = undefined;
+      continue;
+    }
+    if (type === 'Q') {
+      const control = { x: absolute(values[0], x), y: absolute(values[1], y) };
+      const nextX = absolute(values[2], x);
+      const nextY = absolute(values[3], y);
+      commands.push({
+        type: 'C',
+        values: [
+          x + (2 / 3) * (control.x - x),
+          y + (2 / 3) * (control.y - y),
+          nextX + (2 / 3) * (control.x - nextX),
+          nextY + (2 / 3) * (control.y - nextY),
+          nextX,
+          nextY
+        ]
+      });
+      x = nextX;
+      y = nextY;
+      previousQuadraticControl = control;
+      previousCubicControl = undefined;
+      continue;
+    }
+    if (type === 'A') {
+      const nextX = absolute(values[5], x);
+      const nextY = absolute(values[6], y);
+      commands.push({ type: 'A', values: [...values.slice(0, 5), nextX, nextY] });
+      x = nextX;
+      y = nextY;
+      previousCubicControl = undefined;
+      previousQuadraticControl = undefined;
+    }
+  }
+  return commands;
+}
+
+function serializeEditablePath(commands) {
+  return commands.map(({ type, values }) => (
+    `${type}${values.map((value) => Number(value.toFixed(3))).join(' ')}`
+  )).join(' ');
+}
+
+function commandAnchor(command) {
+  if (command.type === 'Z') return;
+  if (command.type === 'A') {
+    return { x: command.values[5], y: command.values[6] };
+  }
+  return command.type === 'C'
+    ? { x: command.values[4], y: command.values[5] }
+    : { x: command.values[0], y: command.values[1] };
+}
+
+function saveEditedPath(pathId, commands) {
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  const path = documentNode.getElementById(pathId);
+  if (!path) return;
+  path.setAttribute('d', serializeEditablePath(commands));
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  refreshDownloadUrl();
+}
+
+function renderPathNodes() {
+  if (!nodeToolActive) {
+    nodeEditorCount.textContent = '0 nodes';
+    return 0;
+  }
+  const selected = selectedLayerNumbers();
+  if (selected.length !== 1) {
+    nodeEditorCount.textContent = '0 nodes';
+    return 0;
+  }
+  const root = vectorPreview.querySelector(`[data-layer-root="${selected[0]}"]`);
+  const svg = vectorPreview.querySelector('svg');
+  if (!root || !svg) {
+    nodeEditorCount.textContent = '0 nodes';
+    return 0;
+  }
+  root.classList.add('node-edit-path');
+  const viewBox = (svg.getAttribute('viewBox') || '')
+    .trim()
+    .split(/[\s,]+/)
+    .map(Number);
+  const viewBoxWidth = Number.isFinite(viewBox[2]) ? viewBox[2] : 1000;
+  const viewBoxHeight = Number.isFinite(viewBox[3]) ? viewBox[3] : 1000;
+  const nodeRadius = Math.max(
+    1.25,
+    Math.max(viewBoxWidth, viewBoxHeight) / 650
+  );
+  let nodeCount = 0;
+  let pathCount = 0;
+  let unsupportedPathCount = 0;
+  const editablePaths = root.matches?.('path') ? [root] : root.querySelectorAll('path');
+  for (const path of editablePaths) {
+    if (path.closest?.('defs')) continue;
+    pathCount += 1;
+    if (!path.id) {
+      path.id = `editable-path-${selected[0]}-${nodeCount}`;
+    }
+    const commands = parseEditablePath(path.getAttribute('d') || '');
+    if (!commands) {
+      unsupportedPathCount += 1;
+      continue;
+    }
+    const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    overlay.classList.add('node-editor-overlay');
+    overlay.dataset.pathId = path.id;
+    const transform = root.getAttribute('transform');
+    if (transform) overlay.setAttribute('transform', transform);
+    commands.forEach((command, commandIndex) => {
+      const point = commandAnchor(command);
+      if (!point) return;
+      const node = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      node.classList.add('path-node');
+      node.setAttribute('cx', point.x);
+      node.setAttribute('cy', point.y);
+      node.setAttribute('r', nodeRadius);
+      node.setAttribute('fill', '#ffffff');
+      node.setAttribute('fill-opacity', '0.72');
+      node.setAttribute('stroke', '#ec168c');
+      node.setAttribute('stroke-width', '0.6');
+      node.setAttribute('vector-effect', 'non-scaling-stroke');
+      node.setAttribute('pointer-events', 'all');
+      node.dataset.pathId = path.id;
+      node.dataset.commandIndex = String(commandIndex);
+      if (
+        selectedPathNode?.pathId === path.id &&
+        selectedPathNode.commandIndex === commandIndex
+      ) {
+        node.classList.add('selected');
+      }
+      overlay.append(node);
+      nodeCount += 1;
+    });
+    svg.append(overlay);
+  }
+  nodeEditorCount.textContent = nodeCount > 0
+    ? `${nodeCount} node${nodeCount === 1 ? '' : 's'}`
+    : `0 nodes · ${pathCount} path${pathCount === 1 ? '' : 's'}`;
+  nodeEditorCount.title = unsupportedPathCount > 0
+    ? `${unsupportedPathCount} path${unsupportedPathCount === 1 ? '' : 's'} use unsupported commands`
+    : '';
+  return nodeCount;
+}
+
+function startPathNodeDrag(node, event) {
+  const path = vectorPreview.querySelector(`#${CSS.escape(node.dataset.pathId)}`);
+  const matrix = path?.getScreenCTM();
+  const commands = parseEditablePath(path?.getAttribute('d') || '');
+  const commandIndex = Number(node.dataset.commandIndex);
+  if (!path || !matrix || !commands?.[commandIndex]) return false;
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  selectedPathNode = { pathId: path.id, commandIndex };
+  node.classList.add('selected');
+  activePathNode = {
+    pointerId: event.pointerId,
+    path,
+    node,
+    commands,
+    commandIndex,
+    start: point,
+    original: commands.map((command) => ({ type: command.type, values: [...command.values] })),
+    moved: false
+  };
+  node.setPointerCapture(event.pointerId);
+  return true;
+}
+
+function movePathNode(event) {
+  if (!activePathNode) return;
+  const matrix = activePathNode.path.getScreenCTM();
+  if (!matrix) return;
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  const deltaX = point.x - activePathNode.start.x;
+  const deltaY = point.y - activePathNode.start.y;
+  const index = activePathNode.commandIndex;
+  const command = activePathNode.commands[index];
+  const original = activePathNode.original[index];
+  const anchorOffset = command.type === 'C' ? 4 : command.type === 'A' ? 5 : 0;
+  command.values[anchorOffset] = original.values[anchorOffset] + deltaX;
+  command.values[anchorOffset + 1] = original.values[anchorOffset + 1] + deltaY;
+  if (command.type === 'C') {
+    command.values[2] = original.values[2] + deltaX;
+    command.values[3] = original.values[3] + deltaY;
+  }
+  const next = activePathNode.commands[index + 1];
+  const nextOriginal = activePathNode.original[index + 1];
+  if (next?.type === 'C') {
+    next.values[0] = nextOriginal.values[0] + deltaX;
+    next.values[1] = nextOriginal.values[1] + deltaY;
+  }
+  activePathNode.path.setAttribute('d', serializeEditablePath(activePathNode.commands));
+  activePathNode.node.setAttribute('cx', command.values[anchorOffset]);
+  activePathNode.node.setAttribute('cy', command.values[anchorOffset + 1]);
+  activePathNode.moved = true;
+}
+
+function deleteSelectedPathNode() {
+  if (!nodeToolActive || !selectedPathNode) return false;
+  const documentNode = new DOMParser().parseFromString(vectorSvgText, 'image/svg+xml');
+  const path = documentNode.getElementById(selectedPathNode.pathId);
+  const commands = parseEditablePath(path?.getAttribute('d') || '');
+  if (!path || !commands || selectedPathNode.commandIndex === 0 || commands.length <= 2) return false;
+  pushLayerHistory();
+  commands.splice(selectedPathNode.commandIndex, 1);
+  path.setAttribute('d', serializeEditablePath(commands));
+  vectorSvgText = `${new XMLSerializer().serializeToString(documentNode)}\n`;
+  selectedPathNode = undefined;
+  refreshDownloadUrl();
+  renderLayerPreview();
+  status.textContent = 'Path node removed.';
+  return true;
+}
+
+function addPathNode(path, event) {
+  const commands = parseEditablePath(path.getAttribute('d') || '');
+  const matrix = path.getScreenCTM();
+  if (!commands || !matrix || commands.length < 2) return;
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  let nearestIndex;
+  let nearestDistance = Infinity;
+  for (let index = 1; index < commands.length; index += 1) {
+    if (
+      commands[index].type === 'M' ||
+      commands[index].type === 'Z' ||
+      commands[index].type === 'A'
+    ) continue;
+    const start = commandAnchor(commands[index - 1]);
+    const end = commandAnchor(commands[index]);
+    if (!start || !end) continue;
+    const dx = end.x - start.x;
+    const dy = end.y - start.y;
+    const lengthSquared = dx * dx + dy * dy || 1;
+    const amount = Math.max(0, Math.min(1,
+      ((point.x - start.x) * dx + (point.y - start.y) * dy) / lengthSquared
+    ));
+    const distance = Math.hypot(
+      point.x - (start.x + dx * amount),
+      point.y - (start.y + dy * amount)
+    );
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearestIndex = index;
+    }
+  }
+  if (nearestIndex === undefined) return;
+  const command = commands[nearestIndex];
+  const start = commandAnchor(commands[nearestIndex - 1]);
+  let additions;
+  if (command.type === 'C') {
+    const [x1, y1, x2, y2, x3, y3] = command.values;
+    const a = { x: (start.x + x1) / 2, y: (start.y + y1) / 2 };
+    const b = { x: (x1 + x2) / 2, y: (y1 + y2) / 2 };
+    const c = { x: (x2 + x3) / 2, y: (y2 + y3) / 2 };
+    const d = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const e = { x: (b.x + c.x) / 2, y: (b.y + c.y) / 2 };
+    const middle = { x: (d.x + e.x) / 2, y: (d.y + e.y) / 2 };
+    additions = [
+      { type: 'C', values: [a.x, a.y, d.x, d.y, middle.x, middle.y] },
+      { type: 'C', values: [e.x, e.y, c.x, c.y, x3, y3] }
+    ];
+  } else {
+    const end = commandAnchor(command);
+    additions = [
+      { type: 'L', values: [(start.x + end.x) / 2, (start.y + end.y) / 2] },
+      command
+    ];
+  }
+  pushLayerHistory();
+  commands.splice(nearestIndex, 1, ...additions);
+  saveEditedPath(path.id, commands);
+  renderLayerPreview();
+  status.textContent = 'Path node added.';
 }
 
 function refreshDownloadUrl() {
@@ -984,6 +1372,7 @@ function selectLayerFromPreview(layerNumber, additive) {
     target.checked
   );
   updateLayerSelectionControls();
+  if (nodeToolActive) renderLayerPreview();
   status.classList.remove('error');
   status.textContent = target.checked
     ? `Selected layer ${layerNumber}.`
@@ -1664,6 +2053,10 @@ function commitLassoLayer() {
 vectorPreview.addEventListener('pointermove', (event) => {
   lastVectorPointer = { clientX: event.clientX, clientY: event.clientY };
   updateEraserCursor(event);
+  if (activePathNode) {
+    movePathNode(event);
+    return;
+  }
   if (draggedCanvasPan) {
     vectorStage.scrollLeft =
       draggedCanvasPan.scrollLeft - (event.clientX - draggedCanvasPan.startX);
@@ -1707,6 +2100,34 @@ vectorPreview.addEventListener('pointermove', (event) => {
 
 vectorPreview.addEventListener('pointerdown', (event) => {
   if (event.button !== 0) return;
+  const node = event.target.closest?.('.path-node');
+  if (nodeToolActive && node) {
+    event.preventDefault();
+    startPathNodeDrag(node, event);
+    return;
+  }
+  if (nodeToolActive) {
+    const layer = event.target.closest?.('[data-layer-root]');
+    if (layer) {
+      const selected = selectedLayerNumbers();
+      if (
+        selected.length !== 1 ||
+        selected[0] !== Number(layer.dataset.layerRoot)
+      ) {
+        event.preventDefault();
+        selectLayerFromPreview(layer.dataset.layerRoot, false);
+      }
+      const nodeCount = vectorPreview.querySelectorAll('.path-node').length;
+      status.classList.toggle('error', nodeCount === 0);
+      status.textContent = nodeCount > 0
+        ? `${nodeCount} editable nodes visible. Double-click a path segment to add one.`
+        : `Layer ${layer.dataset.layerRoot} has no editable M/L/C path nodes.`;
+    } else {
+      event.preventDefault();
+      status.textContent = 'Click a layer to reveal its editable nodes.';
+    }
+    return;
+  }
   if (bucketToolActive) {
     event.preventDefault();
     const layer = event.target.closest?.('[data-layer-root]');
@@ -1850,6 +2271,20 @@ vectorPreview.addEventListener('pointerdown', (event) => {
 });
 
 vectorPreview.addEventListener('pointerup', (event) => {
+  if (activePathNode?.pointerId === event.pointerId) {
+    const edit = activePathNode;
+    activePathNode = undefined;
+    if (edit.node.hasPointerCapture(event.pointerId)) {
+      edit.node.releasePointerCapture(event.pointerId);
+    }
+    if (edit.moved) {
+      pushLayerHistory();
+      saveEditedPath(edit.path.id, edit.commands);
+      renderLayerPreview();
+      status.textContent = 'Path node moved.';
+    }
+    return;
+  }
   if (draggedCanvasPan?.pointerId === event.pointerId) {
     draggedCanvasPan = undefined;
     if (vectorPreview.hasPointerCapture(event.pointerId)) {
@@ -1898,6 +2333,10 @@ vectorPreview.addEventListener('pointerup', (event) => {
 });
 
 vectorPreview.addEventListener('pointercancel', (event) => {
+  if (activePathNode) {
+    activePathNode = undefined;
+    renderLayerPreview();
+  }
   if (draggedCanvasPan?.pointerId === event.pointerId) {
     draggedCanvasPan = undefined;
     vectorStage.classList.remove('panning-canvas');
@@ -1917,6 +2356,15 @@ vectorPreview.addEventListener('pointercancel', (event) => {
   draggedPreviewLayer = undefined;
   vectorPreview.classList.remove('dragging-layer');
   renderLayerPreview();
+});
+
+vectorPreview.addEventListener('dblclick', (event) => {
+  if (!nodeToolActive || event.target.closest?.('.path-node')) return;
+  const path = event.target.closest?.('path');
+  const selected = selectedLayerNumbers();
+  if (!path || selected.length !== 1 || !path.closest(`[data-layer-root="${selected[0]}"]`)) return;
+  event.preventDefault();
+  addPathNode(path, event);
 });
 
 vectorPreview.addEventListener('pointerleave', () => {
@@ -1948,6 +2396,7 @@ function showPalette(palette) {
     selection.addEventListener('change', () => {
       row.classList.toggle('merge-selected', selection.checked);
       updateLayerSelectionControls();
+      if (nodeToolActive) renderLayerPreview();
     });
     const toggle = document.createElement('button');
     toggle.type = 'button';
@@ -2155,6 +2604,30 @@ document.addEventListener('keydown', (event) => {
     'input[type="text"], input[type="number"], textarea, [contenteditable="true"]'
   );
   if (
+    event.key.toLowerCase() === 'n' &&
+    !editingText &&
+    !event.metaKey &&
+    !event.ctrlKey &&
+    !event.altKey
+  ) {
+    event.preventDefault();
+    vectorNodeTool.click();
+    return;
+  }
+  if (
+    (event.key === 'Delete' || event.key === 'Backspace') &&
+    !editingText &&
+    nodeToolActive &&
+    selectedPathNode
+  ) {
+    event.preventDefault();
+    if (!deleteSelectedPathNode()) {
+      status.classList.add('error');
+      status.textContent = 'The first node of a path cannot be removed.';
+    }
+    return;
+  }
+  if (
     (event.key === 'Delete' || event.key === 'Backspace') &&
     !editingText &&
     selectedLayerNumbers().length > 0
@@ -2165,7 +2638,7 @@ document.addEventListener('keydown', (event) => {
   }
   if (
     event.key === 'Escape' &&
-    (vectorZoomTool || eraserToolActive || lassoToolActive || bucketToolActive)
+    (vectorZoomTool || eraserToolActive || lassoToolActive || bucketToolActive || nodeToolActive)
   ) {
     if (activeLassoStroke) {
       activeLassoStroke.preview.remove();
@@ -2177,6 +2650,8 @@ document.addEventListener('keydown', (event) => {
     eraserToolActive = false;
     lassoToolActive = false;
     bucketToolActive = false;
+    nodeToolActive = false;
+    selectedPathNode = undefined;
     updateVectorZoomTool();
     status.textContent = '';
     return;
@@ -2263,16 +2738,18 @@ sourcePreviewRestore.addEventListener('click', () => {
 
 function updateVectorZoomTool() {
   const cursorActive =
-    !vectorZoomTool && !eraserToolActive && !lassoToolActive && !bucketToolActive;
+    !vectorZoomTool && !eraserToolActive && !lassoToolActive && !bucketToolActive && !nodeToolActive;
   vectorCursorTool.classList.toggle('active', cursorActive);
   vectorEraserTool.classList.toggle('active', eraserToolActive);
   vectorLassoTool.classList.toggle('active', lassoToolActive);
+  vectorNodeTool.classList.toggle('active', nodeToolActive);
   fillSelectedLayers.classList.toggle('active', bucketToolActive);
   vectorZoomIn.classList.toggle('active', vectorZoomTool === 'in');
   vectorZoomOut.classList.toggle('active', vectorZoomTool === 'out');
   vectorCursorTool.setAttribute('aria-pressed', String(cursorActive));
   vectorEraserTool.setAttribute('aria-pressed', String(eraserToolActive));
   vectorLassoTool.setAttribute('aria-pressed', String(lassoToolActive));
+  vectorNodeTool.setAttribute('aria-pressed', String(nodeToolActive));
   fillSelectedLayers.setAttribute('aria-pressed', String(bucketToolActive));
   vectorZoomIn.setAttribute('aria-pressed', String(vectorZoomTool === 'in'));
   vectorZoomOut.setAttribute('aria-pressed', String(vectorZoomTool === 'out'));
@@ -2281,6 +2758,11 @@ function updateVectorZoomTool() {
   vectorPreview.classList.toggle('eraser-tool', eraserToolActive);
   vectorPreview.classList.toggle('lasso-tool', lassoToolActive);
   vectorPreview.classList.toggle('bucket-tool', bucketToolActive);
+  vectorPreview.classList.toggle('node-tool', nodeToolActive);
+  nodeEditorCount.hidden = !nodeToolActive;
+  vectorToolbarHint.textContent = nodeToolActive
+    ? 'Click artwork to show nodes · Drag to reshape · Double-click path to add · Delete removes'
+    : 'Select − or +, then click the image · Esc to exit';
   if (!eraserToolActive) {
     lastEraserPointer = undefined;
     eraserCursor.hidden = true;
@@ -2292,6 +2774,7 @@ function selectVectorZoomTool(tool) {
   eraserToolActive = false;
   lassoToolActive = false;
   bucketToolActive = false;
+  nodeToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = vectorZoomTool
@@ -2330,6 +2813,7 @@ vectorCursorTool.addEventListener('click', () => {
   eraserToolActive = false;
   lassoToolActive = false;
   bucketToolActive = false;
+  nodeToolActive = false;
   updateVectorZoomTool();
   status.textContent = '';
 });
@@ -2338,6 +2822,7 @@ vectorEraserTool.addEventListener('click', () => {
   vectorZoomTool = undefined;
   lassoToolActive = false;
   bucketToolActive = false;
+  nodeToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = eraserToolActive
@@ -2349,10 +2834,51 @@ vectorLassoTool.addEventListener('click', () => {
   vectorZoomTool = undefined;
   eraserToolActive = false;
   bucketToolActive = false;
+  nodeToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = lassoToolActive
     ? 'Lasso selected. Draw around content on exactly one selected layer.'
+    : '';
+});
+vectorNodeTool.addEventListener('click', () => {
+  nodeToolActive = !nodeToolActive;
+  vectorZoomTool = undefined;
+  eraserToolActive = false;
+  lassoToolActive = false;
+  bucketToolActive = false;
+  selectedPathNode = undefined;
+  if (nodeToolActive) {
+    const selectedNumber = selectedLayerNumbers()[0];
+    const preferred = currentPalette.find(
+      (entry) => Number(entry.layer) === Number(activeSoloLayer)
+    ) || currentPalette.find((entry) => entry.name === 'Detected edges')
+      || currentPalette.find((entry) => Number(entry.layer) === selectedNumber)
+      || currentPalette[0];
+    if (preferred) {
+      const selection = paletteSwatches.querySelector(
+        `.layer-selection[data-layer="${preferred.layer}"]`
+      );
+      if (selection) {
+        for (const checkbox of paletteSwatches.querySelectorAll('.layer-selection')) {
+          checkbox.checked = checkbox === selection;
+          checkbox.closest('.palette-swatch')?.classList.toggle(
+            'merge-selected',
+            checkbox.checked
+          );
+        }
+        updateLayerSelectionControls();
+      }
+    }
+  }
+  updateVectorZoomTool();
+  renderLayerPreview();
+  const nodeCount = vectorPreview.querySelectorAll('.path-node').length;
+  status.classList.toggle('error', nodeToolActive && nodeCount === 0);
+  status.textContent = nodeToolActive
+    ? nodeCount > 0
+      ? `${nodeCount} editable nodes visible. Drag a node or double-click a path to add one.`
+      : 'No editable M/L/C path nodes were found in the selected layer.'
     : '';
 });
 fillSelectedLayers.addEventListener('click', () => {
@@ -2360,6 +2886,7 @@ fillSelectedLayers.addEventListener('click', () => {
   vectorZoomTool = undefined;
   eraserToolActive = false;
   lassoToolActive = false;
+  nodeToolActive = false;
   updateVectorZoomTool();
   status.classList.remove('error');
   status.textContent = bucketToolActive
@@ -2377,6 +2904,7 @@ vectorZoomValue.addEventListener('click', () => {
   eraserToolActive = false;
   lassoToolActive = false;
   bucketToolActive = false;
+  nodeToolActive = false;
   updateVectorZoomTool();
   vectorPreview.style.removeProperty('--vector-preview-origin-x');
   vectorPreview.style.removeProperty('--vector-preview-origin-y');
@@ -2678,6 +3206,7 @@ for (const input of [
   removeBackground,
   keepWhiteLayer,
   fillColorGaps,
+  findEdges,
   allowTraceUpscaling
 ]) {
   input.addEventListener('change', () => {
@@ -2695,6 +3224,7 @@ function vectorizationForm(paletteCount) {
   form.append('targetHeightMm', targetHeight.value);
   form.append('mode', vectorMode.value);
   form.append('svgStructure', svgStructure.value);
+  form.append('findEdges', String(findEdges.checked));
   form.append('threshold', threshold.value);
   form.append('colorCount', paletteCount);
   form.append('removeBackground', String(removeBackground.checked));

@@ -32,6 +32,7 @@ app.post('/api/vectorize', upload.single('image'), async (req, res) => {
       curveSmoothing: Number(req.body.curveSmoothing ?? 50),
       mode: req.body.mode || 'monochrome',
       svgStructure: req.body.svgStructure || 'groups',
+      findEdges: req.body.findEdges === 'true',
       colorCount: Number(req.body.colorCount || 6),
       removeBackground: req.body.removeBackground !== 'false',
       keepWhiteLayer: req.body.keepWhiteLayer !== 'false',

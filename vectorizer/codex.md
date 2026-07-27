@@ -65,6 +65,14 @@ Behavior:
   enclosed same-color details remain.
 - Fill gaps only after exact masks have isolated-fragment cleanup. Merge only
   small, color-near antialias regions; retain substantial or distinct colors.
+- Multicolor Find edges derives a mask from adjacent retained palette labels
+  and appends it as a separate dark layer above the color layers. It must not
+  replace or mutate those color layers.
+- Edit nodes normalizes standard absolute and relative SVG path commands into
+  editable M/L/C/A segments. It exposes anchors for exactly one selected
+  layer; dragging preserves adjacent cubic handles, segment insertion splits
+  cubic curves, **N** toggles the tool, and node edits are included in layer
+  Undo/Redo history.
 - Trace retained masks with Potrace. Support Inkscape layer groups and flat
   paths with palette metadata, editable names, unique IDs, titles, and
   data-name attributes.

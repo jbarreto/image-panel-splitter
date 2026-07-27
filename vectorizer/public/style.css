@@ -127,6 +127,7 @@ button:disabled { opacity: .45; cursor: default; }
 .toolbar-label { margin-right: 2px; color: var(--green-dark); font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
 .toolbar-separator { align-self: stretch; width: 1px; margin: 0 3px; background: #d7dfdb; }
 .toolbar-hint { min-width: 0; margin-left: 5px; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.node-editor-count { padding: 3px 6px; border: 1px solid #e5b4cf; border-radius: 6px; background: #fff4fa; color: #80204f; font-size: 9px; white-space: nowrap; }
 .eraser-size-control { display: flex; align-items: center; gap: 4px; color: #68766f; font-size: 8px; }
 .eraser-size-control input { width: 70px; accent-color: var(--green); }
 .eraser-size-control output { min-width: 20px; text-align: right; }
@@ -152,6 +153,13 @@ button:disabled { opacity: .45; cursor: default; }
 .vector-stage #vectorPreview.erasing { cursor: none; }
 .vector-stage #vectorPreview.lasso-tool, .vector-stage #vectorPreview.lassoing { cursor: crosshair; }
 .vector-stage #vectorPreview.bucket-tool { cursor: url("/bucket-cursor.svg") 4 22, crosshair; }
+.vector-stage #vectorPreview.node-tool { cursor: default; }
+.vector-stage #vectorPreview .node-editor-overlay { pointer-events: visiblePainted; }
+.vector-stage #vectorPreview .path-node { vector-effect: non-scaling-stroke; pointer-events: all; cursor: move; }
+.vector-stage #vectorPreview .path-node:hover { fill: #ffd5ea; fill-opacity: 1; stroke-width: 1; }
+.vector-stage #vectorPreview .path-node.selected { fill: #ec168c; fill-opacity: 1; stroke: white; stroke-width: 1; }
+.vector-stage #vectorPreview.node-tool [data-layer-root] { opacity: .12; }
+.vector-stage #vectorPreview.node-tool .node-edit-path { opacity: 1; filter: drop-shadow(0 0 1px #ec168c); }
 .vector-stage #vectorPreview .lasso-preview { vector-effect: non-scaling-stroke; }
 .eraser-cursor { position: absolute; z-index: 8; border: 1.5px solid white; border-radius: 50%; background: rgb(236 22 140 / .14); box-shadow: 0 0 0 1px #ec168c, 0 1px 4px rgb(0 0 0 / .25); pointer-events: none; transform: translate(-50%, -50%); }
 .vector-stage #vectorPreview svg { display: block; width: 100%; height: auto; max-height: calc((100vh - 167px) * var(--vector-preview-zoom)); overflow: visible; }

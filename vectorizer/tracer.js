@@ -347,6 +347,7 @@ async function multicolorPaths(
   removeBackground,
   keepWhiteLayer,
   fillColorGaps,
+  findEdges,
   curveSmoothing,
   signal
 ) {
@@ -455,6 +456,37 @@ async function multicolorPaths(
       });
     }
   }
+  if (findEdges) {
+    const edgeMask = new Int8Array(labels.length);
+    for (let pixel = 0; pixel < labels.length; pixel += 1) {
+      const layerIndex = artworkLabels[pixel];
+      if (!retainedIndexes.has(layerIndex)) continue;
+      const x = pixel % width;
+      const y = Math.floor(pixel / width);
+      if (
+        (x > 0 && artworkLabels[pixel - 1] !== layerIndex) ||
+        (x + 1 < width && artworkLabels[pixel + 1] !== layerIndex) ||
+        (y > 0 && artworkLabels[pixel - width] !== layerIndex) ||
+        (y + 1 < height && artworkLabels[pixel + width] !== layerIndex)
+      ) {
+        edgeMask[pixel] = 1;
+      }
+    }
+    const pathData = await traceMask(
+      edgeMask,
+      width,
+      height,
+      Math.min(curveSmoothing, 50)
+    );
+    throwIfAborted(signal);
+    if (pathData) {
+      layers.push({
+        color: '#000000',
+        name: 'Detected edges',
+        pathData
+      });
+    }
+  }
   return layers;
 }
 
@@ -468,6 +500,7 @@ export async function vectorizeMonochrome(
     curveSmoothing = 50,
     mode = 'monochrome',
     svgStructure = 'groups',
+    findEdges = false,
     colorCount = 6,
     removeBackground = true,
     keepWhiteLayer = true,
@@ -528,6 +561,7 @@ export async function vectorizeMonochrome(
       Boolean(removeBackground),
       Boolean(keepWhiteLayer),
       Boolean(fillColorGaps),
+      Boolean(findEdges),
       curveSmoothing,
       signal
     );
@@ -536,7 +570,7 @@ export async function vectorizeMonochrome(
 
   const targetWidthMm = targetHeightMm * metadata.width / metadata.height;
   const layerElements = vectorLayers.map((layer, index) => {
-    const label = `Color ${index + 1} — ${layer.color.toUpperCase()}`;
+    const label = layer.name || `Color ${index + 1} — ${layer.color.toUpperCase()}`;
     const layerNumber = index + 1;
     const pathId = svgNameId(label);
     const groupId = `${pathId}-group`;
@@ -569,7 +603,7 @@ export async function vectorizeMonochrome(
     palette: vectorLayers.map((layer, index) => ({
       layer: index + 1,
       color: layer.color.toUpperCase(),
-      name: `Color ${index + 1} — ${layer.color.toUpperCase()}`
+      name: layer.name || `Color ${index + 1} — ${layer.color.toUpperCase()}`
     }))
   };
 }

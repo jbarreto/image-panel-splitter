@@ -13,7 +13,7 @@
         <span class="brand-mark" aria-hidden="true">R</span>
         <div>
           <h1>Vectorizer</h1>
-          <span class="version">v1.8.2</span>
+          <span class="version">v1.9.0</span>
         </div>
       </header>
       <p>Convert monochrome line art into a genuine, editable SVG drawing.</p>
@@ -88,6 +88,11 @@
             <input id="fillColorGaps" type="checkbox" checked />
             <span>Fill gaps between colors</span>
           </label>
+          <label class="check-field">
+            <input id="findEdges" type="checkbox" />
+            <span>Find edges</span>
+          </label>
+          <div class="note">Add detected boundaries between palette colors as a separate dark outline layer.</div>
           <div class="note">Flat-color logos and illustrations produce the cleanest layered paths.</div>
         </div>
         <label class="field">
@@ -165,6 +170,18 @@
                 <path d="M11.5 13c.2 3.8 2.1 6.5 5.2 6.5 1.5 0 2.3-.7 2.3-1.6 0-.8-.7-1.4-1.6-1.4-1.2 0-1.8.8-1.8 1.7"></path>
               </svg>
             </button>
+            <button id="vectorNodeTool" class="preview-tool-button" type="button"
+              aria-label="Edit path nodes" aria-pressed="false"
+              title="Edit nodes: drag anchors, add or remove nodes · Shortcut: N">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 18L9 6l10 4-4 9z"></path>
+                <rect x="3.5" y="16.5" width="3" height="3"></rect>
+                <rect x="7.5" y="4.5" width="3" height="3"></rect>
+                <rect x="17.5" y="8.5" width="3" height="3"></rect>
+                <rect x="13.5" y="17.5" width="3" height="3"></rect>
+              </svg>
+            </button>
+            <strong id="nodeEditorCount" class="node-editor-count" hidden>0 nodes</strong>
             <button id="fillSelectedLayers" class="preview-tool-button" type="button"
               aria-label="Fill selected layers with color" disabled
               title="Apply the chosen fill color to selected layers">
@@ -201,7 +218,7 @@
                 <path d="M15.5 15.5L21 21M7.5 10.5h6M10.5 7.5v6"></path>
               </svg>
             </button>
-            <span class="toolbar-hint">Select − or +, then click the image · Esc to exit</span>
+            <span id="vectorToolbarHint" class="toolbar-hint">Select − or +, then click the image · Esc to exit</span>
           </div>
           <section id="variationResults" class="variation-results" aria-label="Palette variation results" hidden>
             <div class="variation-results-heading">

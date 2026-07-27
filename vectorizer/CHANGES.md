@@ -1,5 +1,15 @@
 # Ronyka Vectorizer Changes
 
+## v1.9.0 — Multicolor edges and node editing
+
+- Added a Multicolor **Find edges** option that detects boundaries between
+  palette regions and adds them as a separate, editable dark outline layer.
+- Added an **Edit nodes** preview tool for manually smoothing vector paths.
+  Select one layer to reveal its anchors, drag an anchor to reshape the curve,
+  double-click a segment to insert an anchor, or select an anchor and press
+  Backspace/Delete to remove it. The toolbar reports the current node count,
+  **N** toggles node-editing mode, and node changes participate in Undo/Redo.
+
 ## v1.8.2 — Bucket fill tool
 
 - Added a bucket-fill tool and native color picker to the vector toolbar.
